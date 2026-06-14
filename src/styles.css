@@ -3603,9 +3603,19 @@ p {
 }
 
 @media (max-width: 767px) {
+  .meeting-page {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+  }
+
   .meeting-main {
-    min-height: 720px;
-    padding: 2rem 0 3rem;
+    flex: 0 0 auto;
+    padding: 2rem 0 0;
+  }
+
+  .meeting-page .site-footer {
+    margin-top: 1.5rem;
   }
 
   .meeting-heading {
