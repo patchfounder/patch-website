@@ -114,7 +114,7 @@ export default function Meeting() {
       <main className="meeting-main">
         <div className="page-shell meeting-shell">
           <a className="meeting-brand" href="/" aria-label="Patch home">
-            <img src="/patch-logo.png" alt="Patch" />
+            <img src="/patch-logo-2.png" alt="Patch" />
           </a>
 
           <header className="meeting-heading">
@@ -151,7 +151,7 @@ export default function Meeting() {
         </div>
       </main>
 
-      <Footer hideColumns logoSrc="/patch-logo.png" />
+      <Footer hideColumns logoSrc="/patch-logo-2.png" />
     </div>
   );
 }

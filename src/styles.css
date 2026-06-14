@@ -3587,17 +3587,17 @@ p {
 
 .meeting-heading h1 {
   max-width: none;
-  margin-bottom: 1.15rem;
-  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  margin-bottom: 0.9rem;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.14;
 }
 
 .meeting-heading p {
   max-width: 720px;
   margin-bottom: 0;
-  font-size: clamp(1rem, 1.3vw, 1.2rem);
-  line-height: 1.55;
+  font-size: clamp(0.92rem, 1vw, 1rem);
+  line-height: 1.6;
 }
 
 .meeting-booking {
@@ -3612,13 +3612,15 @@ p {
 
 .meeting-instruction h2 {
   margin-bottom: 0.85rem;
-  font-size: clamp(1.75rem, 2.8vw, 2.5rem);
+  font-size: clamp(1.15rem, 1.7vw, 1.5rem);
   font-weight: 400;
+  line-height: 1.2;
 }
 
 .meeting-instruction p {
   margin-bottom: 0;
-  font-size: clamp(0.95rem, 1.15vw, 1.1rem);
+  font-size: clamp(0.88rem, 1vw, 0.95rem);
+  line-height: 1.6;
 }
 
 .meeting-calendar {
@@ -3650,11 +3652,11 @@ p {
   }
 
   .meeting-heading h1 {
-    font-size: clamp(2.125rem, 10vw, 2.5rem);
+    font-size: clamp(1.25rem, 6vw, 1.5rem);
   }
 
   .meeting-heading p {
-    font-size: clamp(1rem, 4.5vw, 1.125rem);
+    font-size: clamp(0.9rem, 4vw, 1rem);
   }
 
   .meeting-booking {
@@ -3666,11 +3668,11 @@ p {
   }
 
   .meeting-instruction h2 {
-    font-size: clamp(1.75rem, 8vw, 2rem);
+    font-size: clamp(1.1rem, 5vw, 1.35rem);
   }
 
   .meeting-instruction p {
-    font-size: 1rem;
+    font-size: 0.92rem;
   }
 
   .meeting-calendar {
