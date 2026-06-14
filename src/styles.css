@@ -2985,7 +2985,7 @@ p {
   inset: 0;
   z-index: 5;
   background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(44px);
+  backdrop-filter: blur(132px);
   content: "";
   pointer-events: none;
 }
