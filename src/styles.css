@@ -3587,16 +3587,16 @@ p {
 
 .meeting-heading h1 {
   max-width: none;
-  margin-bottom: 1.5rem;
-  font-size: clamp(3rem, 6vw, 5.5rem);
+  margin-bottom: 1.15rem;
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
   font-weight: 500;
-  line-height: 0.98;
+  line-height: 1;
 }
 
 .meeting-heading p {
   max-width: 720px;
   margin-bottom: 0;
-  font-size: clamp(1.08rem, 1.7vw, 1.35rem);
+  font-size: clamp(1rem, 1.3vw, 1.2rem);
   line-height: 1.55;
 }
 
@@ -3612,12 +3612,13 @@ p {
 
 .meeting-instruction h2 {
   margin-bottom: 0.85rem;
-  font-size: clamp(2rem, 3.6vw, 3.2rem);
+  font-size: clamp(1.75rem, 2.8vw, 2.5rem);
   font-weight: 400;
 }
 
 .meeting-instruction p {
   margin-bottom: 0;
+  font-size: clamp(0.95rem, 1.15vw, 1.1rem);
 }
 
 .meeting-calendar {
@@ -3649,7 +3650,11 @@ p {
   }
 
   .meeting-heading h1 {
-    font-size: clamp(2.75rem, 13vw, 4rem);
+    font-size: clamp(2.125rem, 10vw, 2.5rem);
+  }
+
+  .meeting-heading p {
+    font-size: clamp(1rem, 4.5vw, 1.125rem);
   }
 
   .meeting-booking {
@@ -3658,6 +3663,14 @@ p {
 
   .meeting-instruction {
     margin-bottom: 2.5rem;
+  }
+
+  .meeting-instruction h2 {
+    font-size: clamp(1.75rem, 8vw, 2rem);
+  }
+
+  .meeting-instruction p {
+    font-size: 1rem;
   }
 
   .meeting-calendar {
@@ -3695,6 +3708,11 @@ p {
   grid-template-columns: 1fr 1.2fr;
   gap: 5rem;
   padding-bottom: 60px;
+}
+
+.site-footer-compact .footer-main {
+  grid-template-columns: 1fr;
+  gap: 0;
 }
 
 .brand-footer {

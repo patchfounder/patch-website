@@ -151,7 +151,7 @@ export default function Meeting() {
         </div>
       </main>
 
-      <Footer />
+      <Footer hideColumns logoSrc="/patch-logo.png" />
     </div>
   );
 }
