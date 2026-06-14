@@ -2,11 +2,13 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import Meeting from './components/Meeting.jsx';
+import Kc from './components/Kc.jsx';
 import Reactivate from './components/Reactivate.jsx';
 import './styles.css';
 
 const bookingRoutes = {
   '/meeting': Meeting,
+  '/kc': Kc,
   '/reactivate': Reactivate,
   // Add future Unbounce replacement pages here, for example:
   // '/kc': KcBookingPage,
