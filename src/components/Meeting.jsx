@@ -113,10 +113,6 @@ export default function Meeting() {
     <div className="meeting-page">
       <main className="meeting-main">
         <div className="page-shell meeting-shell">
-          <a className="meeting-brand" href="/" aria-label="Patch home">
-            <img src="/patch-logo-2.png" alt="Patch" />
-          </a>
-
           <header className="meeting-heading">
             <h1>Meeting with Patrick</h1>
             <p>
