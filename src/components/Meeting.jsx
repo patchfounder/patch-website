@@ -3,8 +3,9 @@ import Footer from './Footer.jsx';
 
 const CAL_SCRIPT_ID = 'cal-inline-embed-script';
 const CAL_NAMESPACE = 'meeting';
-const CAL_LINK = 'patchapp/meeting';
-const CAL_URL = 'https://cal.com/patchapp/meeting';
+// Replace these values if Patrick's Cal.com event URL changes.
+const MEETING_CAL_LINK = 'patchapp/meeting';
+const MEETING_CAL_URL = 'https://cal.com/patchapp/meeting';
 
 let meetingEmbedInitialised = false;
 
@@ -62,7 +63,7 @@ function initialiseMeetingEmbed() {
       layout: 'month_view',
       useSlotsViewOnSmallScreen: true,
     },
-    calLink: CAL_LINK,
+    calLink: MEETING_CAL_LINK,
   });
   window.Cal.ns[CAL_NAMESPACE]('ui', {
     hideEventTypeDetails: false,
@@ -85,7 +86,7 @@ export default function Meeting() {
       document.head.appendChild(routeRobotsMeta);
     }
 
-    document.title = 'Meeting with Patrick | Patch';
+    document.title = 'Scheduling a Meeting with Patrick | Patch';
 
     const desktopQuery = window.matchMedia('(min-width: 768px)');
     const initialiseForDesktop = (event) => {
@@ -118,9 +119,9 @@ export default function Meeting() {
           </a>
 
           <header className="meeting-heading">
-            <h1>Meeting with Patrick</h1>
+            <h1>Scheduling a Meeting with Patrick</h1>
             <p>
-              We can set up a 15 minute meeting here. If it ends up being a bit longer, that’s fine.
+              Choose a time that works for you and book directly into Patrick’s calendar.
             </p>
           </header>
 
@@ -136,7 +137,7 @@ export default function Meeting() {
               aria-label="Choose a meeting time"
             />
 
-            <a className="meeting-mobile-cta" href={CAL_URL}>
+            <a className="meeting-mobile-cta" href={MEETING_CAL_URL}>
               <span>Choose a time</span>
               <span className="meeting-mobile-cta-arrow" aria-hidden="true">
                 →

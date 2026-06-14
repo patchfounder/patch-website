@@ -4,7 +4,13 @@ import App from './App.jsx';
 import Meeting from './components/Meeting.jsx';
 import './styles.css';
 
-const RootComponent = window.location.pathname === '/meeting' ? Meeting : App;
+const bookingRoutes = {
+  '/meeting': Meeting,
+  // Add future Unbounce replacement pages here, for example:
+  // '/kc': KcBookingPage,
+};
+
+const RootComponent = bookingRoutes[window.location.pathname] || App;
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
