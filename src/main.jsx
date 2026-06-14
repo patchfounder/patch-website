@@ -10,6 +10,7 @@ import Kc from './components/Kc.jsx';
 import Masterclass from './components/Masterclass.jsx';
 import Pre from './components/Pre.jsx';
 import Reactivate from './components/Reactivate.jsx';
+import Training from './components/Training.jsx';
 import './styles.css';
 
 const bookingRoutes = {
@@ -22,6 +23,7 @@ const bookingRoutes = {
   '/masterclass': Masterclass,
   '/pre': Pre,
   '/reactivate': Reactivate,
+  '/training': Training,
   // Add future Unbounce replacement pages here, for example:
   // '/kc': KcBookingPage,
 };
