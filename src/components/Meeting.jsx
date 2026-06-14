@@ -7,8 +7,6 @@ const CAL_NAMESPACE = 'meeting';
 const MEETING_CAL_LINK = 'patchapp/meeting';
 const MEETING_CAL_URL = 'https://cal.com/patchapp/meeting';
 
-let meetingEmbedInitialised = false;
-
 function installCalLoader() {
   if (window.Cal) {
     return;
@@ -51,26 +49,27 @@ function installCalLoader() {
 }
 
 function initialiseMeetingEmbed() {
-  if (meetingEmbedInitialised) {
+  const calendarElement = document.getElementById('my-cal-inline-meeting');
+
+  if (!calendarElement || calendarElement.dataset.calInitialised === 'true') {
     return;
   }
 
   installCalLoader();
-  window.Cal('init', CAL_NAMESPACE, { origin: 'https://cal.com' });
+  window.Cal('init', CAL_NAMESPACE, { origin: 'https://app.cal.com' });
   window.Cal.ns[CAL_NAMESPACE]('inline', {
     elementOrSelector: '#my-cal-inline-meeting',
+    calLink: MEETING_CAL_LINK,
     config: {
       layout: 'month_view',
       useSlotsViewOnSmallScreen: true,
     },
-    calLink: MEETING_CAL_LINK,
   });
   window.Cal.ns[CAL_NAMESPACE]('ui', {
     hideEventTypeDetails: false,
-    layout: 'month_view',
   });
 
-  meetingEmbedInitialised = true;
+  calendarElement.dataset.calInitialised = 'true';
 }
 
 export default function Meeting() {
@@ -86,7 +85,7 @@ export default function Meeting() {
       document.head.appendChild(routeRobotsMeta);
     }
 
-    document.title = 'Scheduling a Meeting with Patrick | Patch';
+    document.title = 'Meeting with Patrick | Patch';
 
     const desktopQuery = window.matchMedia('(min-width: 768px)');
     const initialiseForDesktop = (event) => {
@@ -119,16 +118,16 @@ export default function Meeting() {
           </a>
 
           <header className="meeting-heading">
-            <h1>Scheduling a Meeting with Patrick</h1>
+            <h1>Meeting with Patrick</h1>
             <p>
-              Choose a time that works for you and book directly into Patrick’s calendar.
+              We can set up a 15 minute meeting here. If it ends up being a bit longer, that’s fine.
             </p>
           </header>
 
           <section className="meeting-booking" aria-labelledby="meeting-instruction">
             <div className="meeting-instruction">
               <h2 id="meeting-instruction">What time suits you best?</h2>
-              <p>Select any day and time that is most convenient for you.</p>
+              <p>Feel free to select any day and time that is most convenient for you.</p>
             </div>
 
             <div
@@ -137,8 +136,13 @@ export default function Meeting() {
               aria-label="Choose a meeting time"
             />
 
-            <a className="meeting-mobile-cta" href={MEETING_CAL_URL}>
-              <span>Choose a time</span>
+            <a
+              className="meeting-mobile-cta"
+              href={MEETING_CAL_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>View Calendar</span>
               <span className="meeting-mobile-cta-arrow" aria-hidden="true">
                 →
               </span>

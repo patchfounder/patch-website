@@ -10,7 +10,13 @@ const bookingRoutes = {
   // '/kc': KcBookingPage,
 };
 
-const RootComponent = bookingRoutes[window.location.pathname] || App;
+function normalisePathname(pathname) {
+  const normalised = pathname.replace(/\/+$/, '');
+  return normalised || '/';
+}
+
+const pathname = normalisePathname(window.location.pathname);
+const RootComponent = bookingRoutes[pathname] || App;
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
