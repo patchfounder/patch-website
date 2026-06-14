@@ -124,12 +124,7 @@ export default function Meeting() {
             </p>
           </header>
 
-          <section className="meeting-booking" aria-labelledby="meeting-instruction">
-            <div className="meeting-instruction">
-              <h2 id="meeting-instruction">What time suits you best?</h2>
-              <p>Feel free to select any day and time that is most convenient for you.</p>
-            </div>
-
+          <section className="meeting-booking" aria-label="Choose a meeting time">
             <div
               className="meeting-calendar"
               id="my-cal-inline-meeting"
