@@ -5,6 +5,7 @@ import Meeting from './components/Meeting.jsx';
 import Activity from './components/Activity.jsx';
 import Cancel from './components/Cancel.jsx';
 import Certified from './components/Certified.jsx';
+import Coaching from './components/Coaching.jsx';
 import Kc from './components/Kc.jsx';
 import Masterclass from './components/Masterclass.jsx';
 import Pre from './components/Pre.jsx';
@@ -16,6 +17,7 @@ const bookingRoutes = {
   '/activity': Activity,
   '/cancel': Cancel,
   '/certified': Certified,
+  '/coaching': Coaching,
   '/kc': Kc,
   '/masterclass': Masterclass,
   '/pre': Pre,
