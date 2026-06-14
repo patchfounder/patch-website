@@ -4,6 +4,7 @@ import App from './App.jsx';
 import Meeting from './components/Meeting.jsx';
 import Activity from './components/Activity.jsx';
 import Cancel from './components/Cancel.jsx';
+import Certified from './components/Certified.jsx';
 import Kc from './components/Kc.jsx';
 import Masterclass from './components/Masterclass.jsx';
 import Pre from './components/Pre.jsx';
@@ -14,6 +15,7 @@ const bookingRoutes = {
   '/meeting': Meeting,
   '/activity': Activity,
   '/cancel': Cancel,
+  '/certified': Certified,
   '/kc': Kc,
   '/masterclass': Masterclass,
   '/pre': Pre,
