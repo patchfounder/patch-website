@@ -3960,7 +3960,7 @@ p {
   }
 
   .download-modal-phone {
-    width: min(190px, 52vw);
+    display: none;
   }
 }
 
