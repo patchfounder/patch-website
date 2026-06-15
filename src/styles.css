@@ -2974,9 +2974,21 @@ p {
 }
 
 .testimonials-section {
+  position: relative;
   overflow: hidden;
   padding-bottom: 56px;
   background: var(--white);
+}
+
+.testimonials-section::after {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(132px);
+  -webkit-backdrop-filter: blur(132px);
+  content: "";
+  pointer-events: none;
 }
 
 .testimonial-carousel-shell {
@@ -3750,6 +3762,245 @@ p {
   font-size: 0.7rem;
 }
 
+.application-page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.application-hero {
+  padding: clamp(5.2rem, 10vw, 8.5rem) 0 clamp(3.5rem, 7vw, 5.75rem);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(0, 165, 192, 0.08), transparent 34rem),
+    linear-gradient(180deg, #ffffff 0%, #f7fafa 100%);
+}
+
+.application-hero-shell,
+.application-split {
+  max-width: 1080px;
+}
+
+.application-kicker,
+.application-section-label {
+  display: block;
+  margin-bottom: 1rem;
+  color: var(--turquoise);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.application-hero h1 {
+  max-width: 840px;
+  margin-bottom: 1.2rem;
+  font-size: clamp(3rem, 8vw, 6.15rem);
+  font-weight: 400;
+  line-height: 0.98;
+}
+
+.application-hero-subtitle {
+  max-width: 720px;
+  color: #202020;
+  font-size: clamp(1.25rem, 2.8vw, 2rem);
+  line-height: 1.25;
+}
+
+.application-reassurance {
+  max-width: 610px;
+  margin-top: 1.6rem;
+  margin-bottom: 0;
+  color: #626262;
+  font-size: 1.02rem;
+}
+
+.application-section {
+  padding: clamp(4.5rem, 8vw, 7.25rem) 0;
+}
+
+.application-split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: start;
+}
+
+.application-section h2 {
+  max-width: 660px;
+  margin-bottom: 0;
+  font-size: clamp(2.15rem, 4.8vw, 4.45rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.application-copy,
+.application-instructions-copy {
+  display: grid;
+  gap: 1.05rem;
+}
+
+.application-copy p,
+.application-instructions-copy p {
+  margin-bottom: 0;
+  color: #424242;
+  font-size: clamp(1rem, 1.55vw, 1.16rem);
+  line-height: 1.68;
+}
+
+.application-copy strong {
+  color: var(--black);
+  font-weight: 500;
+}
+
+.application-logo-section,
+.application-interns-section {
+  background: #f7f8f8;
+}
+
+.application-section-heading {
+  max-width: 760px;
+  margin-bottom: clamp(2rem, 5vw, 3.2rem);
+}
+
+.application-section-heading p {
+  max-width: 620px;
+  margin-top: 1.1rem;
+  margin-bottom: 0;
+  color: #686868;
+  font-size: 1.05rem;
+}
+
+.application-logo-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.application-logo-card {
+  display: grid;
+  min-height: 116px;
+  place-items: center;
+  padding: 1.1rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 44px rgba(8, 55, 93, 0.05);
+  color: #1f2528;
+  text-align: center;
+}
+
+.application-logo-card span {
+  font-size: clamp(0.94rem, 1.45vw, 1.15rem);
+  font-weight: 500;
+  line-height: 1.22;
+}
+
+.application-instructions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.72fr);
+  gap: clamp(2rem, 6vw, 4.5rem);
+  align-items: start;
+}
+
+.application-instructions-copy h2 {
+  margin-bottom: 0.65rem;
+}
+
+.application-closing {
+  padding-top: 0.75rem;
+}
+
+.application-steps-card {
+  position: sticky;
+  top: 96px;
+  padding: clamp(1.35rem, 3vw, 2rem);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(8, 55, 93, 0.09);
+}
+
+.application-steps-card h3 {
+  margin-bottom: 1.2rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.application-steps-card ol {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding-left: 1.35rem;
+  color: #464646;
+  line-height: 1.55;
+}
+
+.application-steps-card li::marker {
+  color: var(--turquoise);
+  font-weight: 500;
+}
+
+.application-whatsapp-cta {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.7rem;
+  padding: 0.85rem 1.15rem;
+  border-radius: 999px;
+  background: var(--turquoise);
+  color: var(--white);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.application-intern-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.application-intern-card {
+  display: flex;
+  min-height: 205px;
+  flex-direction: column;
+  padding: 1.2rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.application-intern-card h3 {
+  margin-bottom: 0.55rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.application-intern-card p {
+  margin-bottom: 1.4rem;
+  color: #7a7a7a;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.application-intern-card a {
+  margin-top: auto;
+  color: var(--turquoise);
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+@media (max-width: 1023px) {
+  .application-logo-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .application-intern-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1060px) {
   .nav-links {
     display: none;
@@ -3868,8 +4119,14 @@ p {
   .vision-editorial,
   .firm-layout,
   .final-cta-layout,
-  .footer-main {
+  .footer-main,
+  .application-split,
+  .application-instructions {
     grid-template-columns: 1fr;
+  }
+
+  .application-steps-card {
+    position: static;
   }
 
   .split-heading {
@@ -3984,7 +4241,32 @@ p {
   }
 
   .download-modal-phone {
-    width: min(164px, 50vw);
+    display: none;
+  }
+
+  .application-hero {
+    padding: 4.4rem 0 3.2rem;
+  }
+
+  .application-hero h1 {
+    font-size: clamp(2.65rem, 14vw, 4.8rem);
+  }
+
+  .application-section {
+    padding: 4rem 0;
+  }
+
+  .application-logo-grid,
+  .application-intern-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .application-logo-card {
+    min-height: 92px;
+  }
+
+  .application-intern-card {
+    min-height: 0;
   }
 
   h1 {

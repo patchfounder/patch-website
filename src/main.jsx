@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
+import Application from './components/Application.jsx';
 import Meeting from './components/Meeting.jsx';
 import Activity from './components/Activity.jsx';
 import ActivityContent from './components/ActivityContent.jsx';
@@ -16,6 +17,7 @@ import Training from './components/Training.jsx';
 import './styles.css';
 
 const bookingRoutes = {
+  '/application': Application,
   '/meeting': Meeting,
   '/activity': Activity,
   '/activity-content': ActivityContent,
