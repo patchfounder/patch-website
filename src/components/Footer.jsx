@@ -28,8 +28,9 @@ export default function Footer({ hideColumns = false, logoSrc = '/patch-logo-2.p
             </div>
             <div>
               <strong>Legal</strong>
-              <a href="#top">Privacy</a>
-              <a href="#top">Terms</a>
+              <a href="/legal/privacy">Privacy</a>
+              <a href="/legal/terms">Terms</a>
+              <a href="/legal/account-deletion">Account deletion</a>
             </div>
           </div>
         )}

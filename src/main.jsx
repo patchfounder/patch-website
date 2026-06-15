@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import Application from './components/Application.jsx';
+import Legal from './components/Legal.jsx';
 import Meeting from './components/Meeting.jsx';
 import Activity from './components/Activity.jsx';
 import ActivityContent from './components/ActivityContent.jsx';
@@ -18,6 +19,10 @@ import './styles.css';
 
 const bookingRoutes = {
   '/application': Application,
+  '/legal': Legal,
+  '/legal/privacy': () => <Legal page="privacy" />,
+  '/legal/terms': () => <Legal page="terms" />,
+  '/legal/account-deletion': () => <Legal page="accountDeletion" />,
   '/meeting': Meeting,
   '/activity': Activity,
   '/activity-content': ActivityContent,
