@@ -2974,20 +2974,9 @@ p {
 }
 
 .testimonials-section {
-  position: relative;
   overflow: hidden;
   padding-bottom: 56px;
   background: var(--white);
-}
-
-.testimonials-section::after {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(132px);
-  content: "";
-  pointer-events: none;
 }
 
 .testimonial-carousel-shell {
