@@ -118,7 +118,7 @@ export default function Hero({ onDownloadClick }) {
         </div>
 
         <div className="hero-copy">
-          <h1>Legal speaking, without limits.</h1>
+          <h1>The Speaking Coach for Lawyers</h1>
           <div className="hero-lede-row">
             <p className="hero-lede">
               Speak one-to-one with your coach, designed for high-performance lawyers.
