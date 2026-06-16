@@ -4568,12 +4568,19 @@ p {
   }
 
   .product-grid {
-    grid-template-columns: 1fr;
-    row-gap: 3.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1rem;
+    row-gap: 2.5rem;
+  }
+
+  .product-grid-media {
+    border-radius: 15px;
   }
 
   .product-grid-card h3 {
-    margin-top: 1.4rem;
+    margin-top: 1rem;
+    font-size: 0.92rem;
+    line-height: 1.2;
   }
 
   .product-heading h2 {
@@ -4581,7 +4588,207 @@ p {
   }
 
   .product-grid-card p {
-    margin-top: 1.25rem;
+    margin-top: 0.85rem;
+    font-size: 0.76rem;
+    line-height: 1.42;
+  }
+
+  .product-calendar-mockup {
+    padding: 10px 8px;
+    border-radius: 15px;
+  }
+
+  .product-calendar-grid {
+    grid-template-rows: 22px repeat(5, minmax(0, 1fr));
+  }
+
+  .product-calendar-weekday {
+    font-size: 0.64rem;
+  }
+
+  .product-calendar-date {
+    width: 22px;
+    height: 22px;
+    font-size: 0.68rem;
+  }
+
+  .patch-channels-card {
+    padding: 10px 8px;
+    border-radius: 15px;
+  }
+
+  .patch-channel-slide {
+    gap: 9px;
+    transition: opacity 0.55s ease;
+  }
+
+  .patch-channel-logo {
+    width: min(68%, 88px);
+    border-radius: 18px;
+    box-shadow:
+      0 12px 24px rgba(0, 0, 0, 0.1),
+      0 1px 5px rgba(0, 0, 0, 0.05);
+  }
+
+  .patch-channel-label {
+    font-size: 9px;
+  }
+
+  .patch-channel-slide--ft .patch-channel-logo span {
+    font-size: clamp(29px, 8vw, 36px);
+  }
+
+  .patch-channel-slide--wsj .patch-channel-logo span {
+    font-size: clamp(26px, 7.2vw, 32px);
+  }
+
+  .patch-channel-slide--school .patch-channel-logo {
+    padding: 12px;
+  }
+
+  .patch-channel-slide--school .patch-channel-logo span {
+    font-size: clamp(10px, 2.8vw, 13px);
+    line-height: 1.06;
+  }
+
+  .patch-channel-slide--economist .patch-channel-logo span {
+    max-width: 72%;
+    font-size: clamp(9px, 2.6vw, 12px);
+    line-height: 1.06;
+  }
+
+  .patch-channel-slide--bloomberg .patch-channel-logo span {
+    max-width: 70%;
+    font-size: clamp(9px, 2.6vw, 12px);
+    line-height: 1.08;
+  }
+
+  .patch-channels-dots {
+    bottom: 10px;
+    gap: 5px;
+  }
+
+  .patch-channels-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .patch-channels-dot.is-active {
+    width: 15px;
+  }
+
+  .patch-voice-card,
+  .patch-score-card {
+    padding: 10px 8px;
+    border-radius: 15px;
+  }
+
+  .patch-voice-speaker {
+    top: 12px;
+    width: 24px;
+    height: 3px;
+  }
+
+  .patch-voice-main {
+    justify-content: flex-start;
+    gap: 7px;
+    padding-top: 27px;
+  }
+
+  .patch-voice-kicker {
+    font-size: 7px;
+    letter-spacing: 0.1em;
+  }
+
+  .patch-voice-avatar {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    max-width: 34px;
+    min-height: 34px;
+    max-height: 34px;
+    flex: 0 0 34px;
+    border-width: 1px;
+  }
+
+  .patch-voice-avatar svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .patch-voice-name {
+    font-size: 13px;
+  }
+
+  .patch-voice-timer {
+    margin-top: 6px;
+    margin-bottom: 5px;
+    font-size: 23px;
+  }
+
+  .patch-voice-controls {
+    gap: 8px;
+  }
+
+  .patch-voice-control {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+  }
+
+  .patch-voice-control svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .patch-score-main {
+    justify-content: flex-start;
+    padding-top: 18px;
+  }
+
+  .patch-score-kicker {
+    font-size: 7px;
+    letter-spacing: 0.1em;
+  }
+
+  .patch-score-ring--large {
+    width: min(47%, 78px) !important;
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+
+  .patch-score-value {
+    font-size: 27px;
+  }
+
+  .patch-score-subvalue {
+    margin-top: 3px;
+    font-size: 7px;
+  }
+
+  .patch-score-divider {
+    width: 86%;
+    margin: 0 0 8px;
+  }
+
+  .patch-score-section-title {
+    font-size: 9px;
+  }
+
+  .patch-score-history-row {
+    width: 90%;
+    gap: 3px;
+    margin-top: 8px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .patch-score-history-item .patch-score-ring {
+    width: 20px;
+  }
+
+  .patch-score-history-value {
+    font-size: 7px;
   }
 
   .showcase-list {
