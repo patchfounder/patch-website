@@ -20,9 +20,6 @@ import './styles.css';
 const bookingRoutes = {
   '/application': Application,
   '/legal': Legal,
-  '/legal/privacy': () => <Legal page="privacy" />,
-  '/legal/terms': () => <Legal page="terms" />,
-  '/legal/account-deletion': () => <Legal page="accountDeletion" />,
   '/meeting': Meeting,
   '/activity': Activity,
   '/activity-content': ActivityContent,
