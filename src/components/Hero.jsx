@@ -11,8 +11,7 @@ const DownloadAction = ({ light = false, onDownloadClick }) => (
 export { DownloadAction };
 
 const HERO_VIDEO_SRC = '/hero-background.mp4';
-// TODO: Add an approved local poster image when available.
-const HERO_POSTER_SRC = '';
+const HERO_POSTER_SRC = '/hero-video-poster.png';
 
 export default function Hero({ onDownloadClick }) {
   return (
