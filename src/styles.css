@@ -4469,6 +4469,7 @@ p {
   }
 
   .vision-heading {
+    max-width: 300px;
     margin-bottom: 3rem;
   }
 
