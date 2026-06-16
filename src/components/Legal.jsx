@@ -54,39 +54,21 @@ const TERMS_PARAGRAPHS = [
 ];
 
 const PAGE_META = {
-  hub: {
-    title: 'Legal | Patch',
-    description: 'Legal information for Patch, including privacy, terms, and account deletion.',
-    heading: 'Legal',
-  },
-  privacy: {
-    title: 'Privacy Policy | Patch',
-    description: 'Privacy Policy for Patch App LLC.',
-    heading: 'Privacy Policy',
-  },
-  terms: {
-    title: 'Terms of Service | Patch',
-    description: 'Terms of Service for Patch App LLC.',
-    heading: 'Terms of Service',
-  },
-  accountDeletion: {
-    title: 'Account Deletion | Patch',
-    description: 'How Patch users can request account deletion and associated app data deletion.',
-    heading: 'Account Deletion',
-  },
+  title: 'Legal | Patch',
+  description: 'Legal information for Patch, including privacy, terms, and account deletion.',
+  heading: 'Legal',
 };
 
-function useLegalMeta(page) {
+function useLegalMeta() {
   useEffect(() => {
-    const meta = PAGE_META[page];
     const descriptionMeta = document.querySelector('meta[name="description"]');
     const previousDescription = descriptionMeta?.getAttribute('content');
     const routeDescriptionMeta = descriptionMeta || document.createElement('meta');
     const previousTitle = document.title;
 
-    document.title = meta.title;
+    document.title = PAGE_META.title;
     routeDescriptionMeta.setAttribute('name', 'description');
-    routeDescriptionMeta.setAttribute('content', meta.description);
+    routeDescriptionMeta.setAttribute('content', PAGE_META.description);
 
     if (!descriptionMeta) {
       document.head.appendChild(routeDescriptionMeta);
@@ -101,7 +83,7 @@ function useLegalMeta(page) {
         descriptionMeta.setAttribute('content', previousDescription);
       }
     };
-  }, [page]);
+  }, []);
 }
 
 function EmailLink() {
@@ -152,35 +134,10 @@ function AccountDeletionContent({ compact = false }) {
   );
 }
 
-function LegalHub() {
-  return (
-    <>
-      <div className="legal-card-grid" aria-label="Legal pages">
-        <a className="legal-card" href="/legal/privacy">
-          <span>Privacy Policy</span>
-          <small>How Patch handles personal information.</small>
-        </a>
-        <a className="legal-card" href="/legal/terms">
-          <span>Terms of Service</span>
-          <small>The terms that apply to using Patch.</small>
-        </a>
-        <a className="legal-card" href="/legal/account-deletion">
-          <span>Account Deletion</span>
-          <small>How to request deletion of your Patch account and app data.</small>
-        </a>
-      </div>
-
-      <section className="legal-document legal-document-inline" aria-labelledby="account-deletion-summary">
-        <h2 id="account-deletion-summary">Account Deletion</h2>
-        <AccountDeletionContent compact />
-      </section>
-    </>
-  );
-}
-
 function PrivacyPolicy() {
   return (
     <div className="legal-copy">
+      <h2>Privacy Policy</h2>
       {PRIVACY_PARAGRAPHS.map((paragraph) => (
         <p key={paragraph}>{paragraph}</p>
       ))}
@@ -194,6 +151,7 @@ function PrivacyPolicy() {
 function TermsOfService() {
   return (
     <div className="legal-copy">
+      <h2>Terms of Service</h2>
       {TERMS_PARAGRAPHS.map((paragraph) => (
         <p key={paragraph}>{paragraph}</p>
       ))}
@@ -204,9 +162,8 @@ function TermsOfService() {
   );
 }
 
-export default function Legal({ page = 'hub' }) {
-  const meta = PAGE_META[page] || PAGE_META.hub;
-  useLegalMeta(page);
+export default function Legal() {
+  useLegalMeta();
 
   return (
     <div className="legal-page">
@@ -217,18 +174,17 @@ export default function Legal({ page = 'hub' }) {
               <img src="/patch-logo-2.png" alt="Patch" />
             </a>
             <span className="legal-kicker">Patch App LLC</span>
-            <h1>{meta.heading}</h1>
+            <h1>{PAGE_META.heading}</h1>
             <p>
-              Legal information for Patch users, app store reviewers, and visitors to the Patch
-              website.
+              Privacy, terms, and account deletion information for Patch users, app store reviewers,
+              and visitors to the Patch website.
             </p>
           </header>
 
-          <section className="legal-document" aria-label={meta.heading}>
-            {page === 'hub' && <LegalHub />}
-            {page === 'privacy' && <PrivacyPolicy />}
-            {page === 'terms' && <TermsOfService />}
-            {page === 'accountDeletion' && <AccountDeletionContent />}
+          <section className="legal-document" aria-label={PAGE_META.heading}>
+            <PrivacyPolicy />
+            <TermsOfService />
+            <AccountDeletionContent />
           </section>
         </div>
       </main>

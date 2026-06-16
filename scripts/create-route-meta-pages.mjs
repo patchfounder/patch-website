@@ -51,21 +51,6 @@ const routes = [
     title: 'Legal | Patch',
     description: 'Legal information for Patch, including privacy, terms, and account deletion.',
   },
-  {
-    path: 'legal/privacy',
-    title: 'Privacy Policy | Patch',
-    description: 'Privacy Policy for Patch App LLC.',
-  },
-  {
-    path: 'legal/terms',
-    title: 'Terms of Service | Patch',
-    description: 'Terms of Service for Patch App LLC.',
-  },
-  {
-    path: 'legal/account-deletion',
-    title: 'Account Deletion | Patch',
-    description: 'How Patch users can request account deletion and associated app data deletion.',
-  },
 ];
 
 function escapeHtml(value) {
