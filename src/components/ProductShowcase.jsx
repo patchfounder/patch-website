@@ -252,6 +252,8 @@ function ScoreTrackingMockup() {
       ref={scoreRef}
       aria-label="Session score tracking"
     >
+      <div className="patch-score-speaker" aria-hidden="true" />
+
       <div className="patch-score-main">
         <div className="patch-score-kicker">Last call</div>
 

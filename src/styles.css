@@ -1409,7 +1409,8 @@ p {
     sans-serif;
 }
 
-.patch-voice-speaker {
+.patch-voice-speaker,
+.patch-score-speaker {
   position: absolute;
   top: 20px;
   left: 50%;
@@ -4691,7 +4692,8 @@ p {
     border-radius: 15px;
   }
 
-  .patch-voice-speaker {
+  .patch-voice-speaker,
+  .patch-score-speaker {
     top: 12px;
     width: 24px;
     height: 3px;
