@@ -4574,6 +4574,7 @@ p {
   }
 
   .product-grid-media {
+    border: 0.5px solid rgba(0, 0, 0, 0.24);
     border-radius: 15px;
   }
 
