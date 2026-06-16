@@ -4575,8 +4575,14 @@ p {
   }
 
   .product-grid-media {
-    border: 0.5px solid rgba(0, 0, 0, 0.24);
     border-radius: 15px;
+  }
+
+  .product-calendar-mockup,
+  .patch-channels-card,
+  .patch-voice-card,
+  .patch-score-card {
+    border: 1px solid rgba(0, 0, 0, 0.18);
   }
 
   .product-grid-card h3 {
