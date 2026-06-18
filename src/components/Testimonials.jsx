@@ -16,8 +16,8 @@ const slides = [
       'Regular conversations with Patch help me stay clear, confident, and consistent in my voice.',
   },
   {
-    label: 'Idoya Fernández',
-    title: 'Head of Knowledge at Cuatrecasas',
+    label: 'Idoya Fernández Elorza',
+    title: 'Head of Knowledge and Innovation at Cuatrecasas',
     src: '/testimonial-3.png',
     quote:
       'The coaches are excellent. They bring warmth, judgement, and real professional insight.',
