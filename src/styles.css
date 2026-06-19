@@ -2981,17 +2981,6 @@ p {
   background: var(--white);
 }
 
-.testimonials-section::after {
-  position: absolute;
-  z-index: 5;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(132px);
-  -webkit-backdrop-filter: blur(132px);
-  content: "";
-  pointer-events: none;
-}
-
 .testimonial-carousel-shell {
   text-align: center;
 }
@@ -3064,9 +3053,7 @@ p {
   display: grid;
   grid-template-columns:
     minmax(0, 0.84fr)
-    minmax(0, 0.84fr)
     minmax(0, 2.295fr)
-    minmax(0, 0.84fr)
     minmax(0, 0.84fr);
   align-items: start;
   gap: clamp(2rem, 4vw, 4rem);

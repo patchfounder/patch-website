@@ -9,13 +9,6 @@ const slides = [
       'The flexibility made it easy to keep practising, even during a demanding working week.',
   },
   {
-    label: 'Javier Tarjuelo',
-    title: 'Senior Associate at Pérez-Llorca',
-    src: '/testimonial-2.png',
-    quote:
-      'Regular conversations with Patch help me stay clear, confident, and consistent in my voice.',
-  },
-  {
     label: 'Idoya Fernández Elorza',
     title: 'Head of Knowledge and Innovation at Cuatrecasas',
     src: '/testimonial-3.png',
@@ -38,7 +31,7 @@ const slides = [
   },
 ];
 
-const visibleOffsets = [-2, -1, 0, 1, 2];
+const visibleOffsets = [-1, 0, 1];
 
 export default function Testimonials() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -68,7 +61,7 @@ export default function Testimonials() {
           </p>
         </header>
 
-        <div className="testimonial-progress" aria-label={`Slide ${activeIndex + 1} of 5`}>
+        <div className="testimonial-progress" aria-label={`Slide ${activeIndex + 1} of ${slides.length}`}>
           {slides.map((slide, index) => (
             <span
               className={index === activeIndex ? 'active' : ''}
