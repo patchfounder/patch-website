@@ -24,7 +24,7 @@ export default function Footer({ hideColumns = false, logoSrc = '/patch-logo-2.p
               <strong>Patch</strong>
               <a href="#testimonials">Members</a>
               <a href="#firms">For firms</a>
-              <a href="https://www.linkedin.com">Admin</a>
+              <a href="https://os.patch.app/admin-login">Admin</a>
             </div>
             <div>
               <strong>Legal</strong>
