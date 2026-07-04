@@ -18,7 +18,7 @@ export default function Header({ onDownloadClick }) {
         <div className="nav-actions">
           <a
             className="nav-login"
-            href="https://api.patch.app/login.html"
+            href="https://os.patch.app/login"
             target="_blank"
             rel="noreferrer"
           >

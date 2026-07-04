@@ -30,7 +30,6 @@ export default function Footer({ hideColumns = false, logoSrc = '/patch-logo-2.p
               <strong>Legal</strong>
               <a href="/legal">Privacy</a>
               <a href="/legal">Terms</a>
-              <a className="footer-beta-link" href="https://os.patch.app/login">Beta</a>
             </div>
           </div>
         )}
