@@ -9,7 +9,7 @@ export default function Vision() {
 
         <div className="vision-editorial">
           <aside className="vision-founder">
-            <img src="/patrickbeattie.jpeg" alt="Patrick Beattie, Founder and CEO of Patch" />
+            <img src="/patrickbeattie.jpg" alt="Patrick Beattie, Founder and CEO of Patch" />
             <div>
               <strong>Patrick Beattie</strong>
               <span>Founder &amp; CEO</span>
