@@ -4208,6 +4208,28 @@ p {
     width: min(100% - 32px, 1240px);
   }
 
+  .nav-shell {
+    grid-template-areas: "download brand login";
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .nav-actions {
+    display: contents;
+  }
+
+  .nav-cta {
+    grid-area: download;
+    justify-self: start;
+  }
+
+  .nav-login {
+    grid-area: login;
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    justify-self: end;
+  }
+
   .section {
     padding: 84px 0;
   }
@@ -4222,10 +4244,7 @@ p {
   }
 
   .hero-composition {
-    width: min(620px, 100%);
-    height: 560px;
-    min-height: 560px;
-    margin: 0 auto;
+    display: none;
   }
 
   .hero-visual-block {
@@ -4234,7 +4253,7 @@ p {
   }
 
   .hero-copy {
-    margin-top: 1.5rem;
+    margin-top: 0;
   }
 
   .hero-copy h1 {
@@ -4484,10 +4503,18 @@ p {
   }
 
   .nav-shell {
+    grid-template-areas: "download brand login";
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     min-height: 76px;
   }
 
+  .nav-actions {
+    display: contents;
+  }
+
   .nav-cta {
+    grid-area: download;
+    justify-self: start;
     min-height: 38px;
     gap: 0.35rem;
     padding: 0.25rem 0.25rem 0.25rem 0.65rem;
@@ -4509,7 +4536,12 @@ p {
   }
 
   .nav-login {
-    display: none;
+    grid-area: login;
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    justify-self: end;
+    font-size: 0.82rem;
   }
 
   .brand {
