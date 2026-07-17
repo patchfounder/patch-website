@@ -33,7 +33,7 @@ export default function App() {
         <FirmEnquiries />
         <AppDownloadCTA onDownloadClick={openDownloadModal} />
       </main>
-      <Footer />
+      <Footer onDownloadClick={openDownloadModal} />
       {isDownloadModalOpen && (
         <div
           className="download-modal"

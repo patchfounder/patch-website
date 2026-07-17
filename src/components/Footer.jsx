@@ -1,4 +1,8 @@
-export default function Footer({ hideColumns = false, logoSrc = '/patch-logo-2.png' }) {
+export default function Footer({
+  hideColumns = false,
+  logoSrc = '/patch-logo-2.png',
+  onDownloadClick,
+}) {
   return (
     <footer className={`site-footer ${hideColumns ? 'site-footer-compact' : ''}`}>
       <div className="page-shell footer-main">
@@ -16,8 +20,10 @@ export default function Footer({ hideColumns = false, logoSrc = '/patch-logo-2.p
           <div className="footer-links">
             <div>
               <strong>Product</strong>
-              <a href="#how-it-works">How it works</a>
-              <a href="#product">The app</a>
+              <a href="#product">How it works</a>
+              <a href="#download" onClick={onDownloadClick}>
+                The app
+              </a>
               <a href="#pricing">Pricing</a>
             </div>
             <div>
