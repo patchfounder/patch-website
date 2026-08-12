@@ -41,8 +41,8 @@ export default function Footer({
         )}
       </div>
       <div className="page-shell footer-bottom">
-        <span>© 2026 Patch. All rights reserved.</span>
-        <span>Designed for international legal professionals.</span>
+        <span>© 2026 Patch App LLC, all rights reserved.</span>
+        <span>Designed exclusively for.</span>
       </div>
     </footer>
   );
