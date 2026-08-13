@@ -37,13 +37,35 @@ export default function Vision() {
           </div>
         </div>
 
-        <figure className="vision-office">
-          <img
-            src="/office-447-broadway-v3.jpg"
-            alt="447 Broadway in SoHo, New York, where Patch is based"
-          />
-          <figcaption>447 Broadway, SoHo, New York</figcaption>
-        </figure>
+        <div className="vision-technology">
+          <div className="vision-technology-copy">
+            <p>
+              AI can make practice more useful when it supports the conversation rather than
+              replacing it. Patch uses technology to organise each session, surface relevant
+              topics and make the experience easier to fit into a demanding week.
+            </p>
+            <p>
+              Progress should also be visible. We are developing simple metrics that help lawyers
+              understand how consistently they practise, where confidence is growing and which
+              parts of their communication deserve more attention. The numbers provide direction;
+              the coach provides judgement, context and encouragement.
+            </p>
+            <p>
+              Our aim is to combine intelligent tools with human expertise. Technology should
+              remove friction, reveal patterns and help each lawyer build momentum, while every
+              meaningful moment of coaching remains personal, practical and grounded in the
+              realities of legal work.
+            </p>
+          </div>
+
+          <figure className="vision-office">
+            <img
+              src="/office-447-broadway-v3.jpg"
+              alt="447 Broadway in SoHo, New York, where Patch is based"
+            />
+            <figcaption>447 Broadway, SoHo, New York</figcaption>
+          </figure>
+        </div>
       </div>
     </section>
   );

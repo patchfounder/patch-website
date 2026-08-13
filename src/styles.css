@@ -3436,31 +3436,44 @@ p {
   line-height: 1.55;
 }
 
-.vision-copy {
+.vision-copy,
+.vision-technology-copy {
   max-width: 720px;
   transform: translateY(-4px);
 }
 
-.vision-copy p {
+.vision-copy p,
+.vision-technology-copy p {
   margin-bottom: 1.4rem;
   color: #222222;
   font-size: clamp(1.05rem, 1.45vw, 1.28rem);
   line-height: 1.62;
 }
 
-.vision-copy p:last-child {
+.vision-copy p:last-child,
+.vision-technology-copy p:last-child {
   margin-bottom: 0;
 }
 
+.vision-technology {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 571px);
+  align-items: start;
+  gap: clamp(1.75rem, 3vw, 3.25rem);
+}
+
 .vision-office {
-  width: min(100%, 920px);
+  width: min(75%, 428px);
   margin: 0;
+  justify-self: end;
 }
 
 .vision-office img {
   display: block;
   width: 100%;
-  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center;
 }
 
 .vision-office figcaption {
@@ -4271,6 +4284,7 @@ p {
   .why-layout,
   .stats-layout,
   .vision-editorial,
+  .vision-technology,
   .firm-layout,
   .final-cta-layout,
   .footer-main,
@@ -4322,6 +4336,19 @@ p {
 
   .vision-copy {
     transform: none;
+  }
+
+  .vision-technology {
+    gap: 3rem;
+  }
+
+  .vision-technology-copy {
+    transform: none;
+  }
+
+  .vision-office {
+    width: min(63.75%, 428px);
+    justify-self: start;
   }
 
   .price-card {
@@ -4475,14 +4502,13 @@ p {
     width: 63.75%;
   }
 
-  .vision-copy p {
+  .vision-copy p,
+  .vision-technology-copy p {
     font-size: 1rem;
   }
 
-  .vision-office img {
-    height: 440px;
-    object-fit: cover;
-    object-position: center 12%;
+  .vision-office {
+    width: 63.75%;
   }
 
   .nav-shell {
