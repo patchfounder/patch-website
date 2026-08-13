@@ -42,7 +42,7 @@ export default function Footer({
       </div>
       <div className="page-shell footer-bottom">
         <span>© 2026 Patch App LLC, all rights reserved.</span>
-        <span>Designed exclusively for.</span>
+        <span>Designed exclusively for international legal professionals</span>
       </div>
     </footer>
   );
