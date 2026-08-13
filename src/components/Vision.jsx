@@ -40,21 +40,20 @@ export default function Vision() {
         <div className="vision-technology">
           <div className="vision-technology-copy">
             <p>
-              AI can make practice more useful when it supports the conversation rather than
-              replacing it. Patch uses technology to organise each session, surface relevant
-              topics and make the experience easier to fit into a demanding week.
+              Legal AI is changing how lawyers research, draft and prepare for complex work. Patch
+              is using exciting new tools to help lawyers navigate this shift with confidence and
+              understand where technology can add real value.
             </p>
             <p>
-              Progress should also be visible. We are developing simple metrics that help lawyers
-              understand how consistently they practise, where confidence is growing and which
-              parts of their communication deserve more attention. The numbers provide direction;
-              the coach provides judgement, context and encouragement.
+              Effective prompting is becoming a practical communication skill. Our sessions help
+              lawyers turn legal judgement into clear instructions, develop more effective prompts
+              and refine their approach through thoughtful iteration.
             </p>
             <p>
-              Our aim is to combine intelligent tools with human expertise. Technology should
-              remove friction, reveal patterns and help each lawyer build momentum, while every
-              meaningful moment of coaching remains personal, practical and grounded in the
-              realities of legal work.
+              The aim is not to replace expertise, but to strengthen it. By combining real
+              conversations with guided practice, we help lawyers assess AI output carefully and
+              present their conclusions with the judgement, clarity and confident human voice that
+              clients and colleagues expect.
             </p>
           </div>
 
