@@ -38,16 +38,10 @@ export default function Vision() {
         </div>
 
         <figure className="vision-office">
-          <picture>
-            <source
-              media="(min-width: 768px)"
-              srcSet="/office-447-broadway-landscape.jpg"
-            />
-            <img
-              src="/office-447-broadway-v3.jpg"
-              alt="447 Broadway in SoHo, New York, where Patch is based"
-            />
-          </picture>
+          <img
+            src="/office-447-broadway-v3.jpg"
+            alt="447 Broadway in SoHo, New York, where Patch is based"
+          />
           <figcaption>447 Broadway, SoHo, New York</figcaption>
         </figure>
       </div>
