@@ -30,7 +30,7 @@ export default function Vision() {
               pressure.
             </p>
             <p>
-              From Menara Darussalam in Kuala Lumpur, we are building a product with a simple
+              From 447 Broadway in SoHo, New York, we are building a product with a simple
               purpose: to help lawyers develop clearer communication, stronger influence and a
               more confident professional presence.
             </p>
@@ -39,10 +39,10 @@ export default function Vision() {
 
         <figure className="vision-office">
           <img
-            src="/office.jpeg"
-            alt="Menara Darussalam in Kuala Lumpur, where Patch is based"
+            src="/office-447-broadway-v3.jpg"
+            alt="447 Broadway in SoHo, New York, where Patch is based"
           />
-          <figcaption>Menara Darussalam, Kuala Lumpur</figcaption>
+          <figcaption>447 Broadway, SoHo, New York</figcaption>
         </figure>
       </div>
     </section>
