@@ -3456,11 +3456,16 @@ p {
   margin: 0;
 }
 
+.vision-office picture {
+  display: block;
+}
+
 .vision-office img {
+  display: block;
   width: 100%;
   height: clamp(440px, 62vw, 720px);
   object-fit: cover;
-  object-position: center 12%;
+  object-position: center;
 }
 
 .vision-office figcaption {
