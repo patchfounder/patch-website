@@ -16,14 +16,6 @@ export default function Header({ onDownloadClick }) {
         </a>
 
         <div className="nav-actions">
-          <a
-            className="nav-login"
-            href="https://os.patch.app/login"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Log in
-          </a>
           <a className="nav-cta" href="#download" onClick={onDownloadClick}>
             <span>Download</span>
             <span className="nav-cta-arrow" aria-hidden="true">

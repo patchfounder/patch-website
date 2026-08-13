@@ -245,17 +245,6 @@ p {
   gap: 1.15rem;
 }
 
-.nav-login {
-  color: #222222;
-  font-size: 0.88rem;
-  font-weight: 400;
-  transition: color 150ms ease;
-}
-
-.nav-login:hover {
-  color: var(--turquoise);
-}
-
 .nav-cta {
   display: inline-flex;
   min-height: 40px;
@@ -4209,7 +4198,7 @@ p {
   }
 
   .nav-shell {
-    grid-template-areas: "download brand login";
+    grid-template-areas: "download brand empty";
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
 
@@ -4220,14 +4209,6 @@ p {
   .nav-cta {
     grid-area: download;
     justify-self: start;
-  }
-
-  .nav-login {
-    grid-area: login;
-    display: inline-flex;
-    min-height: 38px;
-    align-items: center;
-    justify-self: end;
   }
 
   .section {
@@ -4503,7 +4484,7 @@ p {
   }
 
   .nav-shell {
-    grid-template-areas: "download brand login";
+    grid-template-areas: "download brand empty";
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     min-height: 76px;
   }
@@ -4533,15 +4514,6 @@ p {
     height: 28px;
     flex-basis: 28px;
     font-size: 0.76rem;
-  }
-
-  .nav-login {
-    grid-area: login;
-    display: inline-flex;
-    min-height: 38px;
-    align-items: center;
-    justify-self: end;
-    font-size: 0.82rem;
   }
 
   .brand {
