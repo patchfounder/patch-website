@@ -3929,11 +3929,6 @@ p {
   background: #ffffff;
 }
 
-.application-hero-shell,
-.application-split {
-  max-width: 1080px;
-}
-
 .application-hero-shell {
   padding-bottom: clamp(2.25rem, 4vw, 3.25rem);
 }
