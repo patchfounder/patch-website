@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import Footer from './Footer.jsx';
 
 const LAW_FIRMS = [
-  'Ashurst',
-  'Clifford Chance',
-  'Dentons',
-  'Simmons & Simmons',
-  'Pinsent Masons',
-  'Watson Farley & Williams',
-  'Eversheds Sutherland',
+  { name: 'Ashurst', src: '/law-firm-logos/ashurst.png' },
+  { name: 'Clifford Chance', src: '/law-firm-logos/clifford-chance.jpg' },
+  { name: 'Dentons', src: '/law-firm-logos/dentons.png' },
+  { name: 'Simmons & Simmons', src: '/law-firm-logos/simmons-simmons.png' },
+  { name: 'Pinsent Masons', src: '/law-firm-logos/pinsent-masons.png' },
+  { name: 'Watson Farley & Williams', src: '/law-firm-logos/wfw.jpeg' },
+  { name: 'Eversheds Sutherland', src: '/law-firm-logos/eversheds-sutherland.png' },
 ];
 
 const PREVIOUS_INTERNS = [
@@ -159,7 +159,7 @@ export default function Application() {
           </div>
         </section>
 
-        <section className="application-section">
+        <section className="application-section application-role-section">
           <div className="page-shell application-split">
             <div>
               <span className="application-section-label">The opportunity</span>
@@ -182,15 +182,11 @@ export default function Application() {
         </section>
 
         <section className="application-section application-logo-section">
-          <div className="page-shell">
-            <div className="application-section-heading">
-              <span className="application-section-label">Credibility</span>
-              <h2>Lawyers using Patch have worked at firms including</h2>
-            </div>
-            <div className="application-logo-grid" aria-label="Law firms">
-              {LAW_FIRMS.map((firm) => (
-                <div className="application-logo-card" key={firm} role="img" aria-label={firm}>
-                  <span>{firm}</span>
+          <div className="application-logo-marquee" aria-label="Law firms represented by Patch lawyers">
+            <div className="application-logo-track">
+              {[...LAW_FIRMS, ...LAW_FIRMS].map((firm, index) => (
+                <div className="application-logo-mark" key={`${firm.name}-${index}`}>
+                  <img src={firm.src} alt={firm.name} />
                 </div>
               ))}
             </div>
