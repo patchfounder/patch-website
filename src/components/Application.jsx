@@ -204,33 +204,69 @@ export default function Application() {
                 <span className="application-section-label">Stage 1: Voice Note Submission</span>
                 <h2>How to send your application?</h2>
                 <p>
-                  Congratulations on being invited to the first stage of our application process.
-                  The position is competitive and we like to give everyone a fair opportunity.
+                  Your voice note gives us the chance to hear how you communicate. We are looking
+                  for high-energy, talkative and vibrant speaking voices, as well as people whose
+                  values align with ours.
                 </p>
                 <p>
-                  Please record a 30 to 60 second audio recording outlining why you would like to
-                  join the Patch App team.
+                  Record a 30 to 60 second voice note explaining why you would like to join the
+                  Patch App team and how your values align with ours.
                 </p>
                 <p>
-                  Send your voice note recording to us as a WhatsApp message within 48 hours of
-                  receiving your invitation.
+                  Send your recording to us on WhatsApp within 48 hours of receiving your
+                  invitation. WhatsApp lets us listen to your voice note easily and assess it as
+                  part of your application.
                 </p>
                 <p className="application-closing">
-                  We believe in treating all of our applicants with respect and kindness. You will
-                  hear back from us after sending in your audio message.
+                  Our team will review your recording carefully. If you are successful, we will
+                  reply on WhatsApp and invite you to Stage Two. Every applicant will hear the
+                  outcome of their application from us.
                 </p>
               </div>
 
               <div className="application-steps-card">
-                <h3>Instructions:</h3>
+                <h3>Before you send:</h3>
                 <ol>
                   <li>Plan what you are going to say.</li>
                   <li>Mention how your values align with ours.</li>
-                  <li>Record in a quiet place.</li>
+                  <li>Record somewhere quiet, then send it on WhatsApp.</li>
                 </ol>
                 <a className="application-whatsapp-cta" href={WHATSAPP_CTA_HREF}>
                   Send your voice note on WhatsApp
                 </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="application-section application-stage-two-section">
+          <div className="page-shell">
+            <div className="application-instructions">
+              <div className="application-instructions-copy">
+                <span className="application-section-label">Stage Two Interview</span>
+                <h2>Meet us over WhatsApp</h2>
+                <p>
+                  If your voice note is successful, we will send you a WhatsApp message with an
+                  invitation to Stage Two: a conversation with our founder and CEO.
+                </p>
+                <p>
+                  You will be invited to book a time in their calendar, then speak together over a
+                  WhatsApp call. It is an opportunity for us to get to know you beyond your
+                  recording and for you to ask questions about the role.
+                </p>
+                <p className="application-closing">
+                  If the conversation goes well, you will be invited to join the team as a Legal
+                  Speaking Coach.
+                </p>
+              </div>
+
+              <div className="application-steps-card application-stage-two-card">
+                <h3>What happens next:</h3>
+                <ol>
+                  <li>Receive your Stage Two invitation on WhatsApp.</li>
+                  <li>Use the link to book a time in the calendar.</li>
+                  <li>Join your interview over a WhatsApp call.</li>
+                </ol>
               </div>
             </div>
           </div>

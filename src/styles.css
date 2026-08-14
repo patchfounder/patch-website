@@ -4137,6 +4137,10 @@ p {
   padding-top: 0.75rem;
 }
 
+.application-stage-two-section {
+  background: #f5f5f2;
+}
+
 .application-steps-card {
   position: sticky;
   top: 96px;
@@ -4145,6 +4149,10 @@ p {
   border-radius: 18px;
   background: #ffffff;
   box-shadow: 0 24px 70px rgba(8, 55, 93, 0.09);
+}
+
+.application-stage-two-card {
+  position: static;
 }
 
 .application-steps-card h3 {
