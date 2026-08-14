@@ -4082,22 +4082,50 @@ p {
 }
 
 .application-intern-image {
-  display: grid;
-  place-items: center;
-  background:
-    linear-gradient(135deg, rgba(0, 165, 192, 0.14), rgba(8, 55, 93, 0.08)),
-    #e6e8e8;
-  color: #587176;
+  display: block;
+  background: #e6e8e8;
 }
 
-.application-intern-image span {
-  padding: 0.55rem 0.7rem;
-  border: 1px solid rgba(35, 65, 70, 0.2);
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.application-intern-image img {
+  display: block;
+}
+
+.application-intern-name {
+  position: relative;
+  display: inline-flex;
+  width: auto;
+  align-items: flex-start;
+  padding-right: 0.35rem;
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.application-intern-name:hover,
+.application-intern-name:focus-visible {
+  color: var(--turquoise);
+}
+
+.application-intern-name:focus-visible {
+  outline: 2px solid var(--turquoise);
+  outline-offset: 4px;
+}
+
+.application-intern-linkedin {
+  position: absolute;
+  top: -0.55rem;
+  right: -0.75rem;
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 2px;
+  background: #0a66c2;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 .application-section-heading {

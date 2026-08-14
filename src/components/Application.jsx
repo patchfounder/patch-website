@@ -17,23 +17,33 @@ const CAROUSEL_FIRMS = Array.from({ length: 4 }, () => LAW_FIRMS).flat();
 const PREVIOUS_INTERNS = [
   {
     name: 'Josh Hack',
+    university: 'University of Nottingham',
+    src: '/application-intern-josh-hack.jpg',
     href: 'https://www.linkedin.com/in/joshjhack/',
   },
   {
-    name: 'Uzma Kadri',
-    href: 'https://www.linkedin.com/in/uzma-kadri-law/',
-  },
-  {
-    name: 'Sahib Singh',
-    href: 'https://www.linkedin.com/in/sahibsingh-/',
-  },
-  {
-    name: 'Iman Wissanji',
-    href: 'https://www.linkedin.com/in/imanwissanji/',
-  },
-  {
     name: 'Antonia Pintilie',
+    university: 'Universitat Pompeu Fabra',
+    src: '/application-intern-antonia-pintilie.jpg',
     href: 'https://www.linkedin.com/in/antonia-pintilie-law/',
+  },
+  {
+    name: 'Naïa Foucan',
+    university: 'King\'s College London & Paris II Panthéon-Assas',
+    src: '/application-intern-naia-foucan.jpg',
+    href: 'https://www.linkedin.com/in/naïa-foucan-2a2a84219/',
+  },
+  {
+    name: 'Ross Volpi',
+    university: 'University of Exeter',
+    src: '/application-intern-ross-volpi.jpg',
+    href: 'https://www.linkedin.com/in/ross-volpi-9aa41a2b9/',
+  },
+  {
+    name: 'Dhilan Gudka',
+    university: 'University of Warwick',
+    src: '/application-intern-dhilan-gudka.jpg',
+    href: 'https://www.linkedin.com/in/dhilan-gudka-9b8b30327/',
   },
 ];
 
@@ -124,13 +134,27 @@ function PreviousInternsCarousel() {
                 key={intern.href}
                 aria-hidden={offset !== 0}
               >
-                <div className="testimonial-image application-intern-image" aria-label={`${intern.name} photo placeholder`}>
-                  <span>Intern photo</span>
+                <div className="testimonial-image application-intern-image">
+                  <img
+                    src={intern.src}
+                    alt={`${intern.name}, former Patch App intern`}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 {offset === 0 && (
-                  <div className="testimonial-copy">
-                    <span className="testimonial-name">{intern.name}</span>
-                    <span className="testimonial-title">Former Patch App intern</span>
+                  <div className="testimonial-copy application-intern-copy">
+                    <a
+                      className="testimonial-name application-intern-name"
+                      href={intern.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${intern.name} on LinkedIn`}
+                    >
+                      <span>{intern.name}</span>
+                      <span className="application-intern-linkedin" aria-hidden="true">in</span>
+                    </a>
+                    <span className="testimonial-title">{intern.university}</span>
                   </div>
                 )}
               </article>
