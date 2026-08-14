@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Footer from './Footer.jsx';
+import Header from './Header.jsx';
 
 const LAW_FIRMS = [
   { name: 'Ashurst Perkins Coie', src: '/law-firm-logos/ashurst-perkins-coie-mark.png', width: '76px' },
@@ -38,6 +39,13 @@ const visibleOffsets = [-1, 0, 1];
 
 // TODO: Replace with Patch recruitment WhatsApp link.
 const WHATSAPP_CTA_HREF = '#whatsapp';
+
+const APPLICATION_NAVIGATION = [
+  { href: '#role', label: 'The Role' },
+  { href: '#stage-one', label: 'Stage One' },
+  { href: '#stage-two', label: 'Stage Two' },
+  { href: '#interns', label: 'Interns' },
+];
 
 function useNoIndexPage(title) {
   useEffect(() => {
@@ -147,6 +155,7 @@ export default function Application() {
 
   return (
     <div className="application-page">
+      <Header navigation={APPLICATION_NAVIGATION} logoHref="/" showDownload={false} />
       <main>
         <section className="application-hero">
           <div className="page-shell application-hero-shell">
@@ -174,7 +183,7 @@ export default function Application() {
           </div>
         </section>
 
-        <section className="application-section application-role-section">
+        <section className="application-section application-role-section" id="role">
           <div className="page-shell application-split">
             <div>
               <span className="application-section-label">The opportunity</span>
@@ -196,7 +205,7 @@ export default function Application() {
           </div>
         </section>
 
-        <section className="application-section">
+        <section className="application-section" id="stage-one">
           <div className="page-shell">
             <div className="application-instructions">
               <div className="application-instructions-copy">
@@ -238,7 +247,7 @@ export default function Application() {
           </div>
         </section>
 
-        <section className="application-section application-stage-two-section">
+        <section className="application-section application-stage-two-section" id="stage-two">
           <div className="page-shell">
             <div className="application-instructions">
               <div className="application-instructions-copy">
@@ -271,7 +280,7 @@ export default function Application() {
           </div>
         </section>
 
-        <section className="application-section application-interns-section">
+        <section className="application-section application-interns-section" id="interns">
           <div className="page-shell">
             <div className="application-section-heading">
               <h2>Legal Speaking Coaches</h2>
