@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Footer from './Footer.jsx';
 
 const LAW_FIRMS = [
@@ -34,6 +34,16 @@ const PREVIOUS_INTERNS = [
   },
 ];
 
+const COACHES = [
+  { name: 'Josh Hack' },
+  { name: 'Uzma' },
+  { name: 'Saheeb' },
+  { name: 'Iman' },
+  { name: 'Antonia' },
+];
+
+const visibleOffsets = [-1, 0, 1];
+
 // TODO: Replace with Patch recruitment WhatsApp link.
 const WHATSAPP_CTA_HREF = '#whatsapp';
 
@@ -64,6 +74,88 @@ function useNoIndexPage(title) {
   }, [title]);
 }
 
+function CoachCarousel() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [timerKey, setTimerKey] = useState(0);
+
+  const changeSlide = (direction) => {
+    setActiveIndex((current) => (current + direction + COACHES.length) % COACHES.length);
+    setTimerKey((current) => current + 1);
+  };
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % COACHES.length);
+      setTimerKey((current) => current + 1);
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [timerKey]);
+
+  return (
+    <section className="application-section application-coaches-section" aria-labelledby="coaches-title">
+      <div className="page-shell testimonial-carousel-shell">
+        <header className="testimonial-carousel-heading">
+          <h2 id="coaches-title">Meet the coaches</h2>
+        </header>
+
+        <div className="testimonial-progress" aria-label={`Coach ${activeIndex + 1} of ${COACHES.length}`}>
+          {COACHES.map((coach, index) => (
+            <span className={index === activeIndex ? 'active' : ''} key={coach.name} aria-hidden="true">
+              {index === activeIndex && <i key={timerKey} />}
+            </span>
+          ))}
+        </div>
+
+        <div className="testimonial-carousel">
+          <button
+            className="testimonial-arrow testimonial-arrow-previous"
+            type="button"
+            onClick={() => changeSlide(-1)}
+            aria-label="Previous coach"
+          >
+            ←
+          </button>
+
+          <div className="testimonial-track">
+            {visibleOffsets.map((offset) => {
+              const coachIndex = (activeIndex + offset + COACHES.length) % COACHES.length;
+              const coach = COACHES[coachIndex];
+
+              return (
+                <article
+                  className={`testimonial-slide testimonial-slide-${offset}`}
+                  key={coach.name}
+                  aria-hidden={offset !== 0}
+                >
+                  <div className="testimonial-image application-coach-image" aria-label={`${coach.name} photo placeholder`}>
+                    <span>Coach photo</span>
+                  </div>
+                  {offset === 0 && (
+                    <div className="testimonial-copy">
+                      <span className="testimonial-name">{coach.name}</span>
+                      <span className="testimonial-title">University of</span>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+
+          <button
+            className="testimonial-arrow testimonial-arrow-next"
+            type="button"
+            onClick={() => changeSlide(1)}
+            aria-label="Next coach"
+          >
+            →
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Application() {
   useNoIndexPage('Law Student Intern | Patch');
 
@@ -75,11 +167,8 @@ export default function Application() {
             <span className="application-kicker">Application stage one: voice note submission</span>
             <h1>Law Student Intern</h1>
             <p className="application-hero-subtitle">
-              A unique internship within the legal sector. Work with top-tier lawyers inside their
-              European offices.
-            </p>
-            <p className="application-reassurance">
-              You have been invited to the first stage of the Patch App application process.
+              A unique internship within the legal sector. Work with top-tier lawyers from European
+              offices.
             </p>
           </div>
         </section>
@@ -101,12 +190,11 @@ export default function Application() {
                 our exclusive coaching system.
               </p>
               <p>
-                You will be known to high-performance lawyers as a{' '}
-                <strong>Legal Speaking Coach</strong>.
+                You will be known to high-performance lawyers as a Legal Speaking Coach.
               </p>
               <p>
-                The ten-month internship will give you the official title to use on LinkedIn as{' '}
-                <strong>Legal Speaking Coach</strong>. It will involve building your network with
+                The ten-month internship will give you the official title to use on LinkedIn as
+                {' '}Legal Speaking Coach. It will involve building your network with
                 lawyers on a one-to-one basis from the European offices of leading international law
                 firms.
               </p>
@@ -168,6 +256,8 @@ export default function Application() {
             </div>
           </div>
         </section>
+
+        <CoachCarousel />
 
         <section className="application-section application-interns-section">
           <div className="page-shell">

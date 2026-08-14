@@ -4013,6 +4013,31 @@ p {
   background: #f7f8f8;
 }
 
+.application-coaches-section {
+  overflow: hidden;
+  padding-bottom: 56px;
+  background: #ffffff;
+}
+
+.application-coach-image {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(135deg, rgba(0, 165, 192, 0.14), rgba(8, 55, 93, 0.08)),
+    #e6e8e8;
+  color: #587176;
+}
+
+.application-coach-image span {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(35, 65, 70, 0.2);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .application-section-heading {
   max-width: 760px;
   margin-bottom: clamp(2rem, 5vw, 3.2rem);

@@ -12,7 +12,7 @@ export default function Footer({
           </a>
           <p>The speaking coach for lawyers</p>
           <small>
-            Short, focused speaking sessions for international legal professionals who want their
+            Short, focused speaking sessions for lawyers who want their
             voice to match the quality of their work.
           </small>
         </div>
