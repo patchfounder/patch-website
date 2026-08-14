@@ -193,9 +193,9 @@ export default function Application() {
             </div>
             <div className="application-copy">
               <p>
-                We coach lawyers who need a speaking voice that is precise and professional, so
-                they can demonstrate excellence to their clients. As a Legal Speaking Coach, you
-                will coach lawyers through our platform using our exclusive coaching system.
+                We coach lawyers who need a speaking voice that is precise and professional. As a
+                Legal Speaking Coach, you will coach lawyers through our platform using our
+                exclusive coaching system.
               </p>
               <p>
                 The six-month internship will give you valuable experience to draw on when applying
@@ -253,16 +253,15 @@ export default function Application() {
           <div className="page-shell">
             <div className="application-instructions">
               <div className="application-instructions-copy">
-                <span className="application-section-label">Stage Two Interview</span>
-                <h2>Meet us over WhatsApp</h2>
+                <span className="application-section-label">Stage Two: Interview</span>
+                <h2>Voice Call Interview</h2>
                 <p>
                   If your voice note is successful, we will send you a WhatsApp message with an
-                  invitation to Stage Two: a conversation with our founder and CEO.
+                  invitation to arrange a call with our founder and CEO.
                 </p>
                 <p>
-                  You will be invited to book a time in their calendar, then speak together over a
-                  WhatsApp call. It is an opportunity for us to get to know you beyond your
-                  recording and for you to ask questions about the role.
+                  This will give us the opportunity to get to know you and for you to ask questions
+                  about the role.
                 </p>
                 <p className="application-closing">
                   If the conversation goes well, you will be invited to join the team as a Legal
@@ -285,6 +284,7 @@ export default function Application() {
         <section className="application-section application-interns-section" id="interns">
           <div className="page-shell">
             <div className="application-section-heading">
+              <span className="application-section-label">Patch Alumni</span>
               <h2>Legal Speaking Coaches</h2>
               <p>
                 View some of the students who completed their internship with us.
