@@ -4012,13 +4012,11 @@ p {
   background: #f7f8f8;
 }
 
-.application-coaches-section {
+.application-intern-carousel {
   overflow: hidden;
-  padding-bottom: 56px;
-  background: #ffffff;
 }
 
-.application-coach-image {
+.application-intern-image {
   display: grid;
   place-items: center;
   background:
@@ -4027,7 +4025,7 @@ p {
   color: #587176;
 }
 
-.application-coach-image span {
+.application-intern-image span {
   padding: 0.55rem 0.7rem;
   border: 1px solid rgba(35, 65, 70, 0.2);
   border-radius: 999px;

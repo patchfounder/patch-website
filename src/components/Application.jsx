@@ -34,14 +34,6 @@ const PREVIOUS_INTERNS = [
   },
 ];
 
-const COACHES = [
-  { name: 'Josh Hack' },
-  { name: 'Uzma' },
-  { name: 'Saheeb' },
-  { name: 'Iman' },
-  { name: 'Antonia' },
-];
-
 const visibleOffsets = [-1, 0, 1];
 
 // TODO: Replace with Patch recruitment WhatsApp link.
@@ -74,18 +66,18 @@ function useNoIndexPage(title) {
   }, [title]);
 }
 
-function CoachCarousel() {
+function PreviousInternsCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [timerKey, setTimerKey] = useState(0);
 
   const changeSlide = (direction) => {
-    setActiveIndex((current) => (current + direction + COACHES.length) % COACHES.length);
+    setActiveIndex((current) => (current + direction + PREVIOUS_INTERNS.length) % PREVIOUS_INTERNS.length);
     setTimerKey((current) => current + 1);
   };
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % COACHES.length);
+      setActiveIndex((current) => (current + 1) % PREVIOUS_INTERNS.length);
       setTimerKey((current) => current + 1);
     }, 5000);
 
@@ -93,66 +85,60 @@ function CoachCarousel() {
   }, [timerKey]);
 
   return (
-    <section className="application-section application-coaches-section" aria-labelledby="coaches-title">
-      <div className="page-shell testimonial-carousel-shell">
-        <header className="testimonial-carousel-heading">
-          <h2 id="coaches-title">Meet the coaches</h2>
-        </header>
-
-        <div className="testimonial-progress" aria-label={`Coach ${activeIndex + 1} of ${COACHES.length}`}>
-          {COACHES.map((coach, index) => (
-            <span className={index === activeIndex ? 'active' : ''} key={coach.name} aria-hidden="true">
-              {index === activeIndex && <i key={timerKey} />}
-            </span>
-          ))}
-        </div>
-
-        <div className="testimonial-carousel">
-          <button
-            className="testimonial-arrow testimonial-arrow-previous"
-            type="button"
-            onClick={() => changeSlide(-1)}
-            aria-label="Previous coach"
-          >
-            ←
-          </button>
-
-          <div className="testimonial-track">
-            {visibleOffsets.map((offset) => {
-              const coachIndex = (activeIndex + offset + COACHES.length) % COACHES.length;
-              const coach = COACHES[coachIndex];
-
-              return (
-                <article
-                  className={`testimonial-slide testimonial-slide-${offset}`}
-                  key={coach.name}
-                  aria-hidden={offset !== 0}
-                >
-                  <div className="testimonial-image application-coach-image" aria-label={`${coach.name} photo placeholder`}>
-                    <span>Coach photo</span>
-                  </div>
-                  {offset === 0 && (
-                    <div className="testimonial-copy">
-                      <span className="testimonial-name">{coach.name}</span>
-                      <span className="testimonial-title">University of</span>
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-
-          <button
-            className="testimonial-arrow testimonial-arrow-next"
-            type="button"
-            onClick={() => changeSlide(1)}
-            aria-label="Next coach"
-          >
-            →
-          </button>
-        </div>
+    <div className="testimonial-carousel-shell application-intern-carousel">
+      <div className="testimonial-progress" aria-label={`Intern ${activeIndex + 1} of ${PREVIOUS_INTERNS.length}`}>
+        {PREVIOUS_INTERNS.map((intern, index) => (
+          <span className={index === activeIndex ? 'active' : ''} key={intern.href} aria-hidden="true">
+            {index === activeIndex && <i key={timerKey} />}
+          </span>
+        ))}
       </div>
-    </section>
+
+      <div className="testimonial-carousel">
+        <button
+          className="testimonial-arrow testimonial-arrow-previous"
+          type="button"
+          onClick={() => changeSlide(-1)}
+          aria-label="Previous intern"
+        >
+          ←
+        </button>
+
+        <div className="testimonial-track">
+          {visibleOffsets.map((offset) => {
+            const internIndex = (activeIndex + offset + PREVIOUS_INTERNS.length) % PREVIOUS_INTERNS.length;
+            const intern = PREVIOUS_INTERNS[internIndex];
+
+            return (
+              <article
+                className={`testimonial-slide testimonial-slide-${offset}`}
+                key={intern.href}
+                aria-hidden={offset !== 0}
+              >
+                <div className="testimonial-image application-intern-image" aria-label={`${intern.name} photo placeholder`}>
+                  <span>Intern photo</span>
+                </div>
+                {offset === 0 && (
+                  <div className="testimonial-copy">
+                    <span className="testimonial-name">{intern.name}</span>
+                    <span className="testimonial-title">Former Patch App intern</span>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+
+        <button
+          className="testimonial-arrow testimonial-arrow-next"
+          type="button"
+          onClick={() => changeSlide(1)}
+          aria-label="Next intern"
+        >
+          →
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -250,34 +236,16 @@ export default function Application() {
           </div>
         </section>
 
-        <CoachCarousel />
-
         <section className="application-section application-interns-section">
           <div className="page-shell">
             <div className="application-section-heading">
-              <span className="application-section-label">Alumni</span>
-              <h2>Previous Patch App interns</h2>
+              <h2>Previous Patch</h2>
               <p>
-                View some of the brilliant law students who completed their Patch App internship.
+                View some of the students who completed their internship with us.
               </p>
             </div>
 
-            <div className="application-intern-grid">
-              {PREVIOUS_INTERNS.map((intern) => (
-                <article className="application-intern-card" key={intern.href}>
-                  <h3>{intern.name}</h3>
-                  <p>Former Patch App intern</p>
-                  <a
-                    href={intern.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`View ${intern.name}'s LinkedIn profile`}
-                  >
-                    View LinkedIn profile
-                  </a>
-                </article>
-              ))}
-            </div>
+            <PreviousInternsCarousel />
           </div>
         </section>
       </main>
