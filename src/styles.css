@@ -3077,7 +3077,16 @@ p {
 }
 
 .testimonial-slide-0 .testimonial-image {
+  width: min(100%, 428px);
+  margin-right: auto;
+  margin-left: auto;
   aspect-ratio: 4 / 5;
+}
+
+.testimonial-slide-0 .testimonial-copy {
+  width: min(100%, 428px);
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .testimonial-image img {
@@ -3214,6 +3223,11 @@ p {
 
   .testimonial-slide-0 {
     transform: none;
+  }
+
+  .testimonial-slide-0 .testimonial-image,
+  .testimonial-slide-0 .testimonial-copy {
+    width: min(100%, calc((100vw - 32px) * 0.6375));
   }
 
   .testimonial-arrow {
