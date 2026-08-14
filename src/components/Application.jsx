@@ -181,22 +181,15 @@ export default function Application() {
             </div>
             <div className="application-copy">
               <p>
-                We work with lawyers who are carrying out global transactions. They need to acquire
-                a speaking voice that is confident, precise and professional, so they can
-                demonstrate excellence to their clients.
+                We coach lawyers who need a speaking voice that is precise and professional, so
+                they can demonstrate excellence to their clients. As a Legal Speaking Coach, you
+                will coach lawyers through our platform using our exclusive coaching system.
               </p>
               <p>
-                The role gives you the opportunity to coach lawyers through an online platform using
-                our exclusive coaching system.
-              </p>
-              <p>
-                You will be known to high-performance lawyers as a Legal Speaking Coach.
-              </p>
-              <p>
-                The ten-month internship will give you the official title to use on LinkedIn as
-                {' '}Legal Speaking Coach. It will involve building your network with
-                lawyers on a one-to-one basis from the European offices of leading international law
-                firms.
+                The six-month internship will give you valuable experience to draw on when applying
+                for training contracts. You will receive one-to-one mentoring from our CEO and
+                founder to help develop your professional strategy, including practical guidance on
+                building a network with top-tier lawyers at major global firms.
               </p>
             </div>
           </div>
