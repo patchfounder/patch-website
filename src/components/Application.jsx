@@ -3,13 +3,13 @@ import Footer from './Footer.jsx';
 import Header from './Header.jsx';
 
 const LAW_FIRMS = [
-  { name: 'Ashurst Perkins Coie', src: '/law-firm-logos/ashurst-perkins-coie-mark.png', width: '76px' },
-  { name: 'Clifford Chance', src: '/law-firm-logos/clifford-chance-mark.png', width: '355px' },
-  { name: 'Dentons', src: '/law-firm-logos/dentons-mark.png', width: '155px' },
-  { name: 'Simmons & Simmons', src: '/law-firm-logos/simmons-simmons-mark.png', width: '320px' },
-  { name: 'Pinsent Masons', src: '/law-firm-logos/pinsent-masons-mark.png', width: '205px' },
-  { name: 'Watson Farley & Williams', src: '/law-firm-logos/wfw-mark.png', width: '140px' },
-  { name: 'Eversheds Sutherland', src: '/law-firm-logos/eversheds-sutherland-mark.png', width: '155px' },
+  { name: 'Ashurst Perkins Coie', src: '/law-firm-logos/ashurst-perkins-coie-mark.png' },
+  { name: 'Clifford Chance', src: '/law-firm-logos/clifford-chance-mark.png' },
+  { name: 'Dentons', src: '/law-firm-logos/dentons-mark.png' },
+  { name: 'Simmons & Simmons', src: '/law-firm-logos/simmons-simmons-mark.png' },
+  { name: 'Pinsent Masons', src: '/law-firm-logos/pinsent-masons-mark.png' },
+  { name: 'Watson Farley & Williams', src: '/law-firm-logos/wfw-mark.png' },
+  { name: 'Eversheds Sutherland', src: '/law-firm-logos/eversheds-sutherland-mark.png' },
 ];
 
 const CAROUSEL_FIRMS = Array.from({ length: 4 }, () => LAW_FIRMS).flat();
@@ -171,11 +171,7 @@ export default function Application() {
             <div className="application-logo-marquee" aria-label="Law firms represented by Patch lawyers">
             <div className="application-logo-track">
               {CAROUSEL_FIRMS.map((firm, index) => (
-                <div
-                  className="application-logo-mark"
-                  key={`${firm.name}-${index}`}
-                  style={{ '--firm-logo-width': firm.width }}
-                >
+                <div className="application-logo-mark" key={`${firm.name}-${index}`}>
                   <img src={firm.src} alt={firm.name} />
                 </div>
               ))}

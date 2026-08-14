@@ -4042,7 +4042,7 @@ p {
 
 .application-logo-mark {
   display: grid;
-  width: var(--firm-logo-width);
+  width: clamp(180px, 14vw, 230px);
   height: 76px;
   flex: 0 0 auto;
   place-items: center;
