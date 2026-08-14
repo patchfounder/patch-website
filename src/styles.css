@@ -4235,7 +4235,7 @@ p {
   }
 
   .nav-shell {
-    grid-template-areas: "download brand empty";
+    grid-template-areas: "empty brand download";
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
 
@@ -4245,7 +4245,7 @@ p {
 
   .nav-cta {
     grid-area: download;
-    justify-self: start;
+    justify-self: end;
   }
 
   .section {
@@ -4532,7 +4532,7 @@ p {
   }
 
   .nav-shell {
-    grid-template-areas: "download brand empty";
+    grid-template-areas: "empty brand download";
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     min-height: 76px;
   }
@@ -4543,7 +4543,7 @@ p {
 
   .nav-cta {
     grid-area: download;
-    justify-self: start;
+    justify-self: end;
     min-height: 38px;
     gap: 0.35rem;
     padding: 0.25rem 0.25rem 0.25rem 0.65rem;
