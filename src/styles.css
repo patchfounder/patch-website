@@ -3924,7 +3924,7 @@ p {
 }
 
 .application-hero {
-  padding: clamp(5.2rem, 10vw, 8.5rem) 0 clamp(3.5rem, 7vw, 5.75rem);
+  padding: clamp(5.2rem, 10vw, 8.5rem) 0 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   background: #ffffff;
 }
@@ -3932,6 +3932,10 @@ p {
 .application-hero-shell,
 .application-split {
   max-width: 1080px;
+}
+
+.application-hero-shell {
+  padding-bottom: clamp(2.25rem, 4vw, 3.25rem);
 }
 
 .application-kicker,
@@ -4020,6 +4024,10 @@ p {
   background: #ffffff;
 }
 
+.application-hero-logo-section {
+  padding-top: 0;
+}
+
 .application-logo-marquee {
   width: max-content;
   min-width: 100%;
@@ -4047,7 +4055,6 @@ p {
   height: 42px;
   max-width: 100%;
   object-fit: contain;
-  filter: grayscale(1);
   opacity: 0.38;
 }
 
@@ -4505,7 +4512,7 @@ p {
   }
 
   .application-hero {
-    padding: 4.4rem 0 3.2rem;
+    padding: 4.4rem 0 0;
   }
 
   .application-section {

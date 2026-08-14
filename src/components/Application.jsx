@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import Footer from './Footer.jsx';
 
 const LAW_FIRMS = [
-  { name: 'Ashurst Perkins Coie', src: '/law-firm-logos/ashurst-perkins-coie.jpg', width: '76px' },
-  { name: 'Clifford Chance', src: '/law-firm-logos/clifford-chance.jpg', width: '355px' },
-  { name: 'Dentons', src: '/law-firm-logos/dentons.png', width: '155px' },
-  { name: 'Simmons & Simmons', src: '/law-firm-logos/simmons-simmons.png', width: '320px' },
-  { name: 'Pinsent Masons', src: '/law-firm-logos/pinsent-masons.png', width: '205px' },
-  { name: 'Watson Farley & Williams', src: '/law-firm-logos/wfw.jpeg', width: '140px' },
-  { name: 'Eversheds Sutherland', src: '/law-firm-logos/eversheds-sutherland.png', width: '155px' },
+  { name: 'Ashurst Perkins Coie', src: '/law-firm-logos/ashurst-perkins-coie-mark.png', width: '76px' },
+  { name: 'Clifford Chance', src: '/law-firm-logos/clifford-chance-mark.png', width: '355px' },
+  { name: 'Dentons', src: '/law-firm-logos/dentons-mark.png', width: '155px' },
+  { name: 'Simmons & Simmons', src: '/law-firm-logos/simmons-simmons-mark.png', width: '320px' },
+  { name: 'Pinsent Masons', src: '/law-firm-logos/pinsent-masons-mark.png', width: '205px' },
+  { name: 'Watson Farley & Williams', src: '/law-firm-logos/wfw-mark.png', width: '140px' },
+  { name: 'Eversheds Sutherland', src: '/law-firm-logos/eversheds-sutherland-mark.png', width: '155px' },
 ];
 
 const PREVIOUS_INTERNS = [
@@ -157,6 +157,21 @@ export default function Application() {
               offices.
             </p>
           </div>
+          <div className="application-logo-section application-hero-logo-section">
+            <div className="application-logo-marquee" aria-label="Law firms represented by Patch lawyers">
+            <div className="application-logo-track">
+              {[...LAW_FIRMS, ...LAW_FIRMS].map((firm, index) => (
+                <div
+                  className="application-logo-mark"
+                  key={`${firm.name}-${index}`}
+                  style={{ '--firm-logo-width': firm.width }}
+                >
+                  <img src={firm.src} alt={firm.name} />
+                </div>
+              ))}
+            </div>
+            </div>
+          </div>
         </section>
 
         <section className="application-section application-role-section">
@@ -177,22 +192,6 @@ export default function Application() {
                 founder to help develop your professional strategy, including practical guidance on
                 building a network with top-tier lawyers at major global firms.
               </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="application-section application-logo-section">
-          <div className="application-logo-marquee" aria-label="Law firms represented by Patch lawyers">
-            <div className="application-logo-track">
-              {[...LAW_FIRMS, ...LAW_FIRMS].map((firm, index) => (
-                <div
-                  className="application-logo-mark"
-                  key={`${firm.name}-${index}`}
-                  style={{ '--firm-logo-width': firm.width }}
-                >
-                  <img src={firm.src} alt={firm.name} />
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -275,7 +274,7 @@ export default function Application() {
         <section className="application-section application-interns-section">
           <div className="page-shell">
             <div className="application-section-heading">
-              <h2>Previous Patch</h2>
+              <h2>Legal Speaking Coaches</h2>
               <p>
                 View some of the students who completed their internship with us.
               </p>
