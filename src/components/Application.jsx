@@ -150,7 +150,7 @@ export default function Application() {
       <main>
         <section className="application-hero">
           <div className="page-shell application-hero-shell">
-            <span className="application-kicker">Application stage one: voice note submission</span>
+            <span className="application-kicker">Application Stage 1</span>
             <h1>Law Student Intern</h1>
             <p className="application-hero-subtitle">
               A unique internship within the legal sector. Work with top-tier lawyers from European
@@ -201,8 +201,8 @@ export default function Application() {
           <div className="page-shell">
             <div className="application-instructions">
               <div className="application-instructions-copy">
-                <span className="application-section-label">Stage one</span>
-                <h2>Voice Note Recording Instructions</h2>
+                <span className="application-section-label">Stage 1: Voice Note Submission</span>
+                <h2>How to send your application?</h2>
                 <p>
                   Congratulations on being invited to the first stage of our application process.
                   The position is competitive and we like to give everyone a fair opportunity.
