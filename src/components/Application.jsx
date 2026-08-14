@@ -12,6 +12,8 @@ const LAW_FIRMS = [
   { name: 'Eversheds Sutherland', src: '/law-firm-logos/eversheds-sutherland-mark.png', width: '155px' },
 ];
 
+const CAROUSEL_FIRMS = Array.from({ length: 4 }, () => LAW_FIRMS).flat();
+
 const PREVIOUS_INTERNS = [
   {
     name: 'Josh Hack',
@@ -169,7 +171,7 @@ export default function Application() {
           <div className="application-logo-section application-hero-logo-section">
             <div className="application-logo-marquee" aria-label="Law firms represented by Patch lawyers">
             <div className="application-logo-track">
-              {[...LAW_FIRMS, ...LAW_FIRMS].map((firm, index) => (
+              {CAROUSEL_FIRMS.map((firm, index) => (
                 <div
                   className="application-logo-mark"
                   key={`${firm.name}-${index}`}
