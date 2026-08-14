@@ -188,14 +188,13 @@ export default function Application() {
             </div>
             <div className="application-copy">
               <p>
-                We coach lawyers who need a speaking voice that is precise and professional. As a
-                Legal Speaking Coach, you will coach lawyers through our platform using our
-                exclusive coaching system.
+                We work with lawyers who need a speaking voice that is precise and professional.
+                As a Legal Speaking Coach, you will coach lawyers using our exclusive system.
               </p>
               <p>
                 The six-month internship will give you valuable experience to draw on when applying
-                for training contracts. You will receive one-to-one mentoring from our CEO and
-                founder to help develop your professional strategy, including practical guidance on
+                for training contracts. You will also receive one-to-one mentoring from our founder
+                to help develop your professional strategy, including practical guidance on
                 building a network with top-tier lawyers at major global firms.
               </p>
             </div>
