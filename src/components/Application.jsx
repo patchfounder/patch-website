@@ -233,10 +233,20 @@ export default function Application() {
                 <span className="application-section-label">Stage 1: Voice Note Submission</span>
                 <h2>How to send your application?</h2>
                 <p>
-                  Please send a short voice note to our WhatsApp Business number: +1 (904)
-                  983-7147. This gives us the opportunity to hear how you communicate. We are
-                  looking for high-energy speaking voices, alongside people whose values align with
-                  ours.
+                  Please send a short voice note to our WhatsApp Business number:
+                  <br />
+                  <a
+                    className="application-whatsapp-number"
+                    href={WHATSAPP_CTA_HREF}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    +1 (904) 983-7147
+                  </a>
+                </p>
+                <p>
+                  This gives us the opportunity to hear how you communicate. We are looking for
+                  high-energy speaking voices, alongside people whose values align with ours.
                 </p>
                 <p>
                   Open WhatsApp and use the voice-note feature to record a 30 to 60 second message

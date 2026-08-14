@@ -4181,6 +4181,15 @@ p {
   padding-top: 0.75rem;
 }
 
+.application-whatsapp-number {
+  display: inline-block;
+  margin-top: 0.35rem;
+  color: var(--turquoise);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
 .application-stage-two-section {
   background: #f5f5f2;
 }
