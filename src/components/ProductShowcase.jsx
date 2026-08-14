@@ -497,8 +497,7 @@ export default function ProductShowcase() {
           <h2 id="product-grid-title">Flexibility built-in</h2>
           <p>
             Fifteen-minute speaking sessions anytime, anywhere. Built around the way lawyers
-            actually work, because we understand the pace, pressure and precision your legal
-            practice demands.
+            actually work, because we understand the pace and precision your firm demands.
           </p>
         </div>
 
