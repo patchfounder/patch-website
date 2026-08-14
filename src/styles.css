@@ -3950,7 +3950,6 @@ p {
 .application-hero h1 {
   max-width: 840px;
   margin-bottom: 1.2rem;
-  font-size: clamp(3rem, 8vw, 6.15rem);
   font-weight: 400;
   line-height: 0.98;
 }
@@ -3984,7 +3983,7 @@ p {
 .application-section h2 {
   max-width: 660px;
   margin-bottom: 0;
-  font-size: clamp(2.15rem, 4.8vw, 4.45rem);
+  font-size: var(--section-title-size);
   font-weight: 400;
   line-height: 1;
 }
@@ -4452,10 +4451,6 @@ p {
 
   .application-hero {
     padding: 4.4rem 0 3.2rem;
-  }
-
-  .application-hero h1 {
-    font-size: clamp(2.65rem, 14vw, 4.8rem);
   }
 
   .application-section {
