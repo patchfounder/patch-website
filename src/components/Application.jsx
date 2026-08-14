@@ -271,8 +271,8 @@ export default function Application() {
         <section className="application-section application-interns-section" id="interns">
           <div className="page-shell">
             <div className="application-section-heading">
-              <span className="application-section-label">PATCH ALUMNI</span>
-              <h2>PATCH INTERNS</h2>
+              <span className="application-section-label">PATCH INTERNS</span>
+              <h2>Legal Speaking Coaches</h2>
               <p>
                 View some of the students who completed their internship with us.
               </p>
