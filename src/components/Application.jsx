@@ -189,7 +189,8 @@ export default function Application() {
             <div className="application-copy">
               <p>
                 We work with lawyers who need a speaking voice that is precise and professional.
-                As a Legal Speaking Coach, you will coach lawyers using our exclusive system.
+                As a Legal Speaking Coach, you will learn to coach lawyers using our exclusive
+                system.
               </p>
               <p>
                 The six-month internship will give you valuable experience to draw on when applying
@@ -208,14 +209,14 @@ export default function Application() {
                 <span className="application-section-label">Stage 1: Voice Note Submission</span>
                 <h2>How to send your application?</h2>
                 <p>
-                  Please send a short voice note to our WhatsApp Business number: +1 904 983 7147.
-                  This gives us the opportunity to hear how you communicate. We are looking for
-                  high-energy speaking voices, alongside people whose values align with ours.
+                  WhatsApp Business number: +1 (904) 983-7147. This gives us the opportunity to
+                  hear how you communicate. We are looking for high-energy speaking voices,
+                  alongside people whose values align with ours.
                 </p>
                 <p>
                   Open WhatsApp and use the voice-note feature to record a 30 to 60 second message
-                  explaining why you would like to join the Patch App team and how your values
-                  align with ours. You are also welcome to tell us a little more about yourself and
+                  explaining why you would like to join the team and how your values align with
+                  ours. You are welcome to tell us a little more about yourself and
                   your professional strategy.
                 </p>
                 <p className="application-closing">
@@ -230,7 +231,7 @@ export default function Application() {
                 <ol>
                   <li>Plan what you are going to say.</li>
                   <li>Mention how your values align with ours.</li>
-                  <li>Record somewhere quiet, then send it on WhatsApp.</li>
+                  <li>Send and wait for a reply.</li>
                 </ol>
                 <a className="application-whatsapp-cta" href={WHATSAPP_CTA_HREF}>
                   Send your voice note on WhatsApp
@@ -246,26 +247,20 @@ export default function Application() {
               <div className="application-instructions-copy">
                 <span className="application-section-label">Stage Two: Interview</span>
                 <h2>Voice Call Interview</h2>
-                <p>
-                  If your voice note is successful, we will send you a WhatsApp message with an
-                  invitation to arrange a call with our founder and CEO.
-                </p>
-                <p>
-                  This will give us the opportunity to get to know you and for you to ask questions
-                  about the role.
-                </p>
                 <p className="application-closing">
-                  If the conversation goes well, you will be invited to join the team as a Legal
-                  Speaking Coach.
+                  If your voice note is successful, we will send you a message to arrange a call
+                  with our founder. This will give us the opportunity to get to know you and for you
+                  to ask questions about the role. From there, you may be invited to join the team
+                  as a Legal Speaking Coach.
                 </p>
               </div>
 
               <div className="application-steps-card application-stage-two-card">
                 <h3>What happens next:</h3>
                 <ol>
-                  <li>Receive your Stage Two invitation on WhatsApp.</li>
+                  <li>Receive your Stage Two invitation.</li>
                   <li>Use the link to book a time in the calendar.</li>
-                  <li>Join your interview over a WhatsApp call.</li>
+                  <li>Interview over a WhatsApp Audio.</li>
                 </ol>
               </div>
             </div>
@@ -275,8 +270,8 @@ export default function Application() {
         <section className="application-section application-interns-section" id="interns">
           <div className="page-shell">
             <div className="application-section-heading">
-              <span className="application-section-label">Patch Alumni</span>
-              <h2>Legal Speaking Coaches</h2>
+              <span className="application-section-label">PATCH ALUMNI</span>
+              <h2>PATCH INTERNS</h2>
               <p>
                 View some of the students who completed their internship with us.
               </p>
