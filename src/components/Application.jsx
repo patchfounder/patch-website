@@ -39,8 +39,7 @@ const PREVIOUS_INTERNS = [
 
 const visibleOffsets = [-1, 0, 1];
 
-// TODO: Replace with Patch recruitment WhatsApp link.
-const WHATSAPP_CTA_HREF = '#whatsapp';
+const WHATSAPP_CTA_HREF = 'https://wa.me/19049837147';
 
 const APPLICATION_NAVIGATION = [
   { href: '#role', label: 'The Role' },
@@ -214,23 +213,20 @@ export default function Application() {
                 <span className="application-section-label">Stage 1: Voice Note Submission</span>
                 <h2>How to send your application?</h2>
                 <p>
-                  Your voice note gives us the chance to hear how you communicate. We are looking
-                  for high-energy, talkative and vibrant speaking voices, as well as people whose
-                  values align with ours.
+                  Please send a short voice note to our WhatsApp Business number: +1 904 983 7147.
+                  This gives us the opportunity to hear how you communicate. We are looking for
+                  high-energy speaking voices, alongside people whose values align with ours.
                 </p>
                 <p>
-                  Record a 30 to 60 second voice note explaining why you would like to join the
-                  Patch App team and how your values align with ours.
-                </p>
-                <p>
-                  Send your recording to us on WhatsApp within 48 hours of receiving your
-                  invitation. WhatsApp lets us listen to your voice note easily and assess it as
-                  part of your application.
+                  Open WhatsApp and use the voice-note feature to record a 30 to 60 second message
+                  explaining why you would like to join the Patch App team and how your values
+                  align with ours. You are also welcome to tell us a little more about yourself and
+                  your professional strategy.
                 </p>
                 <p className="application-closing">
                   Our team will review your recording carefully. If you are successful, we will
-                  reply on WhatsApp and invite you to Stage Two. Every applicant will hear the
-                  outcome of their application from us.
+                  invite you to Stage Two. Every applicant will hear the outcome of their
+                  application from us.
                 </p>
               </div>
 
