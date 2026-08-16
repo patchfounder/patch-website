@@ -239,7 +239,7 @@ export default function Application() {
                     className="application-whatsapp-number"
                     href={WHATSAPP_CTA_HREF}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                   >
                     +1 (904) 983-7147
                   </a>
@@ -268,7 +268,12 @@ export default function Application() {
                   <li>Mention how your values align with ours.</li>
                   <li>Send and wait for a reply.</li>
                 </ol>
-                <a className="application-whatsapp-cta" href={WHATSAPP_CTA_HREF}>
+                <a
+                  className="application-whatsapp-cta"
+                  href={WHATSAPP_CTA_HREF}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Send your voice note on WhatsApp
                 </a>
               </div>
