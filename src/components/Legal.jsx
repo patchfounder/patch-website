@@ -130,6 +130,15 @@ function AccountDeletionContent({ compact = false }) {
       <p>
         <EmailLink />
       </p>
+      <p>
+        Patch App LLC
+        <br />
+        447 Broadway, 2nd Floor, #1420
+        <br />
+        New York NY 10013
+        <br />
+        United States
+      </p>
     </div>
   );
 }
