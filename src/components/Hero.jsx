@@ -117,9 +117,7 @@ export default function Hero({ onDownloadClick }) {
         </div>
 
         <div className="hero-copy">
-          <h1>
-            A voice that <span className="hero-title-accent">works for you</span>
-          </h1>
+          <h1>The Speaking Coach for Lawyers</h1>
           <div className="hero-lede-row">
             <p className="hero-lede">
               The app that puts a speaking coach in your pocket, designed for high-performance lawyers.
