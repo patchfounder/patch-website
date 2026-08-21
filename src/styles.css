@@ -371,6 +371,10 @@ p {
   line-height: 1.02;
 }
 
+.hero-title-accent {
+  color: var(--turquoise);
+}
+
 .hero-lede {
   max-width: 780px;
   margin: 0;
