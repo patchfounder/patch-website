@@ -3272,6 +3272,7 @@ p {
 }
 
 .pricing-section {
+  padding-top: 59px;
   background: var(--white);
 }
 
@@ -3295,7 +3296,7 @@ p {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .price-card {
@@ -4389,6 +4390,7 @@ p {
   .stats-section,
   .vision-section,
   .firm-section,
+  .pricing-section,
   .final-cta {
     padding-top: 42px;
   }
@@ -5204,7 +5206,7 @@ p {
   }
 
   .pricing-grid {
-    gap: 0.75rem;
+    gap: 1.125rem;
   }
 
   .price-card {

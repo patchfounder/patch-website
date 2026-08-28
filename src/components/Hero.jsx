@@ -4,7 +4,7 @@ const DownloadAction = ({ light = false, onDownloadClick }) => (
     <a className="button button-primary" href="#download" onClick={onDownloadClick}>
       Download the app
     </a>
-    <span>Available on the App Store and Google Play</span>
+    <span>Available on the App Store</span>
   </div>
 );
 
