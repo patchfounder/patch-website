@@ -120,10 +120,15 @@ export default function Hero({ onDownloadClick }) {
           <h1>The Speaking Coach for Lawyers</h1>
           <div className="hero-lede-row">
             <p className="hero-lede">
-              The app that puts a speaking coach in your pocket, designed for high-performance lawyers.
+              <span className="hero-lede-desktop">
+                The app that puts a speaking coach in your pocket, designed for high-performance lawyers.
+              </span>
+              <span className="hero-lede-mobile">
+                A speaking coach in your pocket, designed for high-performance individuals.
+              </span>
             </p>
             {/* TODO: Replace with the approved live app download destination. */}
-            <a className="nav-cta" href="#download" onClick={onDownloadClick}>
+            <a className="nav-cta hero-download-cta" href="#download" onClick={onDownloadClick}>
               <span>Download</span>
               <span className="nav-cta-arrow" aria-hidden="true">
                 →

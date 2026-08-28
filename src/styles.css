@@ -379,6 +379,10 @@ p {
   line-height: 1.6;
 }
 
+.hero-lede-mobile {
+  display: none;
+}
+
 .hero-lede-row {
   display: flex;
   align-items: center;
@@ -4711,6 +4715,34 @@ p {
     max-width: 345px;
     font-size: 1rem;
     line-height: 1.55;
+  }
+
+  .hero-lede-desktop {
+    display: none;
+  }
+
+  .hero-lede-mobile {
+    display: inline;
+  }
+
+  .hero-download-cta {
+    display: none;
+  }
+
+  .hero-video-overlay {
+    top: 0;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.38) 0%,
+      rgba(0, 0, 0, 0.52) 42%,
+      rgba(0, 0, 0, 0.76) 100%
+    );
+  }
+
+  .hero-copy h1,
+  .hero-lede {
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.58);
   }
 
   .hero-lede-row {
