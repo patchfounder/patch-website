@@ -1130,6 +1130,7 @@ p {
 .product-section {
   --experience-core-width: clamp(200px, 22.5vw, 288px);
   --experience-core-height: 361px;
+  padding-top: 59px;
   background: var(--white);
 }
 
@@ -2874,6 +2875,7 @@ p {
 }
 
 .why-section {
+  padding-top: 59px;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: #f5f5f2;
@@ -2909,8 +2911,9 @@ p {
 }
 
 .stats-section {
-  padding-bottom: 0;
-  background: var(--white);
+  padding-top: 59px;
+  border-bottom: 1px solid var(--line);
+  background: #edf6f7;
 }
 
 .stats-layout {
@@ -2979,6 +2982,10 @@ p {
 }
 
 @media (min-width: 821px) {
+  .stats-section {
+    padding-bottom: 64px;
+  }
+
   .testimonials-section {
     padding-top: 72px;
   }
@@ -3411,8 +3418,9 @@ p {
 }
 
 .vision-section {
+  padding-top: 59px;
   border-bottom: 1px solid var(--line);
-  background: var(--white);
+  background: #f7f1e8;
 }
 
 .vision-heading {
@@ -4378,6 +4386,13 @@ p {
     padding: 84px 0;
   }
 
+  .product-section,
+  .why-section,
+  .stats-section,
+  .vision-section {
+    padding-top: 42px;
+  }
+
   .product-section .page-shell {
     width: min(100% - 32px, 1400px);
   }
@@ -4631,7 +4646,7 @@ p {
   }
 
   .stats-section {
-    padding-bottom: 0;
+    padding-bottom: 3.5rem;
   }
 
   .testimonials-section {
