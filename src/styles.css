@@ -3517,6 +3517,7 @@ p {
 }
 
 .firm-section {
+  padding-top: 59px;
 }
 
 .mobile-only-break {
@@ -3557,7 +3558,7 @@ p {
 }
 
 .final-cta {
-  padding: 100px 0;
+  padding: 59px 0 100px;
   background: var(--black);
   color: var(--white);
 }
@@ -4386,7 +4387,9 @@ p {
   .product-section,
   .why-section,
   .stats-section,
-  .vision-section {
+  .vision-section,
+  .firm-section,
+  .final-cta {
     padding-top: 42px;
   }
 
