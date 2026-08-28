@@ -5231,14 +5231,15 @@ p {
     margin-bottom: 0.95rem;
     font-size: clamp(2.35rem, 10.8vw, 3rem);
     line-height: 0.98;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.01em;
     white-space: normal;
   }
 
   .hero-lede {
-    max-width: 330px;
-    font-size: 1.12rem;
+    max-width: none;
+    font-size: 0.95rem;
     line-height: 1.42;
+    white-space: nowrap;
   }
 
   .hero-lede-row {
