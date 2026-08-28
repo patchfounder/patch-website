@@ -24,7 +24,8 @@ export default function Header({
 
         <a className="brand" href={logoHref} aria-label="Patch home">
           <span className="brand-logo-crop">
-            <img className="brand-logo" src="/patch-logo.png" alt="Patch" />
+            <img className="brand-logo brand-logo-dark" src="/patch-logo.png" alt="Patch" />
+            <img className="brand-logo brand-logo-light" src="/patch-logo-white.png" alt="" />
           </span>
         </a>
 

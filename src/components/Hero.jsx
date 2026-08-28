@@ -10,8 +10,8 @@ const DownloadAction = ({ light = false, onDownloadClick }) => (
 
 export { DownloadAction };
 
-const HERO_VIDEO_SRC = '/hero-background.mp4';
-const HERO_POSTER_SRC = '/hero-video-poster.png';
+const HERO_VIDEO_SRC = '/hero-background.mp4?v=20260828-2';
+const HERO_POSTER_SRC = '/hero-video-poster.png?v=20260828-2';
 
 export default function Hero({ onDownloadClick }) {
   return (
