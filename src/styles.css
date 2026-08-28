@@ -2978,6 +2978,16 @@ p {
   background: var(--white);
 }
 
+@media (min-width: 821px) {
+  .stats-section {
+    padding-bottom: 64px;
+  }
+
+  .testimonials-section {
+    padding-top: 72px;
+  }
+}
+
 .testimonial-carousel-shell {
   text-align: center;
 }
