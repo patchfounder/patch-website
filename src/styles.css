@@ -2909,7 +2909,7 @@ p {
 }
 
 .stats-section {
-  border-bottom: 1px solid var(--line);
+  padding-bottom: 0;
   background: var(--white);
 }
 
@@ -2979,10 +2979,6 @@ p {
 }
 
 @media (min-width: 821px) {
-  .stats-section {
-    padding-bottom: 64px;
-  }
-
   .testimonials-section {
     padding-top: 72px;
   }
@@ -4635,7 +4631,7 @@ p {
   }
 
   .stats-section {
-    padding-bottom: 3.5rem;
+    padding-bottom: 0;
   }
 
   .testimonials-section {
@@ -4685,6 +4681,10 @@ p {
   .vision-mobile-flow .vision-technology-copy {
     max-width: none;
     transform: none;
+  }
+
+  .vision-mobile-flow .vision-technology-copy p:nth-child(n + 2) {
+    display: none;
   }
 
   .vision-mobile-flow .vision-founder {
@@ -5284,20 +5284,20 @@ p {
 
   .brand-logo-light {
     display: block;
-    width: 112px;
+    width: 123px;
     height: auto;
-    max-height: 42px;
+    max-height: 46px;
     object-fit: contain;
     filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.5));
-    transform: translateX(15px);
+    transform: translateX(14px);
   }
 
   .brand-logo-crop {
-    height: 42px;
+    height: 46px;
   }
 
   .brand {
-    width: 112px;
+    width: 123px;
   }
 }
 
