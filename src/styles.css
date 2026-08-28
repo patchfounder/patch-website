@@ -3526,6 +3526,10 @@ p {
   border-top: 1px solid var(--line);
 }
 
+.mobile-only-break {
+  display: none;
+}
+
 .firm-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr);
@@ -4709,18 +4713,12 @@ p {
   }
 
   .firm-section {
-    background: var(--black);
-    color: var(--white);
+    background: var(--white);
+    color: var(--black);
   }
 
-  .firm-section h2,
-  .firm-section .firm-copy p,
-  .firm-section .text-link {
-    color: var(--white);
-  }
-
-  .firm-section .text-link {
-    border-bottom-color: var(--white);
+  .mobile-only-break {
+    display: block;
   }
 
   .vision-mobile-flow .vision-founder {

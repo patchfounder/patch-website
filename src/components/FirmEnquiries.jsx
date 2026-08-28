@@ -4,7 +4,10 @@ export default function FirmEnquiries() {
       <div className="page-shell firm-layout">
         <div>
           <p className="eyebrow">For law firms</p>
-          <h2>Interested in Patch for a wider team?</h2>
+          <h2>
+            Interested in Patch
+            <br className="mobile-only-break" /> for a wider team?
+          </h2>
         </div>
         <div className="firm-copy">
           <p>
