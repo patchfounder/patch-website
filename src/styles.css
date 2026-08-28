@@ -3414,6 +3414,10 @@ p {
   margin-bottom: 0;
 }
 
+.vision-mobile-flow {
+  display: none;
+}
+
 .vision-editorial {
   display: grid;
   grid-template-columns: minmax(0, 571px) minmax(420px, 1fr);
@@ -4652,6 +4656,37 @@ p {
     order: -1;
   }
 
+  .vision-section > .page-shell > .vision-editorial,
+  .vision-section > .page-shell > .vision-technology {
+    display: none;
+  }
+
+  .vision-mobile-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .vision-mobile-flow .vision-copy,
+  .vision-mobile-flow .vision-technology-copy {
+    max-width: none;
+    transform: none;
+  }
+
+  .vision-mobile-flow .vision-founder {
+    gap: 0.9rem;
+  }
+
+  .vision-mobile-flow .vision-founder img,
+  .vision-mobile-flow .vision-office {
+    width: 63.75%;
+  }
+
+  .vision-mobile-flow .vision-office {
+    order: 0;
+    margin-top: 0.5rem;
+  }
+
   .nav-shell {
     grid-template-areas: "empty brand download";
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -5182,7 +5217,7 @@ p {
     margin-bottom: 0.95rem;
     font-size: clamp(2.35rem, 10.8vw, 3rem);
     line-height: 0.98;
-    letter-spacing: -0.055em;
+    letter-spacing: -0.035em;
     white-space: normal;
   }
 
@@ -5226,6 +5261,20 @@ p {
   .hero-copy h1,
   .hero-lede {
     text-shadow: 0 3px 22px rgba(0, 0, 0, 0.68);
+  }
+
+  .brand-logo {
+    display: none;
+  }
+
+  .brand-logo-crop::after {
+    color: var(--white);
+    content: "PATCH";
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.065em;
+    line-height: 1;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
   }
 }
 

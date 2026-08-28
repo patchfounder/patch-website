@@ -121,7 +121,7 @@ export default function Hero({ onDownloadClick }) {
           <div className="hero-lede-row">
             <p className="hero-lede">
               <span className="hero-lede-desktop">
-                The app that puts a speaking coach in your pocket, designed for high-performance lawyers.
+                The app that puts a speaking coach in your pocket, designed for high-performance individuals.
               </span>
               <span className="hero-lede-mobile">
                 Designed for high-performance individuals.
