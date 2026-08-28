@@ -4616,6 +4616,14 @@ p {
     white-space: normal;
   }
 
+  .stats-section {
+    padding-bottom: 3.5rem;
+  }
+
+  .testimonials-section {
+    padding-top: 3.5rem;
+  }
+
   .vision-heading {
     max-width: 275px;
     margin-bottom: 3rem;
@@ -4695,20 +4703,23 @@ p {
   }
 
   .hero-layout {
-    min-height: auto;
-    padding-top: 30px;
-    padding-bottom: 56px;
+    min-height: calc(100svh - 76px);
+    justify-content: flex-end;
+    padding-top: 40px;
+    padding-bottom: 48px;
   }
 
   .hero-copy {
-    margin-top: 1.5rem;
+    margin-top: 0;
   }
 
   .hero-copy h1 {
-    max-width: 350px;
-    margin-bottom: 1rem;
-    font-size: 1.65rem;
-    line-height: 1.04;
+    max-width: none;
+    margin-bottom: 0.85rem;
+    font-size: clamp(1.1rem, 5.2vw, 1.35rem);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    white-space: nowrap;
   }
 
   .hero-lede {
@@ -4734,9 +4745,9 @@ p {
     height: 100%;
     background: linear-gradient(
       to bottom,
-      rgba(0, 0, 0, 0.38) 0%,
-      rgba(0, 0, 0, 0.52) 42%,
-      rgba(0, 0, 0, 0.76) 100%
+      rgba(0, 0, 0, 0.16) 0%,
+      rgba(0, 0, 0, 0.34) 50%,
+      rgba(0, 0, 0, 0.78) 100%
     );
   }
 

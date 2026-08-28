@@ -124,7 +124,7 @@ export default function Hero({ onDownloadClick }) {
                 The app that puts a speaking coach in your pocket, designed for high-performance lawyers.
               </span>
               <span className="hero-lede-mobile">
-                A speaking coach in your pocket, designed for high-performance individuals.
+                Designed for high-performance individuals.
               </span>
             </p>
             {/* TODO: Replace with the approved live app download destination. */}
