@@ -4649,6 +4649,7 @@ p {
 
   .vision-office {
     width: 63.75%;
+    order: -1;
   }
 
   .nav-shell {
