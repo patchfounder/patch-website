@@ -55,7 +55,7 @@ export default function Testimonials() {
     <section className="section testimonials-section" id="testimonials">
       <div className="page-shell testimonial-carousel-shell">
         <header className="testimonial-carousel-heading">
-          <h2>Lawyers who believed in us</h2>
+          <h2>Lawyers who believe in us</h2>
           <p>
             We are grateful to the lawyers who supported our early growth
           </p>
