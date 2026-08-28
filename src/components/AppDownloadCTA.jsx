@@ -11,7 +11,7 @@ export default function AppDownloadCTA({ onDownloadClick }) {
         <div className="final-cta-action">
           <DownloadAction light onDownloadClick={onDownloadClick} />
           <p>
-            <strong>4 sessions to try.</strong> Download Patch and book your first call.
+            <strong>4 sessions to try.</strong> Book your first session today.
           </p>
         </div>
       </div>

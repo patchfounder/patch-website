@@ -4687,6 +4687,27 @@ p {
     display: none;
   }
 
+  .vision-section,
+  .firm-section {
+    border-top: 0;
+    border-bottom: 0;
+  }
+
+  .firm-section {
+    background: var(--black);
+    color: var(--white);
+  }
+
+  .firm-section h2,
+  .firm-section .firm-copy p,
+  .firm-section .text-link {
+    color: var(--white);
+  }
+
+  .firm-section .text-link {
+    border-bottom-color: var(--white);
+  }
+
   .vision-mobile-flow .vision-founder {
     gap: 0.9rem;
   }
@@ -5289,7 +5310,7 @@ p {
     max-height: 46px;
     object-fit: contain;
     filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.5));
-    transform: translateX(14px);
+    transform: translateX(11px);
   }
 
   .brand-logo-crop {
