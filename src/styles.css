@@ -5289,6 +5289,7 @@ p {
     max-height: 42px;
     object-fit: contain;
     filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.5));
+    transform: translateX(15px);
   }
 
   .brand-logo-crop {
