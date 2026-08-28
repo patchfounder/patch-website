@@ -5151,6 +5151,82 @@ p {
   .footer-bottom {
     flex-direction: column;
   }
+
+  .site-header {
+    position: absolute;
+    width: 100%;
+    border-bottom: 0;
+    background: transparent;
+  }
+
+  .site-header .nav-cta {
+    display: none;
+  }
+
+  .site-header .brand-logo {
+    filter: brightness(0) invert(1) drop-shadow(0 2px 12px rgba(0, 0, 0, 0.48));
+  }
+
+  .site-header .brand {
+    z-index: 1;
+  }
+
+  .hero-layout {
+    min-height: 100svh;
+    padding-top: 96px;
+    padding-bottom: 52px;
+  }
+
+  .hero-copy h1 {
+    max-width: 350px;
+    margin-bottom: 0.95rem;
+    font-size: clamp(2.35rem, 10.8vw, 3rem);
+    line-height: 0.98;
+    letter-spacing: -0.055em;
+    white-space: normal;
+  }
+
+  .hero-lede {
+    max-width: 330px;
+    font-size: 1.12rem;
+    line-height: 1.42;
+  }
+
+  .hero-lede-row {
+    flex-direction: column;
+    gap: 1.35rem;
+  }
+
+  .hero-download-cta {
+    display: inline-flex;
+    grid-area: auto;
+    justify-self: auto;
+    min-height: 46px;
+    margin-top: 0.1rem;
+    padding: 0.34rem 0.34rem 0.34rem 0.9rem;
+    font-size: 0.9rem;
+  }
+
+  .hero-download-cta .nav-cta-arrow {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  .hero-video-overlay {
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.58) 0%,
+      rgba(0, 0, 0, 0.2) 35%,
+      rgba(0, 0, 0, 0.42) 63%,
+      rgba(0, 0, 0, 0.86) 100%
+    );
+  }
+
+  .hero-copy h1,
+  .hero-lede {
+    text-shadow: 0 3px 22px rgba(0, 0, 0, 0.68);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
