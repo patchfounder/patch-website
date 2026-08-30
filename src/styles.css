@@ -4347,6 +4347,10 @@ p {
   font-weight: 500;
 }
 
+.application-instructions-copy {
+  font-weight: 450;
+}
+
 .application-whatsapp-cta {
   display: inline-flex;
   min-height: 48px;
