@@ -4234,12 +4234,18 @@ p {
   gap: clamp(2.5rem, 5vw, 4rem);
 }
 
+.application-stage-one-aside .application-steps-card {
+  position: static;
+}
+
 .application-process-flow {
   display: grid;
-  width: min(calc(100% - 2rem), 470px);
+  width: 100%;
+  box-sizing: border-box;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.45rem;
-  margin: 0 auto;
+  gap: 0;
+  padding: 0 1.4rem;
+  margin: 0;
 }
 
 .application-process-item {
@@ -4252,8 +4258,8 @@ p {
 
 .application-process-icon {
   display: grid;
-  width: 58px;
-  height: 58px;
+  width: 62px;
+  height: 62px;
   place-items: center;
   margin-bottom: 1rem;
   color: #2f3435;
@@ -4266,16 +4272,21 @@ p {
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 1.7;
+  stroke: #33383a;
+  stroke-width: 3.5;
 }
 
 .application-process-icon .application-process-dot {
-  fill: currentColor;
+  fill: #33383a;
   stroke: none;
 }
 
+.application-process-icon .application-process-clock-face {
+  fill: #ffffff;
+}
+
 .application-process-title {
-  color: var(--turquoise);
+  color: #08a6c4;
   font-size: 0.76rem;
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -4285,19 +4296,24 @@ p {
 
 .application-process-detail {
   margin-top: 0.65rem;
-  color: #505050;
+  color: #4b4b4b;
   font-size: 0.78rem;
   line-height: 1.35;
 }
 
 .application-process-arrow {
   position: absolute;
-  top: 16px;
-  right: -0.6rem;
-  color: var(--turquoise);
-  font-size: 1.7rem;
-  font-weight: 300;
-  line-height: 1;
+  top: 14px;
+  right: -30px;
+  width: 60px;
+  height: 38px;
+  overflow: visible;
+  fill: none;
+  pointer-events: none;
+  stroke: #08a6c4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3.5;
 }
 
 .application-stage-two-card {
@@ -4689,13 +4705,15 @@ p {
   }
 
   .application-process-flow {
-    width: min(100% - 1rem, 390px);
-    gap: 0.2rem;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 2rem;
+    padding: 0 1rem;
   }
 
   .application-process-icon {
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
     margin-bottom: 0.75rem;
   }
 
@@ -4705,9 +4723,14 @@ p {
   }
 
   .application-process-arrow {
-    top: 12px;
-    right: -0.35rem;
-    font-size: 1.1rem;
+    top: 10px;
+    right: -30px;
+    width: 60px;
+    height: 38px;
+  }
+
+  .application-process-item:nth-child(2) .application-process-arrow {
+    display: none;
   }
 
   h1 {

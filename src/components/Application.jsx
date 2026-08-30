@@ -14,54 +14,76 @@ const LAW_FIRMS = [
 
 const CAROUSEL_FIRMS = Array.from({ length: 4 }, () => LAW_FIRMS).flat();
 
+function ProcessArrow() {
+  return (
+    <svg className="application-process-arrow" viewBox="0 0 60 38" aria-hidden="true">
+      <path d="M2 19h50M36 3l16 16-16 16" />
+    </svg>
+  );
+}
+
+function StageOneProcessIcon({ type }) {
+  if (type === 'plan') {
+    return (
+      <svg viewBox="0 0 144 144" aria-hidden="true">
+        <path d="M22 18h100a14 14 0 0 1 14 14v58a14 14 0 0 1-14 14H70l-28 22v-22H22A14 14 0 0 1 8 90V32A14 14 0 0 1 22 18z" />
+        <circle className="application-process-dot" cx="49" cy="62" r="4" />
+        <circle className="application-process-dot" cx="72" cy="62" r="4" />
+        <circle className="application-process-dot" cx="95" cy="62" r="4" />
+      </svg>
+    );
+  }
+
+  if (type === 'record') {
+    return (
+      <svg viewBox="0 0 134 142" aria-hidden="true">
+        <rect x="30" y="5" width="74" height="126" rx="10" />
+        <path d="M58 18h18" />
+        <path d="M43 76c6 0 6-18 12-18s6 34 12 34 6-48 12-48 6 34 12 34" />
+      </svg>
+    );
+  }
+
+  if (type === 'send') {
+    return (
+      <svg viewBox="0 0 140 140" aria-hidden="true">
+        <path d="M7 48 132 7 89 132 64 76 7 48z" />
+        <path d="m64 76 68-69" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 140 140" aria-hidden="true">
+      <path d="M16 72h105l17 38v22H1v-22l15-38z" />
+      <path d="M1 110h43l8 12h34l8-12h44" />
+      <circle className="application-process-clock-face" cx="110" cy="28" r="27" />
+      <path d="M110 13v16l12 8" />
+    </svg>
+  );
+}
+
 function StageOneProcessFlow() {
   const steps = [
     {
       title: 'Plan',
       detail: 'Your message',
-      icon: (
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <path d="M11 12.5h42v28.2c0 6.4-5.2 11.6-11.6 11.6H29.7L19 59v-6.7C14.3 50.1 11 45.7 11 40.7Z" />
-          <circle className="application-process-dot" cx="24" cy="31" r="1.7" />
-          <circle className="application-process-dot" cx="32" cy="31" r="1.7" />
-          <circle className="application-process-dot" cx="40" cy="31" r="1.7" />
-        </svg>
-      ),
+      icon: <StageOneProcessIcon type="plan" />,
     },
     {
       title: 'Record',
       detail: '30–60 secs',
-      icon: (
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <rect x="18" y="6" width="28" height="52" rx="4" />
-          <path d="M29 28c2.4-8.4 4.8 8.4 7.2 0s4.8-8.4 7.2 0" />
-          <path d="M22 33c2.4-8.4 4.8 8.4 7.2 0s4.8-8.4 7.2 0" />
-          <path d="M30 6h4" />
-        </svg>
-      ),
+      icon: <StageOneProcessIcon type="record" />,
     },
     {
       title: 'Send',
       detail: 'WhatsApp',
-      icon: (
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <path d="m7 28 50-19-18 49-9-20Z" />
-          <path d="m30 38 27-29M30 38l-8 8" />
-        </svg>
-      ),
+      icon: <StageOneProcessIcon type="send" />,
     },
     {
       title: 'Wait for reply',
       detail: 'From Patch',
-      icon: (
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <path d="M12 35h40l5 12v11H7V47Z" />
-          <path d="M12 35 19 19h26l7 16" />
-          <path d="M23 47h18l-3.5 4.5h-11Z" />
-          <circle cx="49" cy="16" r="10" />
-          <path d="M49 10v6l4 3" />
-        </svg>
-      ),
+      icon: <StageOneProcessIcon type="wait" />,
     },
   ];
 
@@ -72,7 +94,7 @@ function StageOneProcessFlow() {
           <div className="application-process-icon">{step.icon}</div>
           <span className="application-process-title">{step.title}</span>
           <span className="application-process-detail">{step.detail}</span>
-          {index < steps.length - 1 && <span className="application-process-arrow">→</span>}
+          {index < steps.length - 1 && <ProcessArrow />}
         </div>
       ))}
     </div>
