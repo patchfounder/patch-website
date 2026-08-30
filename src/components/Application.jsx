@@ -335,7 +335,7 @@ export default function Application() {
                   This gives us the opportunity to hear how you communicate. We are looking for
                   high-energy speaking voices, alongside people whose values align with ours.
                 </p>
-                <p className="application-instructions-copy">
+                <p className="application-instructions-emphasis">
                   <strong>Instructions:</strong> Open WhatsApp and use the voice-note feature to record a 30 to 60 second message
                   explaining why you would like to join the team and how your values align with
                   ours. You are welcome to tell us a little more about yourself and
