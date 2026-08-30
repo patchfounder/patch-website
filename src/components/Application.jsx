@@ -72,7 +72,7 @@ function StageOneProcessFlow() {
     },
     {
       title: 'Record',
-      detail: '30–60 secs',
+      detail: '30–60 seconds',
       icon: <StageOneProcessIcon type="record" />,
     },
     {
@@ -81,7 +81,7 @@ function StageOneProcessFlow() {
       icon: <StageOneProcessIcon type="send" />,
     },
     {
-      title: 'Wait for reply',
+      title: 'Reply',
       detail: 'From Patch',
       icon: <StageOneProcessIcon type="wait" />,
     },
@@ -364,6 +364,9 @@ export default function Application() {
                   >
                     Send your voice note on WhatsApp
                   </a>
+                  <p className="application-whatsapp-cta-note">
+                    This opens WhatsApp so you can record and send your voice note directly to us.
+                  </p>
                 </div>
                 <StageOneProcessFlow />
               </div>

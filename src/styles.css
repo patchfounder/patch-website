@@ -4303,10 +4303,10 @@ p {
 
 .application-process-arrow {
   position: absolute;
-  top: 14px;
-  right: -30px;
-  width: 60px;
-  height: 38px;
+  top: 21px;
+  right: -15px;
+  width: 30px;
+  height: 19px;
   overflow: visible;
   fill: none;
   pointer-events: none;
@@ -4314,6 +4314,13 @@ p {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 3.5;
+}
+
+.application-whatsapp-cta-note {
+  margin: 0.7rem 0 0;
+  color: #a3a3a3;
+  font-size: 0.68rem;
+  line-height: 1.4;
 }
 
 .application-stage-two-card {
@@ -4723,10 +4730,18 @@ p {
   }
 
   .application-process-arrow {
-    top: 10px;
-    right: -30px;
-    width: 60px;
-    height: 38px;
+    top: 17px;
+    right: -15px;
+    width: 30px;
+    height: 19px;
+  }
+
+  .application-stage-one-aside > .application-process-flow {
+    order: 1;
+  }
+
+  .application-stage-one-aside > .application-steps-card {
+    order: 2;
   }
 
   .application-process-item:nth-child(2) .application-process-arrow {
