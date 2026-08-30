@@ -4229,6 +4229,77 @@ p {
   box-shadow: 0 24px 70px rgba(8, 55, 93, 0.09);
 }
 
+.application-stage-one-aside {
+  display: grid;
+  gap: clamp(2.5rem, 5vw, 4rem);
+}
+
+.application-process-flow {
+  display: grid;
+  width: min(calc(100% - 2rem), 470px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0 auto;
+}
+
+.application-process-item {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.application-process-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  margin-bottom: 1rem;
+  color: #2f3435;
+}
+
+.application-process-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.application-process-icon .application-process-dot {
+  fill: currentColor;
+  stroke: none;
+}
+
+.application-process-title {
+  color: var(--turquoise);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.application-process-detail {
+  margin-top: 0.65rem;
+  color: #505050;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.application-process-arrow {
+  position: absolute;
+  top: 16px;
+  right: -0.6rem;
+  color: var(--turquoise);
+  font-size: 1.7rem;
+  font-weight: 300;
+  line-height: 1;
+}
+
 .application-stage-two-card {
   position: static;
 }
@@ -4464,6 +4535,10 @@ p {
     position: static;
   }
 
+  .application-process-flow {
+    margin-top: 0.5rem;
+  }
+
   .split-heading {
     gap: 0.5rem;
   }
@@ -4611,6 +4686,28 @@ p {
 
   .application-intern-card {
     min-height: 0;
+  }
+
+  .application-process-flow {
+    width: min(100% - 1rem, 390px);
+    gap: 0.2rem;
+  }
+
+  .application-process-icon {
+    width: 46px;
+    height: 46px;
+    margin-bottom: 0.75rem;
+  }
+
+  .application-process-detail {
+    margin-top: 0.45rem;
+    font-size: 0.67rem;
+  }
+
+  .application-process-arrow {
+    top: 12px;
+    right: -0.35rem;
+    font-size: 1.1rem;
   }
 
   h1 {
@@ -5330,6 +5427,35 @@ p {
 
   .brand {
     width: 123px;
+  }
+
+  /* The application page keeps its original light header rather than inheriting the mobile hero treatment. */
+  .application-page .site-header {
+    position: relative;
+    width: auto;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+  }
+
+  .application-page .site-header .brand-logo {
+    filter: none;
+  }
+
+  .application-page .brand-logo-dark {
+    display: block;
+  }
+
+  .application-page .brand-logo-light {
+    display: none;
+  }
+
+  .application-page .brand-logo-crop {
+    height: 26px;
+  }
+
+  .application-page .brand {
+    width: 93px;
+    transform: translateX(calc(-50% + 4px));
   }
 }
 

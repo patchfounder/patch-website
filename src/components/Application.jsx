@@ -14,6 +14,71 @@ const LAW_FIRMS = [
 
 const CAROUSEL_FIRMS = Array.from({ length: 4 }, () => LAW_FIRMS).flat();
 
+function StageOneProcessFlow() {
+  const steps = [
+    {
+      title: 'Plan',
+      detail: 'Your message',
+      icon: (
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M11 12.5h42v28.2c0 6.4-5.2 11.6-11.6 11.6H29.7L19 59v-6.7C14.3 50.1 11 45.7 11 40.7Z" />
+          <circle className="application-process-dot" cx="24" cy="31" r="1.7" />
+          <circle className="application-process-dot" cx="32" cy="31" r="1.7" />
+          <circle className="application-process-dot" cx="40" cy="31" r="1.7" />
+        </svg>
+      ),
+    },
+    {
+      title: 'Record',
+      detail: '30–60 secs',
+      icon: (
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <rect x="18" y="6" width="28" height="52" rx="4" />
+          <path d="M29 28c2.4-8.4 4.8 8.4 7.2 0s4.8-8.4 7.2 0" />
+          <path d="M22 33c2.4-8.4 4.8 8.4 7.2 0s4.8-8.4 7.2 0" />
+          <path d="M30 6h4" />
+        </svg>
+      ),
+    },
+    {
+      title: 'Send',
+      detail: 'WhatsApp',
+      icon: (
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path d="m7 28 50-19-18 49-9-20Z" />
+          <path d="m30 38 27-29M30 38l-8 8" />
+        </svg>
+      ),
+    },
+    {
+      title: 'Wait for reply',
+      detail: 'From Patch',
+      icon: (
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M12 35h40l5 12v11H7V47Z" />
+          <path d="M12 35 19 19h26l7 16" />
+          <path d="M23 47h18l-3.5 4.5h-11Z" />
+          <circle cx="49" cy="16" r="10" />
+          <path d="M49 10v6l4 3" />
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <div className="application-process-flow" aria-label="Voice note application process">
+      {steps.map((step, index) => (
+        <div className="application-process-item" key={step.title}>
+          <div className="application-process-icon">{step.icon}</div>
+          <span className="application-process-title">{step.title}</span>
+          <span className="application-process-detail">{step.detail}</span>
+          {index < steps.length - 1 && <span className="application-process-arrow">→</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const PREVIOUS_INTERNS = [
   {
     name: 'Josh Hack',
@@ -261,21 +326,24 @@ export default function Application() {
                 </p>
               </div>
 
-              <div className="application-steps-card">
-                <h3>Before you send:</h3>
-                <ol>
-                  <li>Plan what you are going to say.</li>
-                  <li>Mention how your values align with ours.</li>
-                  <li>Send and wait for a reply.</li>
-                </ol>
-                <a
-                  className="application-whatsapp-cta"
-                  href={WHATSAPP_CTA_HREF}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Send your voice note on WhatsApp
-                </a>
+              <div className="application-stage-one-aside">
+                <div className="application-steps-card">
+                  <h3>Before you send:</h3>
+                  <ol>
+                    <li>Plan what you are going to say.</li>
+                    <li>Mention how your values align with ours.</li>
+                    <li>Send and wait for a reply.</li>
+                  </ol>
+                  <a
+                    className="application-whatsapp-cta"
+                    href={WHATSAPP_CTA_HREF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Send your voice note on WhatsApp
+                  </a>
+                </div>
+                <StageOneProcessFlow />
               </div>
             </div>
           </div>
