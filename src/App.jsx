@@ -57,25 +57,25 @@ export default function App() {
             </button>
             <div className="download-modal-content">
               <div className="download-modal-copy">
-                <span className="download-modal-eyebrow">Patch 3.0</span>
-                <h2 id="download-modal-title">Patch 3.0 is coming soon</h2>
+                <span className="download-modal-eyebrow">Patch App</span>
+                <h2 id="download-modal-title">The all-new Patch app is coming soon</h2>
                 <p>
-                  The new app is being built for focused speaking practice,
-                  real coach conversations, and progress you can feel.
+                  A new way to build a stronger, more confident speaking habit—with focused
+                  practice, real coach conversations, and progress you can feel.
                 </p>
-                <p className="download-modal-launch">Launching mid-August.</p>
+                <p className="download-modal-launch">Launching early September.</p>
                 <button
                   className="download-modal-action"
                   type="button"
                   onClick={() => setIsDownloadModalOpen(false)}
                 >
-                  See you mid-August
+                  See you in early September
                 </button>
               </div>
               <div className="download-modal-phone" aria-hidden="true">
                 <div className="download-phone-top">
                   <img src="/patch-icon.png" alt="" />
-                  <span>Patch 3.0</span>
+                  <span>Patch App</span>
                 </div>
                 <div className="download-phone-session">
                   <small>Your next session</small>
@@ -84,7 +84,7 @@ export default function App() {
                 </div>
                 <div className="download-phone-rhythm">
                   <span>Launch window</span>
-                  <strong>Mid-August</strong>
+                  <strong>Early September</strong>
                 </div>
                 <div className="download-phone-score">
                   <span>Progress</span>
