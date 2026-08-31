@@ -197,16 +197,17 @@
 }
 
 .assessment-navigation {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  align-items: center;
   padding: 4px;
   border: 1px solid var(--assessment-line);
   border-radius: 14px;
   background: #e9eeee;
 }
 
-.assessment-navigation button {
+.assessment-navigation > button {
   display: inline-flex;
+  flex: 1 1 0;
   min-width: 0;
   min-height: 46px;
   align-items: center;
@@ -221,13 +222,13 @@
   font-weight: 650;
 }
 
-.assessment-navigation button.is-active {
+.assessment-navigation > button.is-active {
   background: var(--assessment-white);
   color: var(--assessment-black);
   box-shadow: 0 3px 12px rgba(8, 55, 93, 0.08);
 }
 
-.assessment-navigation button span {
+.assessment-navigation > button span {
   display: grid;
   min-width: 22px;
   height: 22px;
@@ -236,6 +237,32 @@
   background: var(--assessment-soft-blue);
   color: var(--assessment-navy);
   font-size: 0.72rem;
+}
+
+.assessment-view-application {
+  display: grid;
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  margin-left: 6px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--assessment-white);
+  color: var(--assessment-navy);
+  box-shadow: 0 3px 12px rgba(8, 55, 93, 0.08);
+  font-size: 1.08rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.assessment-view-application:hover {
+  background: var(--assessment-soft-blue);
+  color: var(--assessment-navy);
+}
+
+.assessment-view-application:focus-visible {
+  outline: 2px solid var(--assessment-turquoise);
+  outline-offset: 2px;
 }
 
 .assessment-live-region {
@@ -879,6 +906,54 @@
   gap: 22px;
 }
 
+.assessment-password-workflow {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid #b8dfe5;
+  border-radius: 18px;
+  background: #f2fbfc;
+}
+
+.assessment-password-workflow > div {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  color: var(--assessment-black);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.assessment-password-workflow strong {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--assessment-navy);
+  color: var(--assessment-white);
+  font-size: 0.72rem;
+}
+
+.assessment-password-workflow > a {
+  width: fit-content;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: var(--assessment-turquoise);
+  color: var(--assessment-white);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.assessment-password-workflow > a:hover {
+  background: var(--assessment-navy);
+  color: var(--assessment-white);
+}
+
 .assessment-cohort-list-section,
 .assessment-cohort-create {
   padding: 20px;
@@ -1191,8 +1266,21 @@
   }
 
   .assessment-navigation {
-    width: fit-content;
-    grid-template-columns: repeat(3, 150px);
+    width: 100%;
+  }
+
+  .assessment-navigation > button {
+    flex: 0 0 150px;
+  }
+
+  .assessment-password-workflow {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    align-items: center;
+    padding: 16px 18px;
+  }
+
+  .assessment-password-workflow > a {
+    margin: 0 0 0 6px;
   }
 
   .assessment-live-region {
