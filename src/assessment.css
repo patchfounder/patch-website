@@ -233,6 +233,14 @@
   stroke-width: 1.8;
 }
 
+.assessment-add-window svg {
+  transition: transform 150ms ease;
+}
+
+.assessment-add-window[aria-expanded="true"] svg {
+  transform: rotate(45deg);
+}
+
 .assessment-icon-action:hover,
 .assessment-add-window[aria-expanded="true"] {
   background: var(--assessment-soft-blue);
@@ -924,26 +932,28 @@
   outline: none;
 }
 
-.assessment-cohort-create > h2:focus-visible {
-  outline: 2px solid var(--assessment-turquoise);
-  outline-offset: 5px;
-  border-radius: 4px;
-}
-
 .assessment-cohort-create form {
   display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 22px;
 }
 
 .assessment-field-row {
   display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 20px;
 }
 
 .assessment-field {
   display: grid;
+  width: 100%;
   gap: 10px;
   min-width: 0;
+  max-width: 100%;
   color: var(--assessment-black);
   font-size: 0.82rem;
   font-weight: 400;
@@ -952,6 +962,7 @@
 .assessment-field input {
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: 52px;
   padding: 11px 14px;
   border: 1px solid #c7d0d2;
@@ -965,6 +976,25 @@
     background-color 150ms ease,
     border-color 150ms ease,
     box-shadow 150ms ease;
+}
+
+.assessment-field input[type="datetime-local"] {
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0 !important;
+  max-inline-size: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+}
+
+.assessment-field input[type="datetime-local"]::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+
+.assessment-field input[type="datetime-local"]::-webkit-datetime-edit {
+  min-width: 0;
 }
 
 .assessment-field input:hover {
@@ -1058,6 +1088,35 @@
 .assessment-cohort-create .assessment-button-primary {
   width: 100%;
   margin-top: 2px;
+}
+
+@media (max-width: 559px) {
+  .assessment-cohorts {
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .assessment-cohort-create {
+    gap: 18px;
+    padding: 18px;
+    scroll-margin-top: calc(84px + env(safe-area-inset-top));
+  }
+
+  .assessment-cohort-create > h2 {
+    font-size: 1.22rem;
+  }
+
+  .assessment-cohort-create form {
+    gap: 18px;
+  }
+
+  .assessment-field-row {
+    gap: 16px;
+  }
+
+  .assessment-field {
+    gap: 8px;
+  }
 }
 
 .assessment-access {

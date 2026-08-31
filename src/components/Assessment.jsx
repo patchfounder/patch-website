@@ -529,7 +529,7 @@ export default function Assessment() {
           onRemove={handleRemoveWindow}
         />
 
-        {reviewerState.currentCohort && (
+        {reviewerState.currentCohort && !isWindowFormOpen && (
           <AssessmentQueue
             application={queue[0] || null}
             waitingCount={waitingTotal}

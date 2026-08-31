@@ -76,7 +76,7 @@ export default function AssessmentCohorts({
     setForm(defaultApplicationWindow());
     setFormError('');
     setPasswordVisible(false);
-    createHeadingRef.current?.focus();
+    createHeadingRef.current?.focus({ preventScroll: true });
   }, [showCreateForm]);
 
   useEffect(() => {
@@ -189,7 +189,7 @@ export default function AssessmentCohorts({
 
   return (
     <div className="assessment-cohorts">
-      {currentWindow && (
+      {currentWindow && !showCreateForm && (
         <section className="assessment-current-cohort" aria-labelledby="assessment-window-title">
           <header>
             <div>
@@ -252,7 +252,7 @@ export default function AssessmentCohorts({
         </section>
       )}
 
-      {currentWindow && removeOpen && (
+      {currentWindow && !showCreateForm && removeOpen && (
         <div
           className="assessment-cohort-delete-backdrop"
           onClick={(event) => {
