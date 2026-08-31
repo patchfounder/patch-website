@@ -51,18 +51,6 @@ const routes = [
     title: 'Legal | Patch',
     description: 'Legal information for Patch, including privacy, terms, and account deletion.',
   },
-  {
-    path: 'coach-application',
-    title: 'Legal Speaking Coach Application | Patch',
-    description: 'Apply to become a Legal Speaking Coach at Patch.',
-    robots: 'noindex, nofollow, noarchive',
-  },
-  {
-    path: 'assessment',
-    title: 'Recruitment Assessment | Patch',
-    description: 'Private Patch recruitment assessment.',
-    robots: 'noindex, nofollow, noarchive',
-  },
 ];
 
 function escapeHtml(value) {
@@ -77,12 +65,9 @@ function createMetaBlock(route) {
   const title = escapeHtml(route.title);
   const description = escapeHtml(route.description);
   const url = `https://www.patch.app/${route.path}`;
-  const robots = route.robots
-    ? `\n    <meta name="robots" content="${escapeHtml(route.robots)}" />`
-    : '';
 
   return `    <title>${title}</title>
-    <meta name="description" content="${description}" />${robots}
+    <meta name="description" content="${description}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Patch" />
     <meta property="og:title" content="${title}" />
@@ -108,7 +93,6 @@ function removeExistingMeta(headContent) {
       if (
         /^<title>/i.test(tag) ||
         /\bname="description"/.test(tag) ||
-        /\bname="robots"/.test(tag) ||
         /\bproperty="og:[^"]+"/.test(tag) ||
         /\bname="twitter:[^"]+"/.test(tag) ||
         (/\brel="image_src"/.test(tag) && /^<link\b/i.test(tag))
