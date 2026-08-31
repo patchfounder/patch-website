@@ -107,19 +107,6 @@ function reviewerApplication(application) {
   });
 }
 
-const madridMonthFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Madrid",
-  year: "numeric",
-  month: "2-digit",
-});
-
-function madridMonthKey(isoTimestamp) {
-  const parts = Object.fromEntries(madridMonthFormatter.formatToParts(new Date(isoTimestamp))
-    .filter((part) => part.type !== "literal")
-    .map((part) => [part.type, part.value]));
-  return `${parts.year}-${parts.month}`;
-}
-
 export function createRecruitmentService(options = {}) {
   const database = options.database;
   const storage = options.storage;
@@ -345,12 +332,6 @@ export function createRecruitmentService(options = {}) {
     const closesAt = normalizeMadridTimestamp(input.closesAt);
     if (Date.parse(opensAt) >= Date.parse(closesAt)) {
       throw new RecruitmentServiceError("Cohort closing time must follow its opening time.", "invalid_window");
-    }
-    if (madridMonthKey(opensAt) !== monthKey) {
-      throw new RecruitmentServiceError(
-        "Cohort opening time must fall within its Europe/Madrid month.",
-        "cohort_month_mismatch",
-      );
     }
     const password = await hashCohortPassword(input.password);
     return {

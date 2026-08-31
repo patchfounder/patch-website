@@ -183,7 +183,7 @@ JSON:
 }
 ```
 
-Local timestamps without offsets are interpreted in `Europe/Madrid`, rejected if a DST time is missing or ambiguous, and stored as UTC ISO strings. An explicit RFC 3339 offset is also accepted. This endpoint creates and activates the cohort in one database transaction: the old `current` becomes `previous`, older retained data and any legacy `next` cohort are removed, and no draft remains if the operation fails. The new month must be later than the retained `current` or `previous` cohort. Activation is rejected while the current cohort still has applications waiting for a decision.
+Local timestamps without offsets are interpreted in `Europe/Madrid`, rejected if a DST time is missing or ambiguous, and stored as UTC ISO strings. An explicit RFC 3339 offset is also accepted. The cohort month and display name do not constrain the opening or deadline dates. For the current cohort, applicant access is available from `opensAt` inclusive until `closesAt` exclusive, and the shared password is invalid outside that exact window. This endpoint creates and activates the cohort in one database transaction: the old `current` becomes `previous`, older retained data and any legacy `next` cohort are removed, and no draft remains if the operation fails. The new month label must be later than the retained `current` or `previous` cohort. Activation is rejected while the current cohort still has applications waiting for a decision.
 
 The full purged cohort-month audio folders are first moved into private quarantine, including orphan files that lack metadata. SQLite then removes applications and metadata in the same transition; quarantine is deleted only after commit and restored if the database transaction fails.
 

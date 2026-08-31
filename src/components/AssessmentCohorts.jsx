@@ -383,7 +383,13 @@ export default function AssessmentCohorts({
                           setDeleteError('');
                         }}
                       >
-                        Delete
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M4 7h16" />
+                          <path d="M9 7V4h6v3" />
+                          <path d="m6.5 7 .75 13h9.5l.75-13" />
+                          <path d="M10 11v5M14 11v5" />
+                        </svg>
+                        <span>Delete</span>
                       </button>
                     )}
                   </header>
@@ -543,7 +549,12 @@ export default function AssessmentCohorts({
 
           {formError && (
             <p className="assessment-form-error" role="alert">
-              {formError}
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 3.5 21 20H3L12 3.5Z" />
+                <path d="M12 9v5" />
+                <path d="M12 17.25h.01" />
+              </svg>
+              <span>{formError}</span>
             </p>
           )}
 

@@ -191,76 +191,116 @@
   margin-bottom: 0;
   color: #687173 !important;
   font-size: 0.88rem !important;
+  line-height: 1.2 !important;
 }
 
 .assessment-intro-status strong {
   color: var(--assessment-black);
   font-size: 1.45rem;
   font-weight: 550;
+  line-height: 1;
 }
 
 .assessment-navigation {
   display: flex;
   align-items: center;
-  padding: 4px;
-  border: 1px solid var(--assessment-line);
-  border-radius: 14px;
-  background: #e9eeee;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .assessment-navigation > button {
   display: inline-flex;
   flex: 1 1 0;
   min-width: 0;
-  min-height: 46px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 6px;
-  border-radius: 10px;
-  background: transparent;
-  color: #596365;
+  gap: 7px;
+  padding: 8px 12px;
+  border-top: 1px solid #d9e0e2;
+  border-bottom: 1px solid #d9e0e2;
+  border-radius: 0;
+  background: #edf1f1;
+  color: #556164;
   cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.assessment-navigation > button:first-child {
+  border-left: 1px solid #d9e0e2;
+  border-radius: 11px 0 0 11px;
+}
+
+.assessment-navigation > button:nth-of-type(2),
+.assessment-navigation > button:nth-of-type(3) {
+  border-left: 1px solid #d9e0e2;
+}
+
+.assessment-navigation > button:nth-of-type(3) {
+  border-right: 1px solid #d9e0e2;
+  border-radius: 0 11px 11px 0;
+}
+
+.assessment-navigation > button:not(.is-active):hover {
+  background: #f5f7f7;
+  color: var(--assessment-black);
 }
 
 .assessment-navigation > button.is-active {
+  position: relative;
+  z-index: 1;
   background: var(--assessment-white);
   color: var(--assessment-black);
-  box-shadow: 0 3px 12px rgba(8, 55, 93, 0.08);
+  box-shadow:
+    inset 0 0 0 1px #cbd5d7,
+    0 1px 4px rgba(8, 55, 93, 0.1);
 }
 
 .assessment-navigation > button span {
   display: grid;
-  min-width: 22px;
-  height: 22px;
+  min-width: 20px;
+  height: 20px;
   place-items: center;
   border-radius: 999px;
-  background: var(--assessment-soft-blue);
-  color: var(--assessment-navy);
-  font-size: 0.72rem;
+  background: rgba(8, 55, 93, 0.07);
+  color: #36536a;
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .assessment-view-application {
   display: grid;
-  width: 46px;
-  min-width: 46px;
-  height: 46px;
-  margin-left: 6px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  margin-left: 8px;
   place-items: center;
-  border-radius: 10px;
+  border: 1px solid #d9e0e2;
+  border-radius: 11px;
   background: var(--assessment-white);
   color: var(--assessment-navy);
-  box-shadow: 0 3px 12px rgba(8, 55, 93, 0.08);
-  font-size: 1.08rem;
-  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(8, 55, 93, 0.06);
+  font-size: 1rem;
+  font-weight: 600;
   text-decoration: none;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .assessment-view-application:hover {
   background: var(--assessment-soft-blue);
+  border-color: #c4d0d3;
   color: var(--assessment-navy);
+  box-shadow: 0 2px 6px rgba(8, 55, 93, 0.08);
 }
 
 .assessment-view-application:focus-visible {
@@ -906,7 +946,8 @@
 .assessment-cohort-list-section,
 .assessment-cohort-create {
   padding: 20px;
-  box-shadow: none;
+  border-color: #dbe2e3;
+  box-shadow: 0 10px 30px rgba(8, 55, 93, 0.045);
 }
 
 .assessment-cohort-list-heading {
@@ -929,11 +970,12 @@
 .assessment-cohort-card {
   display: grid;
   width: 100%;
-  gap: 18px;
+  gap: 20px;
   padding: 17px;
-  border: 1px solid var(--assessment-line);
+  border: 1px solid #e0e6e7;
   border-radius: 15px;
-  background: #fafcfc;
+  background: #fbfcfc;
+  box-shadow: 0 1px 2px rgba(8, 55, 93, 0.025);
 }
 
 .assessment-cohort-card > header {
@@ -943,8 +985,13 @@
   gap: 12px;
 }
 
+.assessment-cohort-card > header > div {
+  min-width: 0;
+}
+
 .assessment-cohort-card h4 {
   margin-top: 9px;
+  overflow-wrap: anywhere;
 }
 
 .assessment-cohort-card header p {
@@ -960,8 +1007,31 @@
 }
 
 .assessment-cohort-delete-trigger {
-  border-color: #d9a9a5 !important;
-  background: var(--assessment-white);
+  gap: 7px;
+  min-width: auto !important;
+  padding: 7px 9px !important;
+  border-color: transparent !important;
+  border-radius: 8px;
+  background: transparent;
+  color: #8c4641;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.assessment-cohort-delete-trigger svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.65;
+}
+
+.assessment-cohort-card .assessment-cohort-delete-trigger:not(:disabled):hover,
+.assessment-cohort-delete-trigger[aria-expanded="true"] {
+  transform: none;
+  background: var(--assessment-danger-soft);
   color: var(--assessment-danger);
 }
 
@@ -983,9 +1053,27 @@
   padding-top: 16px;
 }
 
-.assessment-cohort-counts dd {
-  font-size: 1.15rem;
+.assessment-cohort-dates dt,
+.assessment-cohort-counts dt {
+  color: #616d70;
+  font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.assessment-cohort-dates dd {
+  color: #293436;
+  font-size: 0.9rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.assessment-cohort-counts dd {
+  color: #293436;
+  font-size: 1.03rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
 
 .assessment-cohort-delete-confirmation {
@@ -1018,7 +1106,7 @@
 
 .assessment-cohort-create {
   display: grid;
-  gap: 20px;
+  gap: 24px;
 }
 
 .assessment-cohort-create > h3 {
@@ -1027,39 +1115,59 @@
 
 .assessment-cohort-create form {
   display: grid;
-  gap: 17px;
+  gap: 22px;
 }
 
 .assessment-field-row {
   display: grid;
-  gap: 17px;
+  gap: 20px;
 }
 
 .assessment-field {
   display: grid;
-  gap: 7px;
+  gap: 10px;
   min-width: 0;
   color: var(--assessment-black);
   font-size: 0.82rem;
-  font-weight: 650;
+  font-weight: 400;
 }
 
 .assessment-field input,
 .assessment-field select {
   width: 100%;
   min-width: 0;
-  min-height: 50px;
-  padding: 10px 13px;
-  border: 1px solid #bfc9cb;
-  border-radius: 10px;
-  background: var(--assessment-white);
+  min-height: 52px;
+  padding: 11px 14px;
+  border: 1px solid #c7d0d2;
+  border-radius: 12px;
+  background: #fbfcfc;
   color: var(--assessment-black);
   font-size: 16px;
-  font-weight: 450;
+  font-weight: 400;
+  box-shadow: 0 1px 2px rgba(8, 55, 93, 0.035);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .assessment-field select {
   cursor: pointer;
+}
+
+.assessment-field input:hover,
+.assessment-field select:hover {
+  border-color: #aebabc;
+  background: var(--assessment-white);
+}
+
+.assessment-page .assessment-field input:focus-visible,
+.assessment-page .assessment-field select:focus-visible {
+  outline: 3px solid rgba(0, 127, 147, 0.16);
+  outline-offset: 1px;
+  border-color: var(--assessment-turquoise);
+  background: var(--assessment-white);
+  box-shadow: 0 0 0 1px rgba(0, 127, 147, 0.26);
 }
 
 .assessment-password-control {
@@ -1072,8 +1180,8 @@
 
 .assessment-password-control > button {
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: 4px;
+  right: 4px;
   display: inline-flex;
   min-width: 44px;
   min-height: 44px;
@@ -1106,6 +1214,35 @@
   font-size: 0.72rem;
   font-weight: 450;
   line-height: 1.4;
+}
+
+.assessment-form-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid #edc1bd;
+  border-radius: 10px;
+  background: var(--assessment-danger-soft);
+  color: #762d28 !important;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.assessment-form-error svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  margin-top: 1px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.assessment-form-error span {
+  min-width: 0;
 }
 
 .assessment-cohort-create .assessment-button-primary {
@@ -1270,12 +1407,21 @@
     margin-bottom: 34px;
   }
 
+  .assessment-intro-status {
+    align-self: end;
+    padding-bottom: 4px;
+  }
+
   .assessment-navigation {
     width: 100%;
   }
 
   .assessment-navigation > button {
-    flex: 0 0 150px;
+    flex: 0 0 128px;
+  }
+
+  .assessment-view-application {
+    margin-left: auto;
   }
 
   .assessment-live-region {

@@ -188,6 +188,76 @@ test("service preserves only current/previous cohorts and attempts each outcome 
   }
 });
 
+test("cohort labels do not constrain the exact password access window", async () => {
+  const dataRoot = temporaryDataRoot("recruitment-window-label");
+  const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });
+  storage.initialize();
+  const database = createRecruitmentDatabase({ databasePath: storage.databasePath });
+  let now = new Date("2026-09-01T06:59:59.999Z");
+  const service = createRecruitmentService({
+    database,
+    storage,
+    emailSender: { configured: true, async sendOutcome() { return { ok: true }; } },
+    now: () => now,
+  });
+
+  try {
+    await assert.rejects(
+      service.createAndActivateCohort({
+        slug: "2026-10",
+        displayName: "October 2026",
+        password: "invalid-window-password",
+        opensAt: "2026-09-04T17:00",
+        closesAt: "2026-09-04T17:00",
+      }),
+      (error) => error.code === "invalid_window",
+      "the deadline must still follow the opening time",
+    );
+
+    const activated = await service.createAndActivateCohort({
+      slug: "2026-10",
+      displayName: "October 2026",
+      password: "october-label-september-window",
+      opensAt: "2026-09-01T09:00",
+      closesAt: "2026-09-04T17:00",
+    });
+    assert.equal(activated.current.slug, "2026-10");
+    assert.equal(activated.current.opensAt, "2026-09-01T07:00:00.000Z");
+    assert.equal(activated.current.closesAt, "2026-09-04T15:00:00.000Z");
+
+    await assert.rejects(
+      service.unlockApplicant("october-label-september-window"),
+      (error) => error.code === "cohort_not_open" && error.statusCode === 403,
+      "the password is invalid immediately before the chosen opening time",
+    );
+
+    now = new Date(activated.current.opensAt);
+    const unlocked = await service.unlockApplicant("october-label-september-window");
+    assert.equal(unlocked.cohort.slug, "2026-10");
+
+    now = new Date(Date.parse(activated.current.closesAt) - 1);
+    assert.equal(
+      service.validateApplicantSession(unlocked.sessionPayload).cohort.cohortId,
+      activated.current.cohortId,
+    );
+
+    now = new Date(activated.current.closesAt);
+    await assert.rejects(
+      service.unlockApplicant("october-label-september-window"),
+      (error) => error.code === "cohort_not_open" && error.statusCode === 403,
+      "the password is invalid at the chosen deadline",
+    );
+    assert.throws(
+      () => service.validateApplicantSession(unlocked.sessionPayload),
+      (error) => error.code === "applicant_session_expired",
+      "an existing applicant session expires at the chosen deadline",
+    );
+  } finally {
+    database.close();
+    rmSync(dataRoot, { recursive: true, force: true });
+  }
+});
+
 test("a database failure removes the just-promoted private audio", () => {
   const dataRoot = temporaryDataRoot("recruitment-cleanup");
   const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });
