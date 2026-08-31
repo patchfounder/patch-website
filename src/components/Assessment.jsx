@@ -486,7 +486,9 @@ export default function Assessment() {
     try {
       await reviewerRequest('/cohorts', { method: 'POST', body: cohort });
       await Promise.all([loadCohorts(), loadReviewerState({ quiet: true })]);
-      setNotice(`${cohort.displayName} was created. Its password was not retained in this interface.`);
+      setNotice(
+        `${cohort.displayName} and its shared applicant password were created. Activate the cohort when you are ready to open applications.`,
+      );
     } catch (error) {
       if (error?.status === 401 || error?.status === 403) invalidateReviewerSession();
       throw error;
@@ -608,6 +610,16 @@ export default function Assessment() {
           >
             Cohorts
           </button>
+          <a
+            className="assessment-view-application"
+            href="/coach-application"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="View the applicant-facing application page"
+            title="View applicant page"
+          >
+            <span aria-hidden="true">↗</span>
+          </a>
         </nav>
 
         <div className="assessment-live-region" role="status" aria-live="polite">

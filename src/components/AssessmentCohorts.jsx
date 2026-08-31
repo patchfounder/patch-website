@@ -295,12 +295,28 @@ export default function AssessmentCohorts({
   return (
     <div className="assessment-cohorts">
       <div className="assessment-section-intro">
-        <p className="assessment-eyebrow">Monthly recruitment</p>
-        <h2>Cohort manager</h2>
+        <p className="assessment-eyebrow">Monthly application access</p>
+        <h2>Create the password applicants will use</h2>
         <p>
-          Prepare the next monthly cohort, then activate it only after the current cohort has been
-          fully reviewed.
+          Each month, choose one shared password, set the Sunday-to-Friday application window and
+          activate it. Everyone you invite that month uses the same password.
         </p>
+      </div>
+
+      <div className="assessment-password-workflow" aria-label="Monthly password workflow">
+        <div>
+          <strong>1</strong>
+          <span>Choose the shared password</span>
+        </div>
+        <div>
+          <strong>2</strong>
+          <span>Set the opening and deadline</span>
+        </div>
+        <div>
+          <strong>3</strong>
+          <span>Activate and send it out</span>
+        </div>
+        <a href="#assessment-cohort-create-title">Create next month’s password ↓</a>
       </div>
 
       {error && (
@@ -314,7 +330,7 @@ export default function AssessmentCohorts({
 
       <section className="assessment-cohort-list-section" aria-labelledby="assessment-cohort-list-title">
         <div className="assessment-cohort-list-heading">
-          <h3 id="assessment-cohort-list-title">Cohorts</h3>
+          <h3 id="assessment-cohort-list-title">Monthly cohorts</h3>
           {isLoading && <span role="status">Updating…</span>}
         </div>
 
@@ -460,11 +476,11 @@ export default function AssessmentCohorts({
 
       <section className="assessment-cohort-create" aria-labelledby="assessment-cohort-create-title">
         <div>
-          <p className="assessment-eyebrow">Next month</p>
-          <h3 id="assessment-cohort-create-title">Create a cohort</h3>
+          <p className="assessment-eyebrow">Next month’s applicant access</p>
+          <h3 id="assessment-cohort-create-title">Create a cohort and password</h3>
           <p>
-            The cohort password is accepted once and is never displayed again. Store it securely
-            before submitting this form.
+            Enter the password you will send to every invited applicant. It remains reusable for
+            the whole application window and is not displayed again after creation.
           </p>
         </div>
 
@@ -498,7 +514,7 @@ export default function AssessmentCohorts({
           </div>
 
           <label className="assessment-field">
-            <span>Cohort password</span>
+            <span>Shared applicant password</span>
             <input
               name="password"
               type="password"
@@ -508,12 +524,14 @@ export default function AssessmentCohorts({
               spellCheck="false"
               required
             />
-            <small>Use a strong, unique password. It will not be echoed after creation.</small>
+            <small>
+              Write this down before continuing. Everyone invited this month will use it.
+            </small>
           </label>
 
           <div className="assessment-field-row">
             <label className="assessment-field">
-              <span>Opens</span>
+              <span>Application opens · Madrid time</span>
               <input
                 name="opensAt"
                 type="datetime-local"
@@ -523,7 +541,7 @@ export default function AssessmentCohorts({
               />
             </label>
             <label className="assessment-field">
-              <span>Closes</span>
+              <span>Application deadline · Madrid time</span>
               <input
                 name="closesAt"
                 type="datetime-local"
@@ -545,7 +563,7 @@ export default function AssessmentCohorts({
             type="submit"
             disabled={isCreating}
           >
-            {isCreating ? 'Creating cohort…' : 'Create cohort'}
+            {isCreating ? 'Creating cohort and password…' : 'Create cohort and password'}
           </button>
         </form>
       </section>
