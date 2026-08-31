@@ -60,7 +60,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
       const payload = await readJson(response);
 
       if (response.status === 503) {
-        setGateState('unavailable');
+        setGateState('error');
         return;
       }
 
@@ -71,7 +71,9 @@ export default function CoachPasswordGate({ onUnlocked }) {
 
       const nextState = payloadState(payload);
       if (nextState === 'unlocked') {
-        onUnlocked?.();
+        // Opening the applicant route from the back office must always show the
+        // password screen, even if this browser still has an older valid cookie.
+        setGateState('locked');
         return;
       }
 
@@ -142,7 +144,12 @@ export default function CoachPasswordGate({ onUnlocked }) {
         return;
       }
 
-      if (response.status === 503 || nextState === 'unavailable') {
+      if (response.status === 503) {
+        setGateState('error');
+        return;
+      }
+
+      if (nextState === 'unavailable') {
         setGateState('unavailable');
         return;
       }
@@ -165,7 +172,25 @@ export default function CoachPasswordGate({ onUnlocked }) {
     }
   };
 
-  const isMessageState = ['not_open', 'closed', 'unavailable', 'error'].includes(gateState);
+  const showsLogin = ['locked', 'not_open', 'closed', 'unavailable'].includes(gateState);
+  const canUnlock = gateState === 'locked';
+  const accessMessage =
+    gateState === 'unavailable'
+      ? {
+          title: 'Applications are not currently open',
+          copy: 'No application password is active. Use the timing and password in your LinkedIn invitation, then check again.',
+        }
+      : gateState === 'not_open'
+        ? {
+            title: 'This cohort has not opened yet',
+            copy: 'A cohort password exists, but it will only work when the application window opens.',
+          }
+        : gateState === 'closed'
+          ? {
+              title: 'This cohort has closed',
+              copy: 'This application password is no longer active. Follow the timing in your LinkedIn invitation.',
+            }
+          : null;
 
   return (
     <main className="coach-recruitment-ui coach-gate-shell">
@@ -190,13 +215,20 @@ export default function CoachPasswordGate({ onUnlocked }) {
           </div>
         )}
 
-        {gateState === 'locked' && (
+        {showsLogin && (
           <form className="coach-gate-form" onSubmit={unlock} noValidate>
             <span className="coach-gate-kicker">Legal Speaking Coach</span>
-            <h1 id="coach-gate-title">Start your application</h1>
+            <h1 id="coach-gate-title">Application login</h1>
             <p>
               Enter the application password from the invitation sent to you through LinkedIn.
             </p>
+
+            {accessMessage && (
+              <div className="coach-gate-access-note" role="status">
+                <strong>{accessMessage.title}</strong>
+                <span>{accessMessage.copy}</span>
+              </div>
+            )}
 
             <label className="coach-field coach-gate-password" htmlFor="coach-application-password">
               <span>Application password</span>
@@ -212,6 +244,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
                 }}
                 autoComplete="current-password"
                 maxLength="200"
+                disabled={!canUnlock || isUnlocking}
                 required
                 aria-invalid={Boolean(passwordError)}
                 aria-describedby={passwordError ? 'coach-password-error' : 'coach-password-note'}
@@ -227,11 +260,29 @@ export default function CoachPasswordGate({ onUnlocked }) {
             <button
               className="coach-control coach-primary-button coach-gate-submit"
               type="submit"
-              disabled={isUnlocking}
+              disabled={!canUnlock || isUnlocking}
             >
-              {isUnlocking ? 'Unlocking…' : 'Continue'}
-              {!isUnlocking && <span aria-hidden="true">→</span>}
+              {isUnlocking
+                ? 'Unlocking…'
+                : gateState === 'unavailable'
+                  ? 'No active password'
+                  : gateState === 'not_open'
+                    ? 'Applications not open'
+                    : gateState === 'closed'
+                      ? 'Applications closed'
+                      : 'Continue'}
+              {canUnlock && !isUnlocking && <span aria-hidden="true">→</span>}
             </button>
+
+            {!canUnlock && (
+              <button
+                className="coach-control coach-secondary-button coach-gate-refresh"
+                type="button"
+                onClick={checkStatus}
+              >
+                Check again
+              </button>
+            )}
 
             <p className="coach-gate-help">
               The application includes a voice note of up to 60 seconds. Use Safari or Chrome and
@@ -240,30 +291,15 @@ export default function CoachPasswordGate({ onUnlocked }) {
           </form>
         )}
 
-        {isMessageState && (
+        {gateState === 'error' && (
           <div className="coach-gate-state" role="status">
-            <span className="coach-gate-state-mark" aria-hidden="true">
-              {gateState === 'closed' || gateState === 'not_open' ? '—' : '!'}
-            </span>
+            <span className="coach-gate-state-mark" aria-hidden="true">!</span>
             <span className="coach-gate-kicker">Legal Speaking Coach</span>
-            <h1 id="coach-gate-title">
-              {gateState === 'not_open' && 'Applications have not opened yet'}
-              {gateState === 'closed' && 'Applications are currently closed'}
-              {gateState === 'unavailable' && 'Application access is temporarily unavailable'}
-              {gateState === 'error' && 'We could not check application access'}
-            </h1>
-            <p>
-              {gateState === 'not_open'
-                ? 'The next application window is not open yet. Please use the timing in your LinkedIn invitation.'
-                : gateState === 'closed'
-                ? 'The current application window has ended. Please follow the details in your LinkedIn invitation.'
-                : 'No application details have been submitted. Check your connection and try again shortly.'}
-            </p>
-            {gateState !== 'closed' && gateState !== 'not_open' && (
-              <button className="coach-control coach-secondary-button" type="button" onClick={checkStatus}>
-                Try again
-              </button>
-            )}
+            <h1 id="coach-gate-title">We could not check application access</h1>
+            <p>No application details have been submitted. Check your connection and try again shortly.</p>
+            <button className="coach-control coach-secondary-button" type="button" onClick={checkStatus}>
+              Try again
+            </button>
             <a className="coach-gate-home-link" href="/">Return to Patch</a>
           </div>
         )}
