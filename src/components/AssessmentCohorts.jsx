@@ -182,7 +182,9 @@ export default function AssessmentCohorts({
   const [isDeleting, setIsDeleting] = useState(false);
   const createHeadingRef = useRef(null);
   const deleteTriggerRef = useRef(null);
+  const deleteDialogRef = useRef(null);
   const deleteCancelRef = useRef(null);
+  const deleteConfirmRef = useRef(null);
   const currentId = cohortId(currentCohort);
 
   useEffect(() => {
@@ -200,8 +202,27 @@ export default function AssessmentCohorts({
   }, [showCreateForm]);
 
   useEffect(() => {
-    if (deleteOpen) deleteCancelRef.current?.focus();
+    if (!deleteOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    deleteCancelRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.requestAnimationFrame(() => deleteTriggerRef.current?.focus());
+    };
   }, [deleteOpen]);
+
+  useEffect(() => {
+    if (!deleteOpen) return;
+
+    if (isDeleting) {
+      deleteDialogRef.current?.focus();
+    } else {
+      deleteCancelRef.current?.focus();
+    }
+  }, [deleteOpen, isDeleting]);
 
   useEffect(() => {
     setDeleteOpen(false);
@@ -281,9 +302,42 @@ export default function AssessmentCohorts({
   };
 
   const cancelDelete = () => {
+    if (isDeleting) return;
     setDeleteOpen(false);
     setDeleteError('');
-    window.requestAnimationFrame(() => deleteTriggerRef.current?.focus());
+  };
+
+  const handleDeleteDialogKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelDelete();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const dialog = deleteDialogRef.current;
+    const focusableButtons = [deleteCancelRef.current, deleteConfirmRef.current].filter(
+      (button) => button && !button.disabled,
+    );
+
+    if (!focusableButtons.length) {
+      event.preventDefault();
+      dialog?.focus();
+      return;
+    }
+
+    const firstButton = focusableButtons[0];
+    const lastButton = focusableButtons[focusableButtons.length - 1];
+    const activeElement = document.activeElement;
+
+    if (event.shiftKey && (activeElement === firstButton || !dialog?.contains(activeElement))) {
+      event.preventDefault();
+      lastButton.focus();
+    } else if (!event.shiftKey && (activeElement === lastButton || !dialog?.contains(activeElement))) {
+      event.preventDefault();
+      firstButton.focus();
+    }
   };
 
   return (
@@ -301,6 +355,7 @@ export default function AssessmentCohorts({
                 className="assessment-button assessment-cohort-delete-trigger"
                 type="button"
                 ref={deleteTriggerRef}
+                aria-haspopup="dialog"
                 aria-expanded={deleteOpen}
                 aria-controls={deleteOpen ? 'assessment-delete-current-cohort' : undefined}
                 onClick={() => {
@@ -351,44 +406,59 @@ export default function AssessmentCohorts({
               <dd>{processedCount(currentCohort)}</dd>
             </div>
           </dl>
-
-          {deleteOpen && (
-            <div
-              className="assessment-cohort-delete-confirmation"
-              id="assessment-delete-current-cohort"
-              role="group"
-              aria-labelledby="assessment-delete-current-cohort-question"
-            >
-              <p id="assessment-delete-current-cohort-question">
-                Delete {cohortName(currentCohort)} and all its applications and recordings?
-              </p>
-              {deleteError && (
-                <p className="assessment-confirmation-error" role="alert">
-                  {deleteError}
-                </p>
-              )}
-              <div>
-                <button
-                  className="assessment-button assessment-button-secondary"
-                  type="button"
-                  ref={deleteCancelRef}
-                  onClick={cancelDelete}
-                  disabled={isDeleting}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="assessment-button assessment-button-danger"
-                  type="button"
-                  onClick={deleteActiveCohort}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? 'Deleting…' : 'Delete cohort'}
-                </button>
-              </div>
-            </div>
-          )}
         </section>
+      )}
+
+      {currentCohort && deleteOpen && (
+        <div
+          className="assessment-cohort-delete-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) cancelDelete();
+          }}
+        >
+          <div
+            className="assessment-cohort-delete-dialog"
+            id="assessment-delete-current-cohort"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="assessment-delete-current-cohort-title"
+            aria-describedby="assessment-delete-current-cohort-message"
+            aria-busy={isDeleting}
+            ref={deleteDialogRef}
+            tabIndex="-1"
+            onKeyDown={handleDeleteDialogKeyDown}
+          >
+            <h2 id="assessment-delete-current-cohort-title">Delete cohort?</h2>
+            <p id="assessment-delete-current-cohort-message">
+              Are you sure you want to delete {cohortName(currentCohort)}?
+            </p>
+            {deleteError && (
+              <p className="assessment-confirmation-error" role="alert">
+                {deleteError}
+              </p>
+            )}
+            <div className="assessment-cohort-delete-actions">
+              <button
+                className="assessment-button assessment-button-secondary"
+                type="button"
+                ref={deleteCancelRef}
+                onClick={cancelDelete}
+                disabled={isDeleting}
+              >
+                No
+              </button>
+              <button
+                className="assessment-button assessment-button-danger"
+                type="button"
+                ref={deleteConfirmRef}
+                onClick={deleteActiveCohort}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting…' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showCreateForm && (

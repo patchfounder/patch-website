@@ -378,6 +378,7 @@ export default function Assessment() {
         method: 'DELETE',
         body: { confirm: true },
       });
+      setIsCohortFormOpen(false);
       setReviewerState((state) => ({
         ...state,
         currentCohort: null,
@@ -402,6 +403,7 @@ export default function Assessment() {
         refreshed?.authenticated
         && !refreshed.currentCohort
       ) {
+        setIsCohortFormOpen(false);
         setNotice('The active cohort was deleted. Applicant access is closed.');
         return;
       }
