@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import Footer from './Footer.jsx';
-import Header from './Header.jsx';
 import CoachApplicationSuccess from './CoachApplicationSuccess.jsx';
 import CoachPasswordGate from './CoachPasswordGate.jsx';
 import CoachSubmissionSection from './CoachSubmissionSection.jsx';
@@ -17,6 +16,29 @@ const LAW_FIRMS = [
 ];
 
 const CAROUSEL_FIRMS = Array.from({ length: 4 }, () => LAW_FIRMS).flat();
+
+function CoachApplicationHeader() {
+  return (
+    <header className="site-header">
+      <div className="nav-shell">
+        <nav className="nav-links" aria-label="Main navigation">
+          {APPLICATION_NAVIGATION.map((item) => (
+            <a href={item.href} key={item.href}>
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <a className="brand" href="/" aria-label="Patch home">
+          <span className="brand-logo-crop">
+            <img className="brand-logo brand-logo-dark" src="/patch-logo-2.png" alt="Patch" />
+            <img className="brand-logo brand-logo-light" src="/patch-logo-white.png" alt="" />
+          </span>
+        </a>
+      </div>
+    </header>
+  );
+}
 
 function ProcessArrow() {
   return (
@@ -309,7 +331,7 @@ export default function CoachApplication() {
 
   return (
     <div className="application-page coach-application-page coach-recruitment-ui">
-      <Header navigation={APPLICATION_NAVIGATION} logoHref="/" showDownload={false} />
+      <CoachApplicationHeader />
       <main>
         <section className="application-hero">
           <div className="page-shell application-hero-shell">

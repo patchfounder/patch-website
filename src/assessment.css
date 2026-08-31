@@ -137,8 +137,10 @@
 }
 
 .assessment-brand img {
-  width: auto;
-  height: 25px;
+  width: 100px;
+  height: auto;
+  max-height: 44px;
+  object-fit: contain;
 }
 
 .assessment-logout {

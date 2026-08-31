@@ -595,7 +595,7 @@ export default function Assessment() {
       <header className="assessment-header">
         <div className="assessment-header-inner">
           <a className="assessment-brand" href="/" aria-label="Patch home">
-            <img src="/patch-logo.png" alt="Patch" />
+            <img src="/patch-logo-2.png" alt="Patch" />
           </a>
           <button
             className="assessment-logout"

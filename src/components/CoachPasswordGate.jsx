@@ -195,7 +195,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
   return (
     <main className="coach-recruitment-ui coach-gate-shell">
       <div className="coach-gate-brand-panel" aria-hidden="true">
-        <div className="coach-gate-brand-word">PATCH</div>
+        <img className="coach-gate-brand-logo" src="/patch-logo-white.png" alt="" />
         <div className="coach-gate-orbit coach-gate-orbit-one" />
         <div className="coach-gate-orbit coach-gate-orbit-two" />
         <div className="coach-gate-signal">
@@ -205,7 +205,9 @@ export default function CoachPasswordGate({ onUnlocked }) {
       </div>
 
       <section className="coach-gate-form-panel" aria-labelledby="coach-gate-title">
-        <a className="coach-gate-mobile-brand" href="/" aria-label="Patch homepage">PATCH</a>
+        <a className="coach-gate-mobile-brand" href="/" aria-label="Patch homepage">
+          <img src="/patch-logo-2.png" alt="" />
+        </a>
 
         {gateState === 'checking' && (
           <div className="coach-gate-state coach-gate-loading" role="status" aria-live="polite">
