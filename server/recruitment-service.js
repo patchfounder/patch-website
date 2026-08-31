@@ -1,4 +1,10 @@
-import { hashCohortPassword, verifyCohortPassword, assertMonthKey, cohortWindowState, normalizeMadridTimestamp } from "./recruitment-access.js";
+import {
+  applicationWindowIdentity,
+  cohortWindowState,
+  hashCohortPassword,
+  normalizeLondonTimestamp,
+  verifyCohortPassword,
+} from "./recruitment-access.js";
 
 export class RecruitmentServiceError extends Error {
   constructor(message, code = "recruitment_error", statusCode = 400) {
@@ -161,13 +167,13 @@ export function createRecruitmentService(options = {}) {
     const cohort = database.getCohortBySlot("current");
     if (!cohort || cohortWindowState(cohort, instant) !== "open") {
       throw new RecruitmentServiceError(
-        "This application cohort is not currently open.",
+        "This application window is not currently open.",
         "cohort_not_open",
         403,
       );
     }
     if (!await verifyCohortPassword(password, cohort)) {
-      throw new RecruitmentServiceError("That application code is not valid.", "invalid_cohort_password", 401);
+      throw new RecruitmentServiceError("That application password is not valid.", "invalid_cohort_password", 401);
     }
     const confirmedCohort = database.getCohortBySlot("current");
     if (
@@ -176,7 +182,7 @@ export function createRecruitmentService(options = {}) {
       || cohortWindowState(confirmedCohort, currentTime()) !== "open"
     ) {
       throw new RecruitmentServiceError(
-        "This application cohort is not currently open.",
+        "This application window is not currently open.",
         "cohort_not_open",
         403,
       );
@@ -326,13 +332,15 @@ export function createRecruitmentService(options = {}) {
   }
 
   async function prepareCohort(input) {
-    const monthKey = assertMonthKey(input.monthKey ?? input.slug);
-    const displayName = requiredText(input.displayName ?? monthKey, "Cohort display name", 120);
-    const opensAt = normalizeMadridTimestamp(input.opensAt);
-    const closesAt = normalizeMadridTimestamp(input.closesAt);
+    const opensAt = normalizeLondonTimestamp(input.opensAt);
+    const closesAt = normalizeLondonTimestamp(input.closesAt);
     if (Date.parse(opensAt) >= Date.parse(closesAt)) {
-      throw new RecruitmentServiceError("Cohort closing time must follow its opening time.", "invalid_window");
+      throw new RecruitmentServiceError(
+        "The application deadline must follow its opening time.",
+        "invalid_window",
+      );
     }
+    const { monthKey, displayName } = applicationWindowIdentity(opensAt);
     const password = await hashCohortPassword(input.password);
     return {
       monthKey,
@@ -360,6 +368,7 @@ export function createRecruitmentService(options = {}) {
     try {
       result = database.createAndActivateCohort(preview, {
         ...prepared,
+        monthKey: preview.allocatedMonthKey || prepared.monthKey,
         activatedAt: currentTime().toISOString(),
       });
     } catch (error) {
@@ -397,7 +406,7 @@ export function createRecruitmentService(options = {}) {
     const preview = database.previewActivateNext();
     if (expectedCohortId && preview.expectedNextId !== String(expectedCohortId)) {
       throw new RecruitmentServiceError(
-        "Only the prepared next cohort can be activated.",
+        "Only the prepared application window can be activated.",
         "cohort_activation_target_mismatch",
         409,
       );
@@ -405,7 +414,7 @@ export function createRecruitmentService(options = {}) {
     const current = database.getCohortBySlot("current");
     if (current && Number(current.pendingCount) > 0) {
       throw new RecruitmentServiceError(
-        "Review every waiting application before activating the next cohort.",
+        "Review every waiting application before activating the next application window.",
         "current_cohort_has_pending_applications",
         409,
       );

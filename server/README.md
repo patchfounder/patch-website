@@ -36,6 +36,10 @@ The runtime targets Node 24 or newer and uses:
 
 No module calls `listen()`. The Website deployment entry point owns startup, shutdown, and static-directory selection.
 
+The Website recruitment service is deliberately single-instance. Its private SQLite file,
+recording volume, and quarantine transition are coordinated within one Website process;
+do not run more than one application replica against the same recruitment volume.
+
 ## Environment
 
 Required for a real runtime:
@@ -72,7 +76,7 @@ All responses are `private, no-store`.
 
 ### `GET /api/recruitment/status`
 
-Returns whether the browser holds a valid applicant cookie and the public current-cohort state: `unavailable`, `not_open`, `open`, or `closed`.
+Returns whether the browser holds a valid applicant cookie and the public application-window state: `unavailable`, `not_open`, `open`, or `closed`.
 
 `GET /api/recruitment/applicant/status` is an equivalent explicit alias.
 
@@ -81,10 +85,10 @@ Returns whether the browser holds a valid applicant cookie and the public curren
 JSON:
 
 ```json
-{ "password": "shared monthly cohort password" }
+{ "password": "shared application password" }
 ```
 
-The active cohort must be inside its opening window. Passwords are stored only as scrypt hashes with per-cohort random salts. Success sets a signed, `HttpOnly`, `SameSite=Strict` applicant cookie whose expiry is the cohort `closesAt` instant. The password and cookie are reusable; duplicate applicant details and multiple submissions are deliberately permitted.
+The application window must be open. Passwords are stored only as scrypt hashes with per-window random salts. Success sets a signed, `HttpOnly`, `SameSite=Strict` applicant cookie whose expiry is the window's `closesAt` instant. The password and cookie are reusable; duplicate applicant details and multiple submissions are deliberately permitted.
 
 `POST /api/recruitment/applicant/unlock` is an equivalent alias.
 
@@ -98,7 +102,7 @@ The active cohort must be inside its opening window. Passwords are stored only a
 - `audioDurationMs` (sent by the Website client for contract compatibility; never trusted for enforcement)
 - `audio` (one non-empty supported audio file)
 
-Accepted base MIME types: WebM, MP4/M4A, AAC, MPEG/MP3, OGG, and WAV. The server parses the uploaded audio container, stores its measured duration, rejects unreadable media, and enforces the 60-second maximum independently of client metadata. The applicant cookie must still be valid and its `current` cohort must still be open. Audio is kept in a private cohort-month folder and promoted from a private staging path before the SQLite application record is inserted; a database failure removes the promoted file.
+Accepted base MIME types: WebM, MP4/M4A, AAC, MPEG/MP3, OGG, and WAV. The server parses the uploaded audio container, stores its measured duration, rejects unreadable media, and enforces the 60-second maximum independently of client metadata. The applicant cookie must still be valid and its application window must still be open. Audio is kept in a private, server-assigned window folder and promoted from a private staging path before the SQLite application record is inserted; a database failure removes the promoted file.
 
 `POST /api/recruitment/applicant/applications` is an equivalent alias.
 
@@ -163,11 +167,11 @@ or:
 The first decision is immediate and irreversible. The same SQLite transaction sets `email_status=attempting`, records the attempt timestamp, and permanently raises `email_attempt_count` from 0 to 1. Exactly one `resend.emails.send()` call follows. Success or failure is recorded; there is no queue, cron, automatic retry, manual retry endpoint, or decision-change endpoint. A process interruption may leave `attempting`, which is intentionally never replayed.
 If the sender or API key is not configured at all, the decision is rejected before SQLite changes; a configured provider call that later fails is still the single final attempt.
 
-## Cohort controls
+## Application-window controls
 
 ### `GET /api/recruitment/reviewer/cohorts`
 
-Returns the `current`, `previous`, and `next` cohort summaries and application/pending counts. It also includes `cohorts` (the non-null summaries), `currentCohort`, and `previousCohort` for the reviewer UI.
+Returns the active and retained internal window summaries and application/pending counts. The route and response property names retain their original `cohort` terminology for API and stored-data compatibility; the reviewer interface presents one application window and does not expose those internal labels.
 
 ### `POST /api/recruitment/reviewer/cohorts`
 
@@ -175,26 +179,29 @@ JSON:
 
 ```json
 {
-  "slug": "2026-09",
-  "displayName": "September 2026",
   "password": "shared password",
   "opensAt": "2026-09-06T09:00",
   "closesAt": "2026-09-11T23:00"
 }
 ```
 
-Local timestamps without offsets are interpreted in `Europe/Madrid`, rejected if a DST time is missing or ambiguous, and stored as UTC ISO strings. An explicit RFC 3339 offset is also accepted. The cohort month and display name do not constrain the opening or deadline dates. For the current cohort, applicant access is available from `opensAt` inclusive until `closesAt` exclusive, and the shared password is invalid outside that exact window. This endpoint creates and activates the cohort in one database transaction: the old `current` becomes `previous`, older retained data and any legacy `next` cohort are removed, and no draft remains if the operation fails. The new month label must be later than the retained `current` or `previous` cohort. Activation is rejected while the current cohort still has applications waiting for a decision.
+Local timestamps without offsets are interpreted as UK time in `Europe/London`, including automatic GMT/BST handling. A missing or ambiguous clock-change time is rejected, and accepted values are stored as UTC ISO strings. An explicit RFC 3339 offset is also accepted. The server derives the visible month-and-year title solely from the opening instant in UK time; client-supplied `slug`, `monthKey`, or `displayName` values are ignored.
 
-The full purged cohort-month audio folders are first moved into private quarantine, including orphan files that lack metadata. SQLite then removes applications and metadata in the same transition; quarantine is deleted only after commit and restored if the database transaction fails.
+Applicant access is available from `opensAt` inclusive until `closesAt` exclusive, and the shared password is invalid outside that exact window. This endpoint creates and activates the application window in one database transaction: the old active window becomes the retained previous window, older retained data and any legacy prepared window are removed, and no draft remains if the operation fails. Creation is rejected while the active window still has applications waiting for a decision.
+
+The existing database schema and route names retain the word `cohort` for compatibility. `month_key` is now a hidden, monotonically allocated storage bucket rather than a user-selected month. This keeps recording folders isolated when two windows open in the same month or when a later-created window opens in an earlier calendar month. It is never displayed in the reviewer interface.
+
+The full purged window audio folders are first moved into private quarantine, including orphan files that lack metadata. SQLite then removes applications and metadata in the same transition; quarantine is deleted only after commit and restored if the database transaction fails.
 
 ### `DELETE /api/recruitment/reviewer/cohorts/:cohortId`
 
-Requires `{ "confirm": true }` and deletes only the exact active cohort. Its applications and complete private recording folder are removed, applicant sessions for it immediately become invalid, and applicant access closes. A retained `previous` cohort stays `previous`; it is never promoted automatically.
+Requires `{ "confirm": true }` and removes only the exact active application window. Its applications and complete private recording folder are removed, applicant sessions for it immediately become invalid, and applicant access closes. A retained previous window stays internal history; it is never promoted automatically.
 
 ### Legacy prepared-cohort routes
 
-`POST /api/recruitment/reviewer/cohorts/next` retains the earlier create-only behavior and
-accepts `monthKey` in place of `slug`.
+`POST /api/recruitment/reviewer/cohorts/next` retains the earlier create-only behavior.
+Like the one-step route, it derives its hidden storage key and title from `opensAt` and
+ignores legacy client `slug`, `monthKey`, and `displayName` values.
 
 ### `POST /api/recruitment/reviewer/cohorts/:cohortId/activate`
 

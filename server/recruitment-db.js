@@ -73,6 +73,20 @@ function transaction(database, operation) {
   }
 }
 
+function incrementMonthKey(value) {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(String(value || ""));
+  if (!match) {
+    throw new RecruitmentDatabaseError("Internal window storage key is invalid.", "invalid_month_key");
+  }
+  const monthIndex = Number(match[1]) * 12 + Number(match[2]);
+  const nextYear = Math.floor(monthIndex / 12);
+  const nextMonth = monthIndex % 12 + 1;
+  if (nextYear > 9999) {
+    throw new RecruitmentDatabaseError("Internal window storage keys are exhausted.", "month_key_exhausted");
+  }
+  return `${String(nextYear).padStart(4, "0")}-${String(nextMonth).padStart(2, "0")}`;
+}
+
 export function createRecruitmentDatabase(options = {}) {
   const databasePath = String(options.databasePath || "").trim();
   if (!databasePath) {
@@ -179,23 +193,25 @@ export function createRecruitmentDatabase(options = {}) {
       .map((row) => String(row.audio_storage_key));
   }
 
+  function allocateMonthKey(preferredMonthKey) {
+    const latest = database.prepare(
+      "SELECT month_key FROM recruitment_cohorts ORDER BY month_key DESC LIMIT 1",
+    ).get();
+    return !latest || String(preferredMonthKey) > String(latest.month_key)
+      ? String(preferredMonthKey)
+      : incrementMonthKey(latest.month_key);
+  }
+
   function createNextCohort(input) {
     return transaction(database, () => {
       if (getCohortBySlot("next")) {
         throw new RecruitmentDatabaseError(
-          "A next cohort already exists.",
+          "A prepared application window already exists.",
           "next_cohort_exists",
           409,
         );
       }
-      const latest = database.prepare("SELECT month_key FROM recruitment_cohorts ORDER BY month_key DESC LIMIT 1").get();
-      if (latest && String(input.monthKey) <= String(latest.month_key)) {
-        throw new RecruitmentDatabaseError(
-          "The next cohort month must be later than every existing cohort.",
-          "cohort_month_order",
-          409,
-        );
-      }
+      const allocatedMonthKey = allocateMonthKey(input.monthKey);
       const cohortId = randomUUID();
       database.prepare(`
         INSERT INTO recruitment_cohorts (
@@ -204,7 +220,7 @@ export function createRecruitmentDatabase(options = {}) {
         ) VALUES (?, ?, ?, 'next', ?, ?, ?, ?, ?, ?)
       `).run(
         cohortId,
-        input.monthKey,
+        allocatedMonthKey,
         input.displayName,
         input.opensAt,
         input.closesAt,
@@ -225,32 +241,19 @@ export function createRecruitmentDatabase(options = {}) {
     `).all().map((row) => `${row.cohort_id}:${row.slot}`);
   }
 
-  function previewCreateAndActivate(monthKey) {
+  function previewCreateAndActivate(preferredMonthKey) {
     const current = getCohortBySlot("current");
     const previous = getCohortBySlot("previous");
     if (current && Number(current.pendingCount) > 0) {
       throw new RecruitmentDatabaseError(
-        "Review every waiting application before activating a new cohort.",
+        "Review every waiting application before creating a new application window.",
         "current_cohort_has_pending_applications",
         409,
       );
     }
 
     const retainedPrevious = current || previous;
-    const latestRetained = database.prepare(`
-      SELECT month_key
-      FROM recruitment_cohorts
-      WHERE slot IN ('current', 'previous')
-      ORDER BY month_key DESC
-      LIMIT 1
-    `).get();
-    if (latestRetained && String(monthKey) <= String(latestRetained.month_key)) {
-      throw new RecruitmentDatabaseError(
-        "The new cohort month must be later than the retained cohorts.",
-        "cohort_month_order",
-        409,
-      );
-    }
+    const allocatedMonthKey = allocateMonthKey(preferredMonthKey);
 
     const purgeRows = retainedPrevious
       ? database.prepare(`
@@ -271,6 +274,8 @@ export function createRecruitmentDatabase(options = {}) {
       expectedState: cohortStateSnapshot(),
       expectedCurrentId: current?.cohortId || "",
       retainedPreviousId: retainedPrevious?.cohortId || "",
+      preferredMonthKey: String(preferredMonthKey),
+      allocatedMonthKey,
       purgeCohortIds: [...new Set(purgeRows.map((row) => row.cohort_id))],
       purgeCohortMonths: [...new Set(purgeRows.map((row) => row.month_key))],
       purgeAudioStorageKeys: purgeRows.map((row) => row.audio_storage_key).filter(Boolean),
@@ -281,7 +286,7 @@ export function createRecruitmentDatabase(options = {}) {
     return transaction(database, () => {
       if (JSON.stringify(cohortStateSnapshot()) !== JSON.stringify(preview.expectedState)) {
         throw new RecruitmentDatabaseError(
-          "Cohort state changed before activation. Reload and try again.",
+          "The application-window state changed. Reload and try again.",
           "cohort_activation_conflict",
           409,
         );
@@ -295,30 +300,26 @@ export function createRecruitmentDatabase(options = {}) {
         || String(retainedPrevious?.cohortId || "") !== String(preview.retainedPreviousId || "")
       ) {
         throw new RecruitmentDatabaseError(
-          "Cohort state changed before activation. Reload and try again.",
+          "The application-window state changed. Reload and try again.",
           "cohort_activation_conflict",
           409,
         );
       }
       if (current && Number(current.pendingCount) > 0) {
         throw new RecruitmentDatabaseError(
-          "Review every waiting application before activating a new cohort.",
+          "Review every waiting application before creating a new application window.",
           "current_cohort_has_pending_applications",
           409,
         );
       }
 
-      const latestRetained = database.prepare(`
-        SELECT month_key
-        FROM recruitment_cohorts
-        WHERE slot IN ('current', 'previous')
-        ORDER BY month_key DESC
-        LIMIT 1
-      `).get();
-      if (latestRetained && String(input.monthKey) <= String(latestRetained.month_key)) {
+      if (
+        String(input.monthKey) !== String(preview.allocatedMonthKey)
+        || allocateMonthKey(preview.preferredMonthKey) !== String(preview.allocatedMonthKey)
+      ) {
         throw new RecruitmentDatabaseError(
-          "The new cohort month must be later than the retained cohorts.",
-          "cohort_month_order",
+          "The application-window state changed. Reload and try again.",
+          "cohort_activation_conflict",
           409,
         );
       }
@@ -363,11 +364,15 @@ export function createRecruitmentDatabase(options = {}) {
   function previewDeleteCurrentCohort(expectedCohortId) {
     const current = getCohortBySlot("current");
     if (!current) {
-      throw new RecruitmentDatabaseError("There is no active cohort to delete.", "current_cohort_missing", 404);
+      throw new RecruitmentDatabaseError(
+        "There is no active application window to remove.",
+        "current_cohort_missing",
+        404,
+      );
     }
     if (current.cohortId !== String(expectedCohortId || "")) {
       throw new RecruitmentDatabaseError(
-        "The active cohort changed before deletion. Reload and try again.",
+        "The active application window changed. Reload and try again.",
         "cohort_delete_target_mismatch",
         409,
       );
@@ -390,7 +395,7 @@ export function createRecruitmentDatabase(options = {}) {
       const current = getCohortBySlot("current");
       if (!current || current.cohortId !== preview.expectedCurrentId) {
         throw new RecruitmentDatabaseError(
-          "The active cohort changed before deletion. Reload and try again.",
+          "The active application window changed. Reload and try again.",
           "cohort_delete_conflict",
           409,
         );
@@ -401,7 +406,7 @@ export function createRecruitmentDatabase(options = {}) {
       `).run(current.cohortId);
       if (Number(deleted.changes) !== 1) {
         throw new RecruitmentDatabaseError(
-          "The active cohort changed before deletion. Reload and try again.",
+          "The active application window changed. Reload and try again.",
           "cohort_delete_conflict",
           409,
         );
@@ -416,7 +421,11 @@ export function createRecruitmentDatabase(options = {}) {
   function previewActivateNext() {
     const next = getCohortBySlot("next");
     if (!next) {
-      throw new RecruitmentDatabaseError("There is no next cohort to activate.", "next_cohort_missing", 409);
+      throw new RecruitmentDatabaseError(
+        "There is no prepared application window to activate.",
+        "next_cohort_missing",
+        409,
+      );
     }
     const current = getCohortBySlot("current");
     const previous = getCohortBySlot("previous");
@@ -455,7 +464,7 @@ export function createRecruitmentDatabase(options = {}) {
         || String(retainedPrevious?.cohortId || "") !== String(preview.retainedPreviousId || "")
       ) {
         throw new RecruitmentDatabaseError(
-          "Cohort state changed before activation. Reload and try again.",
+          "The application-window state changed. Reload and try again.",
           "cohort_activation_conflict",
           409,
         );

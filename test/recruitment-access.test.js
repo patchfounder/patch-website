@@ -2,28 +2,40 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  applicationWindowIdentity,
   bearerTokenMatches,
   cohortWindowState,
   createSignedCookieCodec,
   hashCohortPassword,
-  madridLocalDateTimeToIso,
+  londonLocalDateTimeToIso,
   verifyCohortPassword,
 } from "../server/recruitment-access.js";
 
-test("Madrid timestamps are deterministic and reject DST gaps and overlaps", () => {
-  assert.equal(madridLocalDateTimeToIso("2026-09-01T09:00"), "2026-09-01T07:00:00.000Z");
-  assert.equal(madridLocalDateTimeToIso("2026-12-01T09:00"), "2026-12-01T08:00:00.000Z");
+test("UK timestamps are deterministic and reject DST gaps and overlaps", () => {
+  assert.equal(londonLocalDateTimeToIso("2026-09-01T09:00"), "2026-09-01T08:00:00.000Z");
+  assert.equal(londonLocalDateTimeToIso("2026-12-01T09:00"), "2026-12-01T09:00:00.000Z");
   assert.throws(
-    () => madridLocalDateTimeToIso("2026-03-29T02:30"),
-    (error) => error.code === "missing_madrid_time",
+    () => londonLocalDateTimeToIso("2026-03-29T01:30"),
+    (error) => error.code === "missing_london_time",
   );
   assert.throws(
-    () => madridLocalDateTimeToIso("2026-10-25T02:30"),
-    (error) => error.code === "ambiguous_madrid_time",
+    () => londonLocalDateTimeToIso("2026-10-25T01:30"),
+    (error) => error.code === "ambiguous_london_time",
   );
 });
 
-test("cohort closing is a hard exclusive deadline", () => {
+test("application-window title follows its UK opening month", () => {
+  assert.deepEqual(
+    applicationWindowIdentity("2026-09-30T23:00:00.000Z"),
+    { monthKey: "2026-10", displayName: "October 2026" },
+  );
+  assert.deepEqual(
+    applicationWindowIdentity("2026-12-01T09:00:00.000Z"),
+    { monthKey: "2026-12", displayName: "December 2026" },
+  );
+});
+
+test("application-window closing is a hard exclusive deadline", () => {
   const cohort = {
     opensAt: "2026-09-01T07:00:00.000Z",
     closesAt: "2026-09-30T21:00:00.000Z",

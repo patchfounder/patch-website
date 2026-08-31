@@ -40,11 +40,11 @@ test("service preserves only current/previous cohorts and attempts each outcome 
       "no cohort means no applicant can log in",
     );
     const supersededSeptemberDraft = await service.createNextCohort({
-      slug: "2026-09",
-      displayName: "September 2026",
+      slug: "2099-12",
+      displayName: "This client label must be ignored",
       password: "superseded-september-password",
-      opensAt: "2026-09-01T00:00",
-      closesAt: "2026-09-30T23:59",
+      opensAt: "2026-08-01T00:00",
+      closesAt: "2026-08-30T23:59",
     });
     const septemberActivated = await service.createAndActivateCohort({
       slug: "2026-09",
@@ -188,12 +188,12 @@ test("service preserves only current/previous cohorts and attempts each outcome 
   }
 });
 
-test("cohort labels do not constrain the exact password access window", async () => {
+test("the application window derives its title and access period from UK opening time", async () => {
   const dataRoot = temporaryDataRoot("recruitment-window-label");
   const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });
   storage.initialize();
   const database = createRecruitmentDatabase({ databasePath: storage.databasePath });
-  let now = new Date("2026-09-01T06:59:59.999Z");
+  let now = new Date("2026-09-30T22:59:59.999Z");
   const service = createRecruitmentService({
     database,
     storage,
@@ -204,35 +204,36 @@ test("cohort labels do not constrain the exact password access window", async ()
   try {
     await assert.rejects(
       service.createAndActivateCohort({
-        slug: "2026-10",
-        displayName: "October 2026",
+        slug: "2027-10",
+        displayName: "Incorrect client title",
         password: "invalid-window-password",
-        opensAt: "2026-09-04T17:00",
-        closesAt: "2026-09-04T17:00",
+        opensAt: "2026-10-04T17:00",
+        closesAt: "2026-10-04T17:00",
       }),
       (error) => error.code === "invalid_window",
       "the deadline must still follow the opening time",
     );
 
     const activated = await service.createAndActivateCohort({
-      slug: "2026-10",
-      displayName: "October 2026",
-      password: "october-label-september-window",
-      opensAt: "2026-09-01T09:00",
-      closesAt: "2026-09-04T17:00",
+      slug: "2027-10",
+      displayName: "Incorrect client title",
+      password: "uk-boundary-window",
+      opensAt: "2026-10-01T00:00",
+      closesAt: "2026-10-04T17:00",
     });
     assert.equal(activated.current.slug, "2026-10");
-    assert.equal(activated.current.opensAt, "2026-09-01T07:00:00.000Z");
-    assert.equal(activated.current.closesAt, "2026-09-04T15:00:00.000Z");
+    assert.equal(activated.current.displayName, "October 2026");
+    assert.equal(activated.current.opensAt, "2026-09-30T23:00:00.000Z");
+    assert.equal(activated.current.closesAt, "2026-10-04T16:00:00.000Z");
 
     await assert.rejects(
-      service.unlockApplicant("october-label-september-window"),
+      service.unlockApplicant("uk-boundary-window"),
       (error) => error.code === "cohort_not_open" && error.statusCode === 403,
       "the password is invalid immediately before the chosen opening time",
     );
 
     now = new Date(activated.current.opensAt);
-    const unlocked = await service.unlockApplicant("october-label-september-window");
+    const unlocked = await service.unlockApplicant("uk-boundary-window");
     assert.equal(unlocked.cohort.slug, "2026-10");
 
     now = new Date(Date.parse(activated.current.closesAt) - 1);
@@ -243,7 +244,7 @@ test("cohort labels do not constrain the exact password access window", async ()
 
     now = new Date(activated.current.closesAt);
     await assert.rejects(
-      service.unlockApplicant("october-label-september-window"),
+      service.unlockApplicant("uk-boundary-window"),
       (error) => error.code === "cohort_not_open" && error.statusCode === 403,
       "the password is invalid at the chosen deadline",
     );
@@ -252,6 +253,121 @@ test("cohort labels do not constrain the exact password access window", async ()
       (error) => error.code === "applicant_session_expired",
       "an existing applicant session expires at the chosen deadline",
     );
+  } finally {
+    database.close();
+    rmSync(dataRoot, { recursive: true, force: true });
+  }
+});
+
+test("application windows keep isolated hidden buckets across same-month and earlier openings", async () => {
+  const dataRoot = temporaryDataRoot("recruitment-window-buckets");
+  const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });
+  storage.initialize();
+  const database = createRecruitmentDatabase({ databasePath: storage.databasePath });
+  let now = new Date("2026-09-15T12:00:00.000Z");
+  const service = createRecruitmentService({
+    database,
+    storage,
+    emailSender: { configured: true, async sendOutcome() { return { ok: true }; } },
+    now: () => now,
+  });
+
+  try {
+    const first = await service.createAndActivateCohort({
+      password: "first-window-password",
+      opensAt: "2026-09-01T00:00",
+      closesAt: "2026-09-30T23:59",
+    });
+    const firstSession = await service.unlockApplicant("first-window-password");
+    const firstSubmission = service.submitApplication({
+      sessionPayload: firstSession.sessionPayload,
+      fullName: "First Window Applicant",
+      email: "first-window@example.com",
+      linkedinUrl: "https://linkedin.com/in/first-window-applicant/",
+      audioDurationSeconds: 1,
+      audioBuffer: Buffer.from("first-window-private-audio"),
+      audioMimeType: "audio/webm",
+    });
+    const firstStored = database.getApplication(firstSubmission.application.applicationId);
+    const firstAudioPath = path.join(storage.audioDirectory, firstStored.audioStorageKey);
+    assert.equal(existsSync(firstAudioPath), true);
+    await service.decideApplication(firstSubmission.application.applicationId, "pass");
+
+    const second = await service.createAndActivateCohort({
+      password: "second-window-password",
+      opensAt: "2026-09-10T00:00",
+      closesAt: "2026-09-20T23:59",
+    });
+    assert.equal(first.current.slug, "2026-09");
+    assert.equal(second.current.slug, "2026-10", "the second window receives a unique hidden bucket");
+    assert.equal(second.current.displayName, "September 2026");
+    assert.equal(second.previous.cohortId, first.current.cohortId);
+    assert.equal(database.getApplication(firstSubmission.application.applicationId)?.cohortId, first.current.cohortId);
+    assert.equal(existsSync(firstAudioPath), true, "retained-window audio stays in its own bucket");
+    assert.throws(
+      () => service.validateApplicantSession(firstSession.sessionPayload),
+      (error) => error.code === "applicant_session_expired",
+    );
+
+    const secondSession = await service.unlockApplicant("second-window-password");
+    const secondSubmission = service.submitApplication({
+      sessionPayload: secondSession.sessionPayload,
+      fullName: "Second Window Applicant",
+      email: "second-window@example.com",
+      linkedinUrl: "https://linkedin.com/in/second-window-applicant/",
+      audioDurationSeconds: 1,
+      audioBuffer: Buffer.from("second-window-private-audio"),
+      audioMimeType: "audio/webm",
+    });
+    const secondStored = database.getApplication(secondSubmission.application.applicationId);
+    const secondAudioPath = path.join(storage.audioDirectory, secondStored.audioStorageKey);
+    assert.equal(existsSync(secondAudioPath), true);
+    service.deleteCurrentCohort(second.current.cohortId);
+    assert.equal(existsSync(secondAudioPath), false, "only the removed window bucket is deleted");
+    assert.equal(existsSync(firstAudioPath), true, "the retained window bucket is not deleted");
+    const recreated = await service.createAndActivateCohort({
+      slug: "2099-12",
+      displayName: "Ignored",
+      password: "recreated-window-password",
+      opensAt: "2026-09-10T00:00",
+      closesAt: "2026-09-20T23:59",
+    });
+    assert.notEqual(recreated.current.cohortId, second.current.cohortId);
+    assert.equal(recreated.current.slug, "2026-10");
+    assert.equal(recreated.current.displayName, "September 2026");
+    assert.throws(
+      () => service.validateApplicantSession(secondSession.sessionPayload),
+      (error) => error.code === "applicant_session_expired",
+    );
+    await assert.rejects(
+      service.unlockApplicant("second-window-password"),
+      (error) => error.code === "invalid_cohort_password",
+    );
+    await service.unlockApplicant("recreated-window-password");
+
+    now = new Date("2026-08-15T12:00:00.000Z");
+    const earlier = await service.createAndActivateCohort({
+      password: "earlier-window-password",
+      opensAt: "2026-08-01T00:00",
+      closesAt: "2026-08-31T23:59",
+    });
+    assert.equal(earlier.current.slug, "2026-11", "an earlier opening still gets an isolated bucket");
+    assert.equal(earlier.current.displayName, "August 2026");
+    await service.unlockApplicant("earlier-window-password");
+
+    const december = await service.createAndActivateCohort({
+      password: "december-window-password",
+      opensAt: "2026-12-01T00:00",
+      closesAt: "2026-12-20T23:59",
+    });
+    const duplicateDecember = await service.createAndActivateCohort({
+      password: "duplicate-december-window-password",
+      opensAt: "2026-12-10T00:00",
+      closesAt: "2026-12-30T23:59",
+    });
+    assert.equal(december.current.slug, "2026-12");
+    assert.equal(duplicateDecember.current.slug, "2027-01", "hidden buckets roll into a new year");
+    assert.equal(duplicateDecember.current.displayName, "December 2026");
   } finally {
     database.close();
     rmSync(dataRoot, { recursive: true, force: true });
@@ -774,7 +890,14 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
     async createAndActivateCohort(input) {
       createdAndActivated = input;
       return {
-        current: { id: "new-current", cohortId: "new-current", slug: input.slug },
+        current: {
+          id: "new-current",
+          cohortId: "new-current",
+          slug: "2026-10",
+          displayName: "October 2026",
+          opensAt: "2026-09-30T23:00:00.000Z",
+          closesAt: "2026-10-31T23:59:00.000Z",
+        },
         previous: currentCohort,
       };
     },
@@ -863,8 +986,6 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
       method: "POST",
       headers: { Cookie: reviewerCookie, "Content-Type": "application/json" },
       body: JSON.stringify({
-        slug: "2026-10",
-        displayName: "October 2026",
         password: "shared",
         opensAt: "2026-10-01T00:00",
         closesAt: "2026-10-31T23:59",
@@ -872,7 +993,11 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
     });
     assert.equal(created.status, 201);
     assert.equal((await created.json()).cohort.slug, "2026-10");
-    assert.equal(createdAndActivated.displayName, "October 2026");
+    assert.deepEqual(createdAndActivated, {
+      password: "shared",
+      opensAt: "2026-10-01T00:00",
+      closesAt: "2026-10-31T23:59",
+    });
 
     const anonymousDelete = await fetch(`${baseUrl}/api/recruitment/reviewer/cohorts/current`, {
       method: "DELETE",

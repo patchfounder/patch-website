@@ -382,7 +382,7 @@ export function mountRecruitmentRoutes(app, options) {
         return res.status(400).json({
           ok: false,
           code: "cohort_deletion_confirmation_required",
-          message: "Confirm deletion of the active cohort.",
+          message: "Confirm removal of the active application window.",
         });
       }
       return res.json({ ok: true, ...service.deleteCurrentCohort(req.params.cohortId) });
@@ -398,7 +398,7 @@ export function mountRecruitmentRoutes(app, options) {
         return res.status(400).json({
           ok: false,
           code: "cohort_activation_confirmation_required",
-          message: "Confirm permanent older-cohort deletion before activation.",
+          message: "Confirm activation of the prepared application window.",
         });
       }
       return res.json({ ok: true, ...service.activateNextCohort() });
@@ -414,7 +414,7 @@ export function mountRecruitmentRoutes(app, options) {
         return res.status(400).json({
           ok: false,
           code: "cohort_activation_confirmation_required",
-          message: "Confirm permanent older-cohort deletion before activation.",
+          message: "Confirm activation of the prepared application window.",
         });
       }
       return res.json({ ok: true, ...service.activateNextCohort(req.params.cohortId) });

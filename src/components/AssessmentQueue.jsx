@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import PatchAudioPlayer from './PatchAudioPlayer.jsx';
+import { formatApplicationDateTime } from '../recruitment-time.js';
 
 function applicationValue(application, ...keys) {
   for (const key of keys) {
@@ -16,21 +17,6 @@ function applicationValue(application, ...keys) {
 
 function getApplicationId(application) {
   return applicationValue(application, 'id', 'applicationId', 'application_id');
-}
-
-function formatDateTime(value) {
-  if (!value) return 'Received time unavailable';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Received time unavailable';
-
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Europe/Madrid',
-  }).format(date);
 }
 
 function safeLinkedInUrl(value) {
@@ -159,7 +145,9 @@ export default function AssessmentQueue({
       <article className="assessment-applicant-card">
         <header className="assessment-applicant-header">
           <div>
-            <p className="assessment-eyebrow">Received {formatDateTime(receivedAt)}</p>
+            <p className="assessment-eyebrow">
+              Received {formatApplicationDateTime(receivedAt, 'time unavailable')}
+            </p>
             <h2 id="assessment-applicant-name" ref={applicantHeadingRef} tabIndex="-1">
               {name}
             </h2>

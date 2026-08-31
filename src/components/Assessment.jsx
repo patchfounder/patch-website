@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AssessmentQueue from './AssessmentQueue.jsx';
 import AssessmentCohorts from './AssessmentCohorts.jsx';
+import { applicationInputValue, applicationWindowTitle } from '../recruitment-time.js';
 import '../assessment.css';
 
 const REVIEWER_API = '/api/recruitment/reviewer';
@@ -105,32 +106,6 @@ function buildQueue(current, queue) {
     .sort((left, right) => applicationTimestamp(left) - applicationTimestamp(right));
 }
 
-function cohortIdentity(cohort) {
-  if (!cohort) return [];
-  return [cohort.id, cohort.cohortId, cohort.slug, cohort.monthKey, cohort.month_key]
-    .filter((value) => value !== undefined && value !== null)
-    .map(String);
-}
-
-function cohortName(cohort, fallback) {
-  const monthKey = cohort?.monthKey || cohort?.month_key || cohort?.slug;
-  const match = /^(\d{4})-(\d{2})$/.exec(String(monthKey || ''));
-  const monthLabel = match
-    ? new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
-        new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1)),
-      )
-    : '';
-
-  return (
-    cohort?.displayName ||
-    cohort?.display_name ||
-    cohort?.name ||
-    monthLabel ||
-    monthKey ||
-    fallback
-  );
-}
-
 function LoadingScreen() {
   return (
     <main className="assessment-access assessment-access-loading" aria-busy="true">
@@ -172,7 +147,7 @@ export default function Assessment() {
     current: null,
     pendingTotal: 0,
   });
-  const [isCohortFormOpen, setIsCohortFormOpen] = useState(false);
+  const [isWindowFormOpen, setIsWindowFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
   const [notice, setNotice] = useState('');
@@ -183,7 +158,7 @@ export default function Assessment() {
   const invalidateReviewerSession = useCallback(({ afterLogout = false } = {}) => {
     setSignedOut(afterLogout);
     setReviewerState(normalizeReviewerState({ authenticated: false }));
-    setIsCohortFormOpen(false);
+    setIsWindowFormOpen(false);
     setNotice('');
     setPageError('');
   }, []);
@@ -335,13 +310,19 @@ export default function Assessment() {
     }
   };
 
-  const handleCreateAndActivateCohort = async (cohort) => {
+  const handleCreateWindow = async (applicationWindow) => {
+    const previousWindowId = String(
+      reviewerState.currentCohort?.id || reviewerState.currentCohort?.cohortId || '',
+    );
     try {
-      const result = await reviewerRequest('/cohorts', { method: 'POST', body: cohort });
-      const activatedCohort = result?.current || result?.cohort || null;
+      const result = await reviewerRequest('/cohorts', {
+        method: 'POST',
+        body: applicationWindow,
+      });
+      const activatedWindow = result?.current || result?.cohort || null;
       setReviewerState((state) => ({
         ...state,
-        currentCohort: activatedCohort || state.currentCohort,
+        currentCohort: activatedWindow || state.currentCohort,
         previousCohort:
           result && Object.hasOwn(result, 'previous') ? result.previous : state.previousCohort,
         queue: [],
@@ -349,12 +330,16 @@ export default function Assessment() {
         pendingTotal: 0,
       }));
       const refreshed = await loadReviewerState({ quiet: true });
-      setIsCohortFormOpen(false);
+      setIsWindowFormOpen(false);
+      const title = applicationWindowTitle(
+        refreshed?.currentCohort?.opensAt || activatedWindow?.opensAt,
+      );
       setNotice(
         refreshed
-          ? `${cohort.displayName} is active.`
-          : `${cohort.displayName} is active. Reload the page to refresh its latest counts.`,
+          ? `${title} application window created.`
+          : `${title} application window created. Reload the page to refresh its latest counts.`,
       );
+      return activatedWindow;
     } catch (error) {
       if (error?.status === 401 || error?.status === 403) {
         invalidateReviewerSession();
@@ -362,23 +347,27 @@ export default function Assessment() {
       }
       if (error?.status) throw error;
       const refreshed = await loadReviewerState({ quiet: true });
-      const requestedMonth = String(cohort.slug || cohort.monthKey || '');
-      if (cohortIdentity(refreshed?.currentCohort).includes(requestedMonth)) {
-        setIsCohortFormOpen(false);
-        setNotice(`${cohort.displayName} is active.`);
-        return;
+      const refreshedWindow = refreshed?.currentCohort;
+      const refreshedWindowId = String(refreshedWindow?.id || refreshedWindow?.cohortId || '');
+      const matchesRequestedWindow =
+        applicationInputValue(refreshedWindow?.opensAt) === applicationWindow.opensAt
+        && applicationInputValue(refreshedWindow?.closesAt) === applicationWindow.closesAt;
+      if (refreshedWindowId && refreshedWindowId !== previousWindowId && matchesRequestedWindow) {
+        setIsWindowFormOpen(false);
+        setNotice(`${applicationWindowTitle(refreshedWindow.opensAt)} application window created.`);
+        return refreshedWindow;
       }
       throw error;
     }
   };
 
-  const handleDeleteActiveCohort = async (id) => {
+  const handleRemoveWindow = async (id) => {
     try {
       await reviewerRequest(`/cohorts/${encodeURIComponent(String(id))}`, {
         method: 'DELETE',
         body: { confirm: true },
       });
-      setIsCohortFormOpen(false);
+      setIsWindowFormOpen(false);
       setReviewerState((state) => ({
         ...state,
         currentCohort: null,
@@ -389,8 +378,8 @@ export default function Assessment() {
       const refreshed = await loadReviewerState({ quiet: true });
       setNotice(
         refreshed
-          ? 'The active cohort was deleted. Applicant access is closed.'
-          : 'The active cohort was deleted. Applicant access is closed. Reload to confirm the latest state.',
+          ? 'The application window was removed. Applicant access is closed.'
+          : 'The application window was removed. Applicant access is closed. Reload to confirm the latest state.',
       );
     } catch (error) {
       if (error?.status === 401 || error?.status === 403) {
@@ -403,8 +392,8 @@ export default function Assessment() {
         refreshed?.authenticated
         && !refreshed.currentCohort
       ) {
-        setIsCohortFormOpen(false);
-        setNotice('The active cohort was deleted. Applicant access is closed.');
+        setIsWindowFormOpen(false);
+        setNotice('The application window was removed. Applicant access is closed.');
         return;
       }
       throw error;
@@ -452,7 +441,10 @@ export default function Assessment() {
     );
   }
 
-  const currentCohortLabel = cohortName(reviewerState.currentCohort, 'No active cohort');
+  const currentWindowLabel = applicationWindowTitle(
+    reviewerState.currentCohort?.opensAt,
+    'No application window',
+  );
   const waitingTotal = Math.max(0, Number(reviewerState.pendingTotal || 0));
 
   return (
@@ -482,21 +474,21 @@ export default function Assessment() {
           <p className="assessment-intro-status">
             <strong>{waitingTotal}</strong> waiting
             <span aria-hidden="true">·</span>
-            <span>{currentCohortLabel}</span>
+            <span>{currentWindowLabel}</span>
           </p>
         </section>
 
         <div className="assessment-page-actions" role="group" aria-label="Assessment actions">
           <button
             type="button"
-            className="assessment-icon-action assessment-add-cohort"
-            aria-label={isCohortFormOpen ? 'Close cohort form' : 'Add cohort'}
-            title={isCohortFormOpen ? 'Close cohort form' : 'Add cohort'}
-            aria-expanded={isCohortFormOpen}
-            aria-controls={isCohortFormOpen ? 'assessment-cohort-create' : undefined}
+            className="assessment-icon-action assessment-add-window"
+            aria-label={isWindowFormOpen ? 'Close application window form' : 'Add application window'}
+            title={isWindowFormOpen ? 'Close application window form' : 'Add application window'}
+            aria-expanded={isWindowFormOpen}
+            aria-controls={isWindowFormOpen ? 'assessment-window-create' : undefined}
             onClick={() => {
               setNotice('');
-              setIsCohortFormOpen((isOpen) => !isOpen);
+              setIsWindowFormOpen((isOpen) => !isOpen);
             }}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -531,11 +523,10 @@ export default function Assessment() {
         )}
 
         <AssessmentCohorts
-          currentCohort={reviewerState.currentCohort}
-          previousCohort={reviewerState.previousCohort}
-          showCreateForm={isCohortFormOpen}
-          onCreateAndActivate={handleCreateAndActivateCohort}
-          onDeleteActive={handleDeleteActiveCohort}
+          currentWindow={reviewerState.currentCohort}
+          showCreateForm={isWindowFormOpen}
+          onCreate={handleCreateWindow}
+          onRemove={handleRemoveWindow}
         />
 
         {reviewerState.currentCohort && (

@@ -182,12 +182,12 @@ export default function CoachPasswordGate({ onUnlocked }) {
         }
       : gateState === 'not_open'
         ? {
-            title: 'This cohort has not opened yet',
-            copy: 'A cohort password exists, but it will only work when the application window opens.',
+            title: 'This application window has not opened yet',
+            copy: 'Your application password will work when the application window opens.',
           }
         : gateState === 'closed'
           ? {
-              title: 'This cohort has closed',
+              title: 'This application window has closed',
               copy: 'This application password is no longer active. Follow the timing in your LinkedIn invitation.',
             }
           : null;

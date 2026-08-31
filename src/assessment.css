@@ -234,7 +234,7 @@
 }
 
 .assessment-icon-action:hover,
-.assessment-add-cohort[aria-expanded="true"] {
+.assessment-add-window[aria-expanded="true"] {
   background: var(--assessment-soft-blue);
   border-color: #c4d0d3 !important;
   color: var(--assessment-navy);
@@ -690,23 +690,6 @@
   margin-bottom: 0;
 }
 
-.assessment-cohort-status {
-  display: inline-flex;
-  min-height: 28px;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 720;
-}
-
-.assessment-cohort-status.is-active {
-  background: var(--assessment-success-soft);
-  color: var(--assessment-success);
-}
-
 .assessment-cohorts {
   display: grid;
   gap: 22px;
@@ -722,9 +705,10 @@
 }
 
 .assessment-current-cohort {
+  position: relative;
   display: grid;
   width: 100%;
-  gap: 20px;
+  gap: 18px;
 }
 
 .assessment-current-cohort > header {
@@ -732,6 +716,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding-right: 52px;
 }
 
 .assessment-current-cohort > header > div {
@@ -739,21 +724,19 @@
 }
 
 .assessment-current-cohort h2 {
-  margin-top: 9px;
-  font-size: 1.35rem;
+  margin-top: 5px;
+  font-size: 1.18rem;
+  font-weight: 600;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
-.assessment-current-cohort header p {
-  margin: 3px 0 0;
-  color: #616d70;
-  font-size: 0.75rem;
-}
-
-.assessment-current-cohort .assessment-button {
-  min-width: 88px;
-  min-height: 44px;
-  padding: 8px 13px;
+.assessment-window-label {
+  color: var(--assessment-turquoise);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .assessment-cohort-empty {
@@ -787,33 +770,40 @@
   font-size: 0.88rem;
 }
 
-.assessment-cohort-delete-trigger {
-  gap: 7px;
-  min-width: auto !important;
-  padding: 7px 9px !important;
-  border-color: transparent !important;
-  border-radius: 8px;
+.assessment-window-remove {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
   background: transparent;
   color: #596568;
-  font-weight: 500;
+  font-size: 1.55rem;
+  font-weight: 300;
+  line-height: 1;
   box-shadow: none;
+  cursor: pointer;
 }
 
-.assessment-cohort-delete-trigger svg {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.65;
+.assessment-window-remove span {
+  transform: translateY(-1px);
 }
 
-.assessment-current-cohort .assessment-cohort-delete-trigger:not(:disabled):hover,
-.assessment-cohort-delete-trigger[aria-expanded="true"] {
+.assessment-window-remove:not(:disabled):hover,
+.assessment-window-remove[aria-expanded="true"] {
   transform: none;
   background: var(--assessment-soft-blue);
   color: var(--assessment-navy);
+}
+
+.assessment-window-remove:focus-visible {
+  outline: 2px solid var(--assessment-turquoise);
+  outline-offset: 2px;
 }
 
 .assessment-cohort-dates,
@@ -959,8 +949,7 @@
   font-weight: 400;
 }
 
-.assessment-field input,
-.assessment-field select {
+.assessment-field input {
   width: 100%;
   min-width: 0;
   min-height: 52px;
@@ -978,18 +967,12 @@
     box-shadow 150ms ease;
 }
 
-.assessment-field select {
-  cursor: pointer;
-}
-
-.assessment-field input:hover,
-.assessment-field select:hover {
+.assessment-field input:hover {
   border-color: #aebabc;
   background: var(--assessment-white);
 }
 
-.assessment-page .assessment-field input:focus-visible,
-.assessment-page .assessment-field select:focus-visible {
+.assessment-page .assessment-field input:focus-visible {
   outline: 3px solid rgba(0, 127, 147, 0.16);
   outline-offset: 1px;
   border-color: var(--assessment-turquoise);
@@ -1274,12 +1257,29 @@
   }
 
   .assessment-current-cohort {
-    grid-template-columns: minmax(180px, 0.78fr) minmax(250px, 1.1fr) minmax(250px, 0.9fr);
+    grid-template-columns:
+      minmax(180px, 0.78fr)
+      minmax(250px, 1.1fr)
+      minmax(250px, 0.9fr)
+      44px;
+    grid-template-areas: "window-title window-dates window-counts window-remove";
     align-items: center;
     padding: 22px 24px;
   }
 
+  .assessment-current-cohort > header {
+    grid-area: window-title;
+    padding-right: 0;
+  }
+
+  .assessment-window-remove {
+    position: static;
+    grid-area: window-remove;
+    align-self: start;
+  }
+
   .assessment-cohort-dates {
+    grid-area: window-dates;
     padding: 0 24px;
     border-right: 1px solid var(--assessment-line);
     border-bottom: 0;
@@ -1287,6 +1287,7 @@
   }
 
   .assessment-cohort-counts {
+    grid-area: window-counts;
     padding-top: 0;
   }
 

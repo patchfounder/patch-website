@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 
 const scrypt = promisify(scryptCallback);
 
-export const MADRID_TIME_ZONE = "Europe/Madrid";
+export const APPLICATION_TIME_ZONE = "Europe/London";
 export const APPLICANT_COOKIE_NAME = "patch_recruitment_applicant";
 export const REVIEWER_COOKIE_NAME = "patch_recruitment_reviewer";
 
@@ -41,7 +41,7 @@ export class RecruitmentAccessError extends Error {
 }
 
 export async function hashCohortPassword(password, parameters = DEFAULT_SCRYPT_PARAMETERS) {
-  const normalized = boundedString(password, "Cohort password", 256);
+  const normalized = boundedString(password, "Application password", 256);
   const params = {
     N: Number(parameters.N || DEFAULT_SCRYPT_PARAMETERS.N),
     r: Number(parameters.r || DEFAULT_SCRYPT_PARAMETERS.r),
@@ -175,8 +175,8 @@ export function validateReviewerSecret(secret) {
   return normalized;
 }
 
-const madridFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: MADRID_TIME_ZONE,
+const londonFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: APPLICATION_TIME_ZONE,
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
@@ -186,8 +186,8 @@ const madridFormatter = new Intl.DateTimeFormat("en-CA", {
   hourCycle: "h23",
 });
 
-function madridParts(instantMs) {
-  return Object.fromEntries(madridFormatter.formatToParts(new Date(instantMs))
+function londonParts(instantMs) {
+  return Object.fromEntries(londonFormatter.formatToParts(new Date(instantMs))
     .filter((part) => part.type !== "literal")
     .map((part) => [part.type, part.value]));
 }
@@ -201,13 +201,13 @@ function localPartsMatch(parts, candidate) {
     && Number(parts.second) === candidate.second;
 }
 
-export function madridLocalDateTimeToIso(value) {
+export function londonLocalDateTimeToIso(value) {
   const normalized = String(value || "").trim();
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(normalized);
   if (!match) {
     throw new RecruitmentAccessError(
       "Use an ISO local date and time such as 2026-09-01T09:00.",
-      "invalid_madrid_time",
+      "invalid_london_time",
     );
   }
   const candidate = {
@@ -229,27 +229,27 @@ export function madridLocalDateTimeToIso(value) {
   const matches = [];
   for (let offsetMinutes = -240; offsetMinutes <= 240; offsetMinutes += 1) {
     const instant = utcGuess + offsetMinutes * 60_000;
-    if (localPartsMatch(madridParts(instant), candidate)) matches.push(instant);
+    if (localPartsMatch(londonParts(instant), candidate)) matches.push(instant);
   }
   const uniqueMatches = [...new Set(matches)];
   if (uniqueMatches.length !== 1) {
     throw new RecruitmentAccessError(
       uniqueMatches.length
-        ? "That Europe/Madrid time is ambiguous because the clocks change. Choose another time."
-        : "That Europe/Madrid time does not exist because the clocks change.",
-      uniqueMatches.length ? "ambiguous_madrid_time" : "missing_madrid_time",
+        ? "That UK time is ambiguous because the clocks change. Choose another time."
+        : "That UK time does not exist because the clocks change.",
+      uniqueMatches.length ? "ambiguous_london_time" : "missing_london_time",
     );
   }
   return new Date(uniqueMatches[0]).toISOString();
 }
 
-export function normalizeMadridTimestamp(value) {
+export function normalizeLondonTimestamp(value) {
   const normalized = String(value || "").trim();
   if (!normalized) {
     throw new RecruitmentAccessError("Opening and closing times are required.", "required_time");
   }
   if (!/(?:Z|[+-]\d{2}:\d{2})$/i.test(normalized)) {
-    return madridLocalDateTimeToIso(normalized);
+    return londonLocalDateTimeToIso(normalized);
   }
   const timestamp = Date.parse(normalized);
   if (!Number.isFinite(timestamp)) {
@@ -258,10 +258,26 @@ export function normalizeMadridTimestamp(value) {
   return new Date(timestamp).toISOString();
 }
 
+export function applicationWindowIdentity(value) {
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) {
+    throw new RecruitmentAccessError("Application opening time is invalid.", "invalid_time");
+  }
+  const instant = new Date(timestamp);
+  const parts = londonParts(timestamp);
+  const monthKey = `${parts.year}-${parts.month}`;
+  const displayName = new Intl.DateTimeFormat("en-GB", {
+    month: "long",
+    year: "numeric",
+    timeZone: APPLICATION_TIME_ZONE,
+  }).format(instant);
+  return Object.freeze({ monthKey, displayName });
+}
+
 export function assertMonthKey(value) {
   const monthKey = String(value || "").trim();
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(monthKey)) {
-    throw new RecruitmentAccessError("Cohort month must use YYYY-MM.", "invalid_month");
+    throw new RecruitmentAccessError("Internal window key must use YYYY-MM.", "invalid_month");
   }
   return monthKey;
 }
