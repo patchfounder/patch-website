@@ -371,9 +371,25 @@ export function mountRecruitmentRoutes(app, options) {
 
   app.post("/api/recruitment/reviewer/cohorts", requireReviewer, asyncRoute(async (req, res) => {
     noStore(res);
-    const cohort = await service.createNextCohort(req.body || {});
-    return res.status(201).json({ ok: true, cohort });
+    const result = await service.createAndActivateCohort(req.body || {});
+    return res.status(201).json({ ok: true, ...result, cohort: result.current });
   }));
+
+  app.delete("/api/recruitment/reviewer/cohorts/:cohortId", requireReviewer, (req, res, next) => {
+    try {
+      noStore(res);
+      if (req.body?.confirm !== true) {
+        return res.status(400).json({
+          ok: false,
+          code: "cohort_deletion_confirmation_required",
+          message: "Confirm deletion of the active cohort.",
+        });
+      }
+      return res.json({ ok: true, ...service.deleteCurrentCohort(req.params.cohortId) });
+    } catch (error) {
+      return next(error);
+    }
+  });
 
   app.post("/api/recruitment/reviewer/cohorts/activate-next", requireReviewer, (req, res, next) => {
     try {

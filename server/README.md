@@ -183,9 +183,17 @@ JSON:
 }
 ```
 
-Local timestamps without offsets are interpreted in `Europe/Madrid`, rejected if a DST time is missing or ambiguous, and stored as UTC ISO strings. An explicit RFC 3339 offset is also accepted. Only one `next` cohort may exist, and its month must be later than every retained cohort.
+Local timestamps without offsets are interpreted in `Europe/Madrid`, rejected if a DST time is missing or ambiguous, and stored as UTC ISO strings. An explicit RFC 3339 offset is also accepted. This endpoint creates and activates the cohort in one database transaction: the old `current` becomes `previous`, older retained data and any legacy `next` cohort are removed, and no draft remains if the operation fails. The new month must be later than the retained `current` or `previous` cohort. Activation is rejected while the current cohort still has applications waiting for a decision.
 
-`POST /api/recruitment/reviewer/cohorts/next` remains an equivalent alias and also
+The full purged cohort-month audio folders are first moved into private quarantine, including orphan files that lack metadata. SQLite then removes applications and metadata in the same transition; quarantine is deleted only after commit and restored if the database transaction fails.
+
+### `DELETE /api/recruitment/reviewer/cohorts/:cohortId`
+
+Requires `{ "confirm": true }` and deletes only the exact active cohort. Its applications and complete private recording folder are removed, applicant sessions for it immediately become invalid, and applicant access closes. A retained `previous` cohort stays `previous`; it is never promoted automatically.
+
+### Legacy prepared-cohort routes
+
+`POST /api/recruitment/reviewer/cohorts/next` retains the earlier create-only behavior and
 accepts `monthKey` in place of `slug`.
 
 ### `POST /api/recruitment/reviewer/cohorts/:cohortId/activate`
@@ -194,8 +202,7 @@ Requires `{ "confirm": true }` and only activates the prepared `next` cohort.
 `POST /api/recruitment/reviewer/cohorts/activate-next` remains as an internal alias and
 requires the same confirmation.
 
-Activation moves `next` to `current`, moves the old `current` to `previous`, and explicitly deletes every older cohort. The full older cohort-month audio folder is first atomically moved into private quarantine, including any orphan that lacks metadata. The SQLite cascade then removes applications and metadata; quarantine is deleted only after commit and restored if the database transaction fails.
-Activation is rejected while the current cohort still has applications waiting for a decision.
+These legacy activation routes move `next` to `current`, move the old `current` to `previous`, and explicitly delete every older cohort. They remain available for compatibility but are not used by the reviewer UI.
 
 ## Health and static hooks
 

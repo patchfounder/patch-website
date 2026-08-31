@@ -80,9 +80,23 @@ function currentMadridMonth() {
   return new Date(Number(parts.year), Number(parts.month) - 1, 1, 12, 0, 0, 0);
 }
 
-function nextMonthDefaults(currentCohort) {
-  const anchor = monthFromCohort(currentCohort) || currentMadridMonth();
-  const monthStart = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1, 12, 0, 0, 0);
+function monthIndex(date) {
+  return date.getFullYear() * 12 + date.getMonth();
+}
+
+function dateFromMonthIndex(value) {
+  return new Date(Math.floor(value / 12), value % 12, 1, 12, 0, 0, 0);
+}
+
+function monthLabel(monthStart) {
+  return new Intl.DateTimeFormat('en-GB', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(monthStart.getFullYear(), monthStart.getMonth(), 1)));
+}
+
+function defaultsForMonth(monthStart) {
   const daysUntilSunday = (7 - monthStart.getDay()) % 7;
   const first = new Date(
     monthStart.getFullYear(),
@@ -103,19 +117,27 @@ function nextMonthDefaults(currentCohort) {
     0,
   );
   const slug = `${monthStart.getFullYear()}-${pad(monthStart.getMonth() + 1)}`;
-  const displayName = new Intl.DateTimeFormat('en-GB', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Europe/Madrid',
-  }).format(monthStart);
 
   return {
     slug,
-    displayName,
+    displayName: monthLabel(monthStart),
     password: '',
     opensAt: toLocalInputValue(first),
     closesAt: toLocalInputValue(last),
   };
+}
+
+function availableMonthOptions(currentCohort, previousCohort) {
+  const retainedMonths = [currentCohort, previousCohort]
+    .map(monthFromCohort)
+    .filter(Boolean)
+    .map(monthIndex);
+  const anchor = Math.max(monthIndex(currentMadridMonth()), ...retainedMonths);
+  return Array.from({ length: 12 }, (_, index) => {
+    const monthStart = dateFromMonthIndex(anchor + index + 1);
+    const defaults = defaultsForMonth(monthStart);
+    return { value: defaults.slug, label: defaults.displayName, defaults };
+  });
 }
 
 function sameCohort(left, right) {
@@ -165,7 +187,9 @@ function processedCount(cohort) {
 }
 
 function mergeCohorts(cohorts, currentCohort, previousCohort) {
-  const all = [...(Array.isArray(cohorts) ? cohorts : []), currentCohort, previousCohort].filter(Boolean);
+  const all = [...(Array.isArray(cohorts) ? cohorts : []), currentCohort, previousCohort]
+    .filter(Boolean)
+    .filter((cohort) => String(cohortValue(cohort, 'slot')).toLowerCase() !== 'next');
   const seen = new Set();
 
   return all
@@ -189,28 +213,38 @@ export default function AssessmentCohorts({
   isLoading = false,
   error = '',
   onReload,
-  onCreate,
-  onActivate,
+  onCreateAndActivate,
+  onDeleteActive,
 }) {
-  const defaults = useMemo(() => nextMonthDefaults(currentCohort), [currentCohort]);
+  const monthOptions = useMemo(
+    () => availableMonthOptions(currentCohort, previousCohort),
+    [currentCohort, previousCohort],
+  );
+  const defaults = useMemo(() => monthOptions[0].defaults, [monthOptions]);
   const [form, setForm] = useState(defaults);
   const [formTouched, setFormTouched] = useState(false);
   const [formError, setFormError] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [activationTarget, setActivationTarget] = useState(null);
-  const [activationConfirmed, setActivationConfirmed] = useState(false);
-  const [activationError, setActivationError] = useState('');
-  const [isActivating, setIsActivating] = useState(false);
-  const activationHeadingRef = useRef(null);
-  const activationTriggerRef = useRef(null);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteTriggerRef = useRef(null);
+  const deleteCancelRef = useRef(null);
 
   useEffect(() => {
-    if (!formTouched) setForm(defaults);
-  }, [defaults, formTouched]);
+    if (!formTouched) {
+      setForm(defaults);
+      return;
+    }
+    if (!monthOptions.some((option) => option.value === form.slug)) {
+      setForm({ ...defaults, password: form.password });
+    }
+  }, [defaults, form.password, form.slug, formTouched, monthOptions]);
 
   useEffect(() => {
-    if (activationTarget) activationHeadingRef.current?.focus();
-  }, [activationTarget]);
+    if (deleteTarget) deleteCancelRef.current?.focus();
+  }, [deleteTarget]);
 
   const visibleCohorts = useMemo(
     () => mergeCohorts(cohorts, currentCohort, previousCohort),
@@ -220,6 +254,13 @@ export default function AssessmentCohorts({
   const updateField = (event) => {
     const { name, value } = event.target;
     setFormTouched(true);
+    if (name === 'slug') {
+      const selected = monthOptions.find((option) => option.value === value)?.defaults;
+      if (selected) {
+        setForm((current) => ({ ...selected, password: current.password }));
+        return;
+      }
+    }
     setForm((current) => ({ ...current, [name]: value }));
   };
 
@@ -237,7 +278,7 @@ export default function AssessmentCohorts({
       return;
     }
     if (!displayName || !password || !form.opensAt || !form.closesAt) {
-      setFormError('Complete every cohort field before creating it.');
+      setFormError('Complete every cohort field before activating it.');
       return;
     }
     if (form.closesAt <= form.opensAt) {
@@ -247,7 +288,7 @@ export default function AssessmentCohorts({
 
     setIsCreating(true);
     try {
-      await onCreate({
+      await onCreateAndActivate({
         slug,
         monthKey: slug,
         displayName,
@@ -256,69 +297,42 @@ export default function AssessmentCohorts({
         closesAt: form.closesAt,
       });
       setForm((current) => ({ ...current, password: '' }));
+      setPasswordVisible(false);
       setFormTouched(false);
     } catch (requestError) {
-      setFormError(requestError?.message || 'The cohort could not be created.');
-      setForm((current) => ({ ...current, password: '' }));
+      setFormError(requestError?.message || 'The cohort and password could not be activated.');
     } finally {
       setIsCreating(false);
     }
   };
 
-  const activateCohort = async () => {
-    const id = cohortId(activationTarget);
-    if (!id || !activationConfirmed || isActivating) return;
+  const deleteActiveCohort = async () => {
+    const id = cohortId(deleteTarget);
+    if (!id || isDeleting) return;
 
-    setActivationError('');
-    setIsActivating(true);
+    setDeleteError('');
+    setIsDeleting(true);
     try {
-      await onActivate(id);
-      setActivationTarget(null);
-      setActivationConfirmed(false);
+      await onDeleteActive(id);
+      setDeleteTarget(null);
       window.requestAnimationFrame(() => {
         document.querySelector('.assessment-navigation [aria-current="page"]')?.focus();
       });
     } catch (requestError) {
-      setActivationError(requestError?.message || 'The cohort could not be activated.');
+      setDeleteError(requestError?.message || 'The active cohort could not be deleted.');
     } finally {
-      setIsActivating(false);
+      setIsDeleting(false);
     }
   };
 
-  const cancelActivation = () => {
-    setActivationTarget(null);
-    setActivationConfirmed(false);
-    setActivationError('');
-    window.requestAnimationFrame(() => activationTriggerRef.current?.focus());
+  const cancelDelete = () => {
+    setDeleteTarget(null);
+    setDeleteError('');
+    window.requestAnimationFrame(() => deleteTriggerRef.current?.focus());
   };
 
   return (
     <div className="assessment-cohorts">
-      <div className="assessment-section-intro">
-        <p className="assessment-eyebrow">Monthly application access</p>
-        <h2>Create the password applicants will use</h2>
-        <p>
-          Each month, choose one shared password, set the Sunday-to-Friday application window and
-          activate it. Everyone you invite that month uses the same password.
-        </p>
-      </div>
-
-      <div className="assessment-password-workflow" aria-label="Monthly password workflow">
-        <div>
-          <strong>1</strong>
-          <span>Choose the shared password</span>
-        </div>
-        <div>
-          <strong>2</strong>
-          <span>Set the opening and deadline</span>
-        </div>
-        <div>
-          <strong>3</strong>
-          <span>Activate and send it out</span>
-        </div>
-        <a href="#assessment-cohort-create-title">Create next month’s password ↓</a>
-      </div>
-
       {error && (
         <div className="assessment-inline-error" role="alert">
           <p>{error}</p>
@@ -343,7 +357,9 @@ export default function AssessmentCohorts({
             {visibleCohorts.map((cohort) => {
               const id = cohortId(cohort);
               const status = statusFor(cohort, currentCohort, previousCohort);
-              const canActivate = (status === 'Draft' || status === 'Next') && Boolean(id);
+              const canDelete = status === 'Active' && Boolean(id);
+              const isDeleteTarget = sameCohort(cohort, deleteTarget);
+              const deletePanelId = `assessment-delete-${String(id || 'cohort').replace(/[^A-Za-z0-9_-]/g, '-')}`;
 
               return (
                 <article className="assessment-cohort-card" key={String(id || cohortSlug(cohort))}>
@@ -355,18 +371,19 @@ export default function AssessmentCohorts({
                       <h4>{cohortName(cohort)}</h4>
                       <p>{cohortSlug(cohort) || 'Monthly cohort'}</p>
                     </div>
-                    {canActivate && (
+                    {canDelete && (
                       <button
-                        className="assessment-button assessment-button-secondary"
+                        className="assessment-button assessment-cohort-delete-trigger"
                         type="button"
+                        aria-expanded={isDeleteTarget}
+                        aria-controls={deletePanelId}
                         onClick={(event) => {
-                          activationTriggerRef.current = event.currentTarget;
-                          setActivationTarget(cohort);
-                          setActivationConfirmed(false);
-                          setActivationError('');
+                          deleteTriggerRef.current = event.currentTarget;
+                          setDeleteTarget(cohort);
+                          setDeleteError('');
                         }}
                       >
-                        Activate
+                        Delete
                       </button>
                     )}
                   </header>
@@ -396,6 +413,43 @@ export default function AssessmentCohorts({
                       <dd>{processedCount(cohort)}</dd>
                     </div>
                   </dl>
+
+                  {isDeleteTarget && (
+                    <div
+                      className="assessment-cohort-delete-confirmation"
+                      id={deletePanelId}
+                      role="group"
+                      aria-labelledby={`${deletePanelId}-question`}
+                    >
+                      <p id={`${deletePanelId}-question`}>
+                        Delete {cohortName(cohort)} and all its applications and recordings?
+                      </p>
+                      {deleteError && (
+                        <p className="assessment-confirmation-error" role="alert">
+                          {deleteError}
+                        </p>
+                      )}
+                      <div>
+                        <button
+                          className="assessment-button assessment-button-secondary"
+                          type="button"
+                          ref={deleteCancelRef}
+                          onClick={cancelDelete}
+                          disabled={isDeleting}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="assessment-button assessment-button-danger"
+                          type="button"
+                          onClick={deleteActiveCohort}
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? 'Deleting…' : 'Delete cohort'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </article>
               );
             })}
@@ -403,102 +457,25 @@ export default function AssessmentCohorts({
         )}
       </section>
 
-      {activationTarget && (
-        <section
-          className="assessment-activation-warning"
-          role="alertdialog"
-          aria-labelledby="assessment-activation-title"
-          aria-describedby="assessment-activation-copy"
-        >
-          <p className="assessment-eyebrow">Permanent deletion warning</p>
-          <h3 id="assessment-activation-title" ref={activationHeadingRef} tabIndex="-1">
-            Activate {cohortName(activationTarget)}?
-          </h3>
-          <p id="assessment-activation-copy">
-            {!currentCohort ? (
-              <>This makes {cohortName(activationTarget)} the current cohort. There is no existing cohort data to delete.</>
-            ) : previousCohort ? (
-              <>
-                Activating this cohort retains <strong>{cohortName(currentCohort)}</strong> as the
-                previous cohort. It permanently deletes applications and recordings from{' '}
-                <strong>{cohortName(previousCohort)}</strong> and anything older. This cannot be undone.
-              </>
-            ) : (
-              <>
-                Activating this cohort retains <strong>{cohortName(currentCohort)}</strong> as the
-                previous cohort. There is no older retained cohort to delete.
-              </>
-            )}
-          </p>
-          <label className="assessment-confirm-checkbox">
-            <input
-              type="checkbox"
-              checked={activationConfirmed}
-              onChange={(event) => setActivationConfirmed(event.target.checked)}
-            />
-            <span>
-              {!currentCohort
-                ? 'I understand that this cohort will become current.'
-                : previousCohort
-                  ? 'I understand that the current cohort will be retained, while the old previous cohort and anything older will be deleted.'
-                  : 'I understand that the current cohort will move to previous and this cohort will become current.'}
-            </span>
-          </label>
-          {activationError && (
-            <p className="assessment-confirmation-error" role="alert">
-              {activationError}
-            </p>
-          )}
-          <div className="assessment-confirmation-actions">
-            <button
-              className="assessment-button assessment-button-secondary"
-              type="button"
-              onClick={cancelActivation}
-              disabled={isActivating}
-            >
-              Cancel
-            </button>
-            <button
-              className="assessment-button assessment-button-danger"
-              type="button"
-              onClick={activateCohort}
-              disabled={!activationConfirmed || isActivating}
-            >
-              {isActivating
-                ? 'Activating…'
-                : previousCohort
-                  ? 'Delete older data and activate'
-                  : 'Activate cohort'}
-            </button>
-          </div>
-        </section>
-      )}
-
       <section className="assessment-cohort-create" aria-labelledby="assessment-cohort-create-title">
-        <div>
-          <p className="assessment-eyebrow">Next month’s applicant access</p>
-          <h3 id="assessment-cohort-create-title">Create a cohort and password</h3>
-          <p>
-            Enter the password you will send to every invited applicant. It remains reusable for
-            the whole application window and is not displayed again after creation.
-          </p>
-        </div>
+        <h3 id="assessment-cohort-create-title">Activate cohort and password</h3>
 
         <form onSubmit={submitCohort} noValidate>
           <div className="assessment-field-row">
             <label className="assessment-field">
               <span>Cohort month</span>
-              <input
+              <select
                 name="slug"
-                type="text"
-                inputMode="numeric"
                 value={form.slug}
                 onChange={updateField}
-                placeholder="2026-10"
-                pattern="\d{4}-(0[1-9]|1[0-2])"
                 required
-              />
-              <small>Use YYYY-MM.</small>
+              >
+                {monthOptions.map((option) => (
+                  <option value={option.value} key={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="assessment-field">
               <span>Display name</span>
@@ -513,21 +490,33 @@ export default function AssessmentCohorts({
             </label>
           </div>
 
-          <label className="assessment-field">
-            <span>Shared applicant password</span>
-            <input
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={updateField}
-              autoComplete="new-password"
-              spellCheck="false"
-              required
-            />
-            <small>
-              Write this down before continuing. Everyone invited this month will use it.
-            </small>
-          </label>
+          <div className="assessment-field">
+            <label htmlFor="assessment-shared-password">Shared applicant password</label>
+            <div className="assessment-password-control">
+              <input
+                id="assessment-shared-password"
+                name="password"
+                type={passwordVisible ? 'text' : 'password'}
+                value={form.password}
+                onChange={updateField}
+                autoComplete="new-password"
+                spellCheck="false"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setPasswordVisible((visible) => !visible)}
+                aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+                aria-pressed={passwordVisible}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                  <circle cx="12" cy="12" r="2.75" />
+                  {passwordVisible && <path d="M4 4 20 20" />}
+                </svg>
+              </button>
+            </div>
+          </div>
 
           <div className="assessment-field-row">
             <label className="assessment-field">
@@ -563,7 +552,7 @@ export default function AssessmentCohorts({
             type="submit"
             disabled={isCreating}
           >
-            {isCreating ? 'Creating cohort and password…' : 'Create cohort and password'}
+            {isCreating ? 'Activating cohort and password…' : 'Activate cohort and password'}
           </button>
         </form>
       </section>

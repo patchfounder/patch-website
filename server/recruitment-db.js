@@ -217,13 +217,211 @@ export function createRecruitmentDatabase(options = {}) {
     });
   }
 
+  function cohortStateSnapshot() {
+    return database.prepare(`
+      SELECT cohort_id, COALESCE(slot, '') AS slot
+      FROM recruitment_cohorts
+      ORDER BY cohort_id
+    `).all().map((row) => `${row.cohort_id}:${row.slot}`);
+  }
+
+  function previewCreateAndActivate(monthKey) {
+    const current = getCohortBySlot("current");
+    const previous = getCohortBySlot("previous");
+    if (current && Number(current.pendingCount) > 0) {
+      throw new RecruitmentDatabaseError(
+        "Review every waiting application before activating a new cohort.",
+        "current_cohort_has_pending_applications",
+        409,
+      );
+    }
+
+    const retainedPrevious = current || previous;
+    const latestRetained = database.prepare(`
+      SELECT month_key
+      FROM recruitment_cohorts
+      WHERE slot IN ('current', 'previous')
+      ORDER BY month_key DESC
+      LIMIT 1
+    `).get();
+    if (latestRetained && String(monthKey) <= String(latestRetained.month_key)) {
+      throw new RecruitmentDatabaseError(
+        "The new cohort month must be later than the retained cohorts.",
+        "cohort_month_order",
+        409,
+      );
+    }
+
+    const purgeRows = retainedPrevious
+      ? database.prepare(`
+          SELECT c.cohort_id, c.month_key, a.audio_storage_key
+          FROM recruitment_cohorts c
+          LEFT JOIN recruitment_applications a ON a.cohort_id = c.cohort_id
+          WHERE c.cohort_id <> ?
+          ORDER BY c.month_key, a.application_id
+        `).all(retainedPrevious.cohortId)
+      : database.prepare(`
+          SELECT c.cohort_id, c.month_key, a.audio_storage_key
+          FROM recruitment_cohorts c
+          LEFT JOIN recruitment_applications a ON a.cohort_id = c.cohort_id
+          ORDER BY c.month_key, a.application_id
+        `).all();
+
+    return Object.freeze({
+      expectedState: cohortStateSnapshot(),
+      expectedCurrentId: current?.cohortId || "",
+      retainedPreviousId: retainedPrevious?.cohortId || "",
+      purgeCohortIds: [...new Set(purgeRows.map((row) => row.cohort_id))],
+      purgeCohortMonths: [...new Set(purgeRows.map((row) => row.month_key))],
+      purgeAudioStorageKeys: purgeRows.map((row) => row.audio_storage_key).filter(Boolean),
+    });
+  }
+
+  function createAndActivateCohort(preview, input) {
+    return transaction(database, () => {
+      if (JSON.stringify(cohortStateSnapshot()) !== JSON.stringify(preview.expectedState)) {
+        throw new RecruitmentDatabaseError(
+          "Cohort state changed before activation. Reload and try again.",
+          "cohort_activation_conflict",
+          409,
+        );
+      }
+
+      const current = getCohortBySlot("current");
+      const previous = getCohortBySlot("previous");
+      const retainedPrevious = current || previous;
+      if (
+        String(current?.cohortId || "") !== String(preview.expectedCurrentId || "")
+        || String(retainedPrevious?.cohortId || "") !== String(preview.retainedPreviousId || "")
+      ) {
+        throw new RecruitmentDatabaseError(
+          "Cohort state changed before activation. Reload and try again.",
+          "cohort_activation_conflict",
+          409,
+        );
+      }
+      if (current && Number(current.pendingCount) > 0) {
+        throw new RecruitmentDatabaseError(
+          "Review every waiting application before activating a new cohort.",
+          "current_cohort_has_pending_applications",
+          409,
+        );
+      }
+
+      const latestRetained = database.prepare(`
+        SELECT month_key
+        FROM recruitment_cohorts
+        WHERE slot IN ('current', 'previous')
+        ORDER BY month_key DESC
+        LIMIT 1
+      `).get();
+      if (latestRetained && String(input.monthKey) <= String(latestRetained.month_key)) {
+        throw new RecruitmentDatabaseError(
+          "The new cohort month must be later than the retained cohorts.",
+          "cohort_month_order",
+          409,
+        );
+      }
+
+      database.prepare("UPDATE recruitment_cohorts SET slot = NULL WHERE slot IS NOT NULL").run();
+      if (retainedPrevious) {
+        database.prepare("DELETE FROM recruitment_cohorts WHERE cohort_id <> ?")
+          .run(retainedPrevious.cohortId);
+        database.prepare("UPDATE recruitment_cohorts SET slot = 'previous' WHERE cohort_id = ?")
+          .run(retainedPrevious.cohortId);
+      } else {
+        database.prepare("DELETE FROM recruitment_cohorts").run();
+      }
+
+      const cohortId = randomUUID();
+      database.prepare(`
+        INSERT INTO recruitment_cohorts (
+          cohort_id, month_key, display_name, slot, opens_at, closes_at,
+          password_salt, password_hash, password_parameters, created_at, activated_at
+        ) VALUES (?, ?, ?, 'current', ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        cohortId,
+        input.monthKey,
+        input.displayName,
+        input.opensAt,
+        input.closesAt,
+        input.passwordSalt,
+        input.passwordHash,
+        input.passwordParameters,
+        input.createdAt,
+        input.activatedAt,
+      );
+
+      return {
+        current: getCohortById(cohortId),
+        previous: retainedPrevious ? getCohortById(retainedPrevious.cohortId) : null,
+        purgedCohortIds: preview.purgeCohortIds,
+      };
+    });
+  }
+
+  function previewDeleteCurrentCohort(expectedCohortId) {
+    const current = getCohortBySlot("current");
+    if (!current) {
+      throw new RecruitmentDatabaseError("There is no active cohort to delete.", "current_cohort_missing", 404);
+    }
+    if (current.cohortId !== String(expectedCohortId || "")) {
+      throw new RecruitmentDatabaseError(
+        "The active cohort changed before deletion. Reload and try again.",
+        "cohort_delete_target_mismatch",
+        409,
+      );
+    }
+    const audioStorageKeys = database.prepare(`
+      SELECT audio_storage_key
+      FROM recruitment_applications
+      WHERE cohort_id = ?
+      ORDER BY audio_storage_key
+    `).all(current.cohortId).map((row) => String(row.audio_storage_key));
+    return Object.freeze({
+      expectedCurrentId: current.cohortId,
+      monthKey: current.monthKey,
+      audioStorageKeys,
+    });
+  }
+
+  function deleteCurrentCohort(preview) {
+    return transaction(database, () => {
+      const current = getCohortBySlot("current");
+      if (!current || current.cohortId !== preview.expectedCurrentId) {
+        throw new RecruitmentDatabaseError(
+          "The active cohort changed before deletion. Reload and try again.",
+          "cohort_delete_conflict",
+          409,
+        );
+      }
+      const deleted = database.prepare(`
+        DELETE FROM recruitment_cohorts
+        WHERE cohort_id = ? AND slot = 'current'
+      `).run(current.cohortId);
+      if (Number(deleted.changes) !== 1) {
+        throw new RecruitmentDatabaseError(
+          "The active cohort changed before deletion. Reload and try again.",
+          "cohort_delete_conflict",
+          409,
+        );
+      }
+      return {
+        deletedCohortId: current.cohortId,
+        deletedMonthKey: current.monthKey,
+      };
+    });
+  }
+
   function previewActivateNext() {
     const next = getCohortBySlot("next");
     if (!next) {
       throw new RecruitmentDatabaseError("There is no next cohort to activate.", "next_cohort_missing", 409);
     }
     const current = getCohortBySlot("current");
-    const keepIds = [next.cohortId, current?.cohortId].filter(Boolean);
+    const previous = getCohortBySlot("previous");
+    const retainedPrevious = current || previous;
+    const keepIds = [next.cohortId, retainedPrevious?.cohortId].filter(Boolean);
     const placeholders = keepIds.map(() => "?").join(", ");
     const purgeRows = keepIds.length
       ? database.prepare(`
@@ -237,6 +435,7 @@ export function createRecruitmentDatabase(options = {}) {
     return Object.freeze({
       expectedNextId: next.cohortId,
       expectedCurrentId: current?.cohortId || "",
+      retainedPreviousId: retainedPrevious?.cohortId || "",
       purgeCohortIds: [...new Set(purgeRows.map((row) => row.cohort_id))],
       purgeCohortMonths: [...new Set(purgeRows.map((row) => row.month_key))],
       purgeAudioStorageKeys: purgeRows.map((row) => row.audio_storage_key).filter(Boolean),
@@ -247,10 +446,13 @@ export function createRecruitmentDatabase(options = {}) {
     return transaction(database, () => {
       const next = getCohortBySlot("next");
       const current = getCohortBySlot("current");
+      const previous = getCohortBySlot("previous");
+      const retainedPrevious = current || previous;
       if (
         !next
         || next.cohortId !== preview.expectedNextId
         || String(current?.cohortId || "") !== String(preview.expectedCurrentId || "")
+        || String(retainedPrevious?.cohortId || "") !== String(preview.retainedPreviousId || "")
       ) {
         throw new RecruitmentDatabaseError(
           "Cohort state changed before activation. Reload and try again.",
@@ -258,15 +460,15 @@ export function createRecruitmentDatabase(options = {}) {
           409,
         );
       }
-      const keepIds = [next.cohortId, current?.cohortId].filter(Boolean);
+      const keepIds = [next.cohortId, retainedPrevious?.cohortId].filter(Boolean);
       database.prepare("UPDATE recruitment_cohorts SET slot = NULL WHERE slot IS NOT NULL").run();
       if (keepIds.length) {
         const placeholders = keepIds.map(() => "?").join(", ");
         database.prepare(`DELETE FROM recruitment_cohorts WHERE cohort_id NOT IN (${placeholders})`).run(...keepIds);
       }
-      if (current) {
+      if (retainedPrevious) {
         database.prepare("UPDATE recruitment_cohorts SET slot = 'previous' WHERE cohort_id = ?")
-          .run(current.cohortId);
+          .run(retainedPrevious.cohortId);
       }
       database.prepare(`
         UPDATE recruitment_cohorts
@@ -275,7 +477,7 @@ export function createRecruitmentDatabase(options = {}) {
       `).run(activatedAt, next.cohortId);
       return {
         current: getCohortById(next.cohortId),
-        previous: current ? getCohortById(current.cohortId) : null,
+        previous: retainedPrevious ? getCohortById(retainedPrevious.cohortId) : null,
         purgedCohortIds: preview.purgeCohortIds,
       };
     });
@@ -418,6 +620,10 @@ export function createRecruitmentDatabase(options = {}) {
     listCohortMonthKeys,
     listAudioStorageKeys,
     createNextCohort,
+    previewCreateAndActivate,
+    createAndActivateCohort,
+    previewDeleteCurrentCohort,
+    deleteCurrentCohort,
     previewActivateNext,
     activateNext,
     createApplication,

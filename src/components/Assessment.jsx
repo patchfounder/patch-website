@@ -357,8 +357,10 @@ export default function Assessment() {
     try {
       const payload = await reviewerRequest('/cohorts');
       const items = Array.isArray(payload) ? payload : payload?.cohorts;
-      setCohorts(Array.isArray(items) ? items : []);
+      const normalizedItems = Array.isArray(items) ? items : [];
+      setCohorts(normalizedItems);
       setCohortsLoaded(true);
+      return normalizedItems;
     } catch (error) {
       if (error?.status === 401 || error?.status === 403) {
         invalidateReviewerSession();
@@ -482,29 +484,64 @@ export default function Assessment() {
     }
   };
 
-  const handleCreateCohort = async (cohort) => {
+  const handleCreateAndActivateCohort = async (cohort) => {
     try {
       await reviewerRequest('/cohorts', { method: 'POST', body: cohort });
       await Promise.all([loadCohorts(), loadReviewerState({ quiet: true })]);
-      setNotice(
-        `${cohort.displayName} and its shared applicant password were created. Activate the cohort when you are ready to open applications.`,
-      );
+      setNotice(`${cohort.displayName} is active.`);
     } catch (error) {
-      if (error?.status === 401 || error?.status === 403) invalidateReviewerSession();
+      if (error?.status === 401 || error?.status === 403) {
+        invalidateReviewerSession();
+        throw error;
+      }
+      if (error?.status) throw error;
+      const [, refreshed] = await Promise.all([
+        loadCohorts(),
+        loadReviewerState({ quiet: true }),
+      ]);
+      const requestedMonth = String(cohort.slug || cohort.monthKey || '');
+      if (cohortIdentity(refreshed?.currentCohort).includes(requestedMonth)) {
+        setNotice(`${cohort.displayName} is active.`);
+        return;
+      }
       throw error;
     }
   };
 
-  const handleActivateCohort = async (id) => {
+  const handleDeleteActiveCohort = async (id) => {
     try {
-      await reviewerRequest(`/cohorts/${encodeURIComponent(String(id))}/activate`, {
-        method: 'POST',
+      await reviewerRequest(`/cohorts/${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
         body: { confirm: true },
       });
       await Promise.all([loadCohorts(), loadReviewerState({ quiet: true })]);
-      setNotice('The cohort was activated. The queue now reflects the active cohort.');
+      setNotice('The active cohort was deleted. Applicant access is closed.');
     } catch (error) {
-      if (error?.status === 401 || error?.status === 403) invalidateReviewerSession();
+      if (error?.status === 401 || error?.status === 403) {
+        invalidateReviewerSession();
+        throw error;
+      }
+      if (error?.status) throw error;
+      const [refreshedCohorts, refreshed] = await Promise.all([
+        loadCohorts(),
+        loadReviewerState({ quiet: true }),
+      ]);
+      const targetId = String(id);
+      const retained = [
+        ...(Array.isArray(refreshedCohorts) ? refreshedCohorts : []),
+        refreshed?.currentCohort,
+        refreshed?.previousCohort,
+      ].filter(Boolean);
+      const targetStillExists = retained.some((cohort) => cohortIdentity(cohort).includes(targetId));
+      if (
+        refreshed?.authenticated
+        && Array.isArray(refreshedCohorts)
+        && !targetStillExists
+        && !refreshed.currentCohort
+      ) {
+        setNotice('The active cohort was deleted. Applicant access is closed.');
+        return;
+      }
       throw error;
     }
   };
@@ -662,8 +699,8 @@ export default function Assessment() {
             isLoading={cohortsLoading}
             error={cohortsError}
             onReload={loadCohorts}
-            onCreate={handleCreateCohort}
-            onActivate={handleActivateCohort}
+            onCreateAndActivate={handleCreateAndActivateCohort}
+            onDeleteActive={handleDeleteActiveCohort}
           />
         )}
       </main>

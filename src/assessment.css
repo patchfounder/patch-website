@@ -31,6 +31,7 @@
 
 .assessment-page button,
 .assessment-page input,
+.assessment-page select,
 .assessment-page a,
 .assessment-access button,
 .assessment-access a {
@@ -339,13 +340,11 @@
 }
 
 .assessment-applicant-header h2:focus,
-.assessment-confirmation h3:focus,
-.assessment-activation-warning h3:focus {
+.assessment-confirmation h3:focus {
   outline: none;
 }
 
-.assessment-confirmation h3:focus-visible,
-.assessment-activation-warning h3:focus-visible {
+.assessment-confirmation h3:focus-visible {
   outline: 2px solid var(--assessment-turquoise);
   outline-offset: 4px;
   border-radius: 2px;
@@ -644,8 +643,7 @@
   color: var(--assessment-white);
 }
 
-.assessment-confirmation,
-.assessment-activation-warning {
+.assessment-confirmation {
   padding: 24px 20px max(24px, env(safe-area-inset-bottom));
   border-top: 1px solid;
 }
@@ -655,20 +653,17 @@
   background: var(--assessment-success-soft);
 }
 
-.assessment-confirmation-fail,
-.assessment-activation-warning {
+.assessment-confirmation-fail {
   border-color: #e8b8b4;
   background: var(--assessment-danger-soft);
 }
 
-.assessment-confirmation h3,
-.assessment-activation-warning h3 {
+.assessment-confirmation h3 {
   margin-bottom: 10px;
   font-size: 1.35rem;
 }
 
-.assessment-confirmation > p:not(.assessment-eyebrow):not(.assessment-confirmation-error),
-.assessment-activation-warning > p:not(.assessment-eyebrow):not(.assessment-confirmation-error) {
+.assessment-confirmation > p:not(.assessment-eyebrow):not(.assessment-confirmation-error) {
   margin-bottom: 20px;
   color: #4f585a;
   font-size: 0.9rem;
@@ -906,54 +901,6 @@
   gap: 22px;
 }
 
-.assessment-password-workflow {
-  display: grid;
-  gap: 10px;
-  padding: 18px;
-  border: 1px solid #b8dfe5;
-  border-radius: 18px;
-  background: #f2fbfc;
-}
-
-.assessment-password-workflow > div {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  color: var(--assessment-black);
-  font-size: 0.84rem;
-  font-weight: 600;
-}
-
-.assessment-password-workflow strong {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--assessment-navy);
-  color: var(--assessment-white);
-  font-size: 0.72rem;
-}
-
-.assessment-password-workflow > a {
-  width: fit-content;
-  min-height: 44px;
-  margin-top: 4px;
-  padding: 11px 14px;
-  border-radius: 10px;
-  background: var(--assessment-turquoise);
-  color: var(--assessment-white);
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.assessment-password-workflow > a:hover {
-  background: var(--assessment-navy);
-  color: var(--assessment-white);
-}
-
 .assessment-cohort-list-section,
 .assessment-cohort-create {
   padding: 20px;
@@ -978,6 +925,9 @@
 }
 
 .assessment-cohort-card {
+  display: grid;
+  width: 100%;
+  gap: 18px;
   padding: 17px;
   border: 1px solid var(--assessment-line);
   border-radius: 15px;
@@ -989,7 +939,6 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
 }
 
 .assessment-cohort-card h4 {
@@ -1006,6 +955,12 @@
   min-width: 88px;
   min-height: 44px;
   padding: 8px 13px;
+}
+
+.assessment-cohort-delete-trigger {
+  border-color: #d9a9a5 !important;
+  background: var(--assessment-white);
+  color: var(--assessment-danger);
 }
 
 .assessment-cohort-dates,
@@ -1031,39 +986,41 @@
   font-weight: 600;
 }
 
-.assessment-activation-warning {
+.assessment-cohort-delete-confirmation {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid #e8b8b4;
-  border-radius: 20px;
+  border-radius: 12px;
+  background: var(--assessment-danger-soft);
 }
 
-.assessment-confirm-checkbox {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  align-items: start;
-  gap: 11px;
-  margin: 0 0 20px;
+.assessment-cohort-delete-confirmation > p {
+  margin: 0;
   color: #59221e;
-  cursor: pointer;
-  font-size: 0.87rem;
+  font-size: 0.84rem;
   font-weight: 600;
   line-height: 1.45;
 }
 
-.assessment-confirm-checkbox input {
-  width: 22px;
-  height: 22px;
-  margin: 0;
-  accent-color: var(--assessment-danger);
+.assessment-cohort-delete-confirmation > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.assessment-cohort-delete-confirmation .assessment-button {
+  min-width: 130px;
 }
 
 .assessment-cohort-create {
   display: grid;
-  gap: 24px;
+  gap: 20px;
 }
 
-.assessment-cohort-create > div > p:last-child {
-  margin: 10px 0 0;
-  font-size: 0.86rem;
+.assessment-cohort-create > h3 {
+  margin: 0;
 }
 
 .assessment-cohort-create form {
@@ -1085,7 +1042,8 @@
   font-weight: 650;
 }
 
-.assessment-field input {
+.assessment-field input,
+.assessment-field select {
   width: 100%;
   min-width: 0;
   min-height: 50px;
@@ -1096,6 +1054,49 @@
   color: var(--assessment-black);
   font-size: 16px;
   font-weight: 450;
+}
+
+.assessment-field select {
+  cursor: pointer;
+}
+
+.assessment-password-control {
+  position: relative;
+}
+
+.assessment-password-control input {
+  padding-right: 56px;
+}
+
+.assessment-password-control > button {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--assessment-navy);
+  cursor: pointer;
+}
+
+.assessment-password-control > button svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.75;
+}
+
+.assessment-password-control > button:hover {
+  background: var(--assessment-soft-blue);
 }
 
 .assessment-field small {
@@ -1178,13 +1179,15 @@
 .assessment-page button:focus-visible,
 .assessment-page a:focus-visible,
 .assessment-page input:focus-visible,
+.assessment-page select:focus-visible,
 .assessment-access button:focus-visible,
 .assessment-access a:focus-visible {
   outline: 3px solid rgba(0, 165, 192, 0.38);
   outline-offset: 3px;
 }
 
-.assessment-page input:focus-visible {
+.assessment-page input:focus-visible,
+.assessment-page select:focus-visible {
   border-color: var(--assessment-turquoise);
 }
 
@@ -1273,16 +1276,6 @@
     flex: 0 0 150px;
   }
 
-  .assessment-password-workflow {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-    align-items: center;
-    padding: 16px 18px;
-  }
-
-  .assessment-password-workflow > a {
-    margin: 0 0 0 6px;
-  }
-
   .assessment-live-region {
     min-height: 44px;
   }
@@ -1306,15 +1299,6 @@
     padding: 26px 24px;
   }
 
-  .assessment-cohort-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .assessment-cohort-create {
-    grid-template-columns: minmax(200px, 0.72fr) minmax(0, 1.28fr);
-    gap: 42px;
-    align-items: start;
-  }
 }
 
 @media (min-width: 980px) {
@@ -1354,9 +1338,23 @@
     border-bottom: 0;
   }
 
-  .assessment-cohort-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .assessment-cohort-card {
+    grid-template-columns: minmax(180px, 0.78fr) minmax(250px, 1.1fr) minmax(250px, 0.9fr);
+    align-items: center;
+    padding: 22px 24px;
   }
+
+  .assessment-cohort-dates {
+    padding: 0 24px;
+    border-right: 1px solid var(--assessment-line);
+    border-bottom: 0;
+    border-left: 1px solid var(--assessment-line);
+  }
+
+  .assessment-cohort-counts {
+    padding-top: 0;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {

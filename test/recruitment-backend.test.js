@@ -39,16 +39,25 @@ test("service preserves only current/previous cohorts and attempts each outcome 
       (error) => error.code === "cohort_not_open" && error.statusCode === 403,
       "no cohort means no applicant can log in",
     );
-    const septemberDraft = await service.createNextCohort({
+    const supersededSeptemberDraft = await service.createNextCohort({
+      slug: "2026-09",
+      displayName: "September 2026",
+      password: "superseded-september-password",
+      opensAt: "2026-09-01T00:00",
+      closesAt: "2026-09-30T23:59",
+    });
+    const septemberActivated = await service.createAndActivateCohort({
       slug: "2026-09",
       displayName: "September 2026",
       password: "shared-september-password",
       opensAt: "2026-09-01T00:00",
       closesAt: "2026-09-30T23:59",
     });
-    assert.equal(septemberDraft.slug, "2026-09");
-    assert.equal(septemberDraft.displayName, "September 2026");
-    service.activateNextCohort(septemberDraft.cohortId);
+    const septemberCohort = septemberActivated.current;
+    assert.equal(septemberCohort.slug, "2026-09");
+    assert.equal(septemberCohort.displayName, "September 2026");
+    assert.equal(database.getCohortBySlot("next"), null);
+    assert.equal(database.getCohortById(supersededSeptemberDraft.cohortId), null);
     await assert.rejects(
       service.unlockApplicant("shared-september-password"),
       (error) => error.code === "cohort_not_open" && error.statusCode === 403,
@@ -59,6 +68,11 @@ test("service preserves only current/previous cohorts and attempts each outcome 
     await assert.rejects(
       service.unlockApplicant("wrong-password"),
       (error) => error.code === "invalid_cohort_password",
+    );
+    await assert.rejects(
+      service.unlockApplicant("superseded-september-password"),
+      (error) => error.code === "invalid_cohort_password",
+      "one-step activation replaces a legacy next cohort and its password",
     );
     const unlocked = await service.unlockApplicant("shared-september-password");
 
@@ -118,14 +132,15 @@ test("service preserves only current/previous cohorts and attempts each outcome 
       [secondRecord.applicationId, firstRecord.applicationId],
     );
 
-    const octoberDraft = await service.createNextCohort({
+    const octoberActivated = await service.createAndActivateCohort({
       slug: "2026-10",
       displayName: "October 2026",
       password: "shared-october-password",
       opensAt: "2026-10-01T00:00",
       closesAt: "2026-10-31T23:59",
     });
-    service.activateNextCohort(octoberDraft.cohortId);
+    assert.equal(octoberActivated.current.slug, "2026-10");
+    assert.equal(database.getCohortBySlot("next"), null);
     assert.throws(
       () => service.validateApplicantSession(unlocked.sessionPayload),
       (error) => error.code === "applicant_session_expired",
@@ -151,19 +166,18 @@ test("service preserves only current/previous cohorts and attempts each outcome 
       new Set(["2026-09", "2026-10"]),
     );
 
-    const novemberDraft = await service.createNextCohort({
+    const activated = await service.createAndActivateCohort({
       slug: "2026-11",
       displayName: "November 2026",
       password: "shared-november-password",
       opensAt: "2026-11-01T00:00",
       closesAt: "2026-11-30T23:59",
     });
-    const activated = service.activateNextCohort(novemberDraft.cohortId);
     assert.deepEqual(
       [activated.current.slug, activated.previous.slug],
       ["2026-11", "2026-10"],
     );
-    assert.equal(database.getCohortById(septemberDraft.cohortId), null);
+    assert.equal(database.getCohortById(septemberCohort.cohortId), null);
     assert.equal(database.getApplication(firstRecord.applicationId), null);
     assert.equal(database.getApplication(secondRecord.applicationId), null);
     assert.equal(existsSync(path.join(storage.audioDirectory, "2026-09")), false);
@@ -245,6 +259,280 @@ test("cohort activation is blocked while applications are still waiting", () => 
     (error) => error.code === "current_cohort_has_pending_applications",
   );
   assert.equal(quarantineCalled, false);
+});
+
+test("one-step activation blocks pending work and deleting the active cohort closes access", async () => {
+  const dataRoot = temporaryDataRoot("recruitment-one-step");
+  const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });
+  storage.initialize();
+  const database = createRecruitmentDatabase({ databasePath: storage.databasePath });
+  let now = new Date("2026-09-15T10:00:00.000Z");
+  const service = createRecruitmentService({
+    database,
+    storage,
+    emailSender: {
+      configured: true,
+      async sendOutcome() { return { ok: true, providerId: "one-step-test" }; },
+    },
+    now: () => now,
+  });
+
+  try {
+    const september = await service.createAndActivateCohort({
+      slug: "2026-09",
+      displayName: "September 2026",
+      password: "shared-september-password",
+      opensAt: "2026-09-01T00:00",
+      closesAt: "2026-09-30T23:59",
+    });
+    const septemberSession = await service.unlockApplicant("shared-september-password");
+    const septemberSubmission = service.submitApplication({
+      sessionPayload: septemberSession.sessionPayload,
+      fullName: "September Applicant",
+      email: "september@example.com",
+      linkedinUrl: "https://linkedin.com/in/september-applicant/",
+      audioDurationSeconds: 1,
+      audioBuffer: Buffer.from("september-private-audio"),
+      audioMimeType: "audio/webm",
+    });
+    await service.decideApplication(septemberSubmission.application.applicationId, "pass");
+
+    const october = await service.createAndActivateCohort({
+      slug: "2026-10",
+      displayName: "October 2026",
+      password: "shared-october-password",
+      opensAt: "2026-10-01T00:00",
+      closesAt: "2026-10-31T23:59",
+    });
+    now = new Date("2026-10-15T10:00:00.000Z");
+    const octoberSession = await service.unlockApplicant("shared-october-password");
+    const octoberSubmission = service.submitApplication({
+      sessionPayload: octoberSession.sessionPayload,
+      fullName: "October Applicant",
+      email: "october@example.com",
+      linkedinUrl: "https://linkedin.com/in/october-applicant/",
+      audioDurationSeconds: 1,
+      audioBuffer: Buffer.from("october-private-audio"),
+      audioMimeType: "audio/webm",
+    });
+    writeFileSync(path.join(storage.audioDirectory, "2026-10", "orphan.private"), "orphan");
+
+    await assert.rejects(
+      service.createAndActivateCohort({
+        slug: "2026-11",
+        displayName: "November 2026",
+        password: "shared-november-password",
+        opensAt: "2026-11-01T00:00",
+        closesAt: "2026-11-30T23:59",
+      }),
+      (error) => error.code === "current_cohort_has_pending_applications" && error.statusCode === 409,
+    );
+    assert.equal(database.getCohortBySlot("current").cohortId, october.current.cohortId);
+    assert.equal(database.getCohortBySlot("next"), null, "a failed one-step action leaves no draft cohort");
+    assert.equal(existsSync(path.join(storage.audioDirectory, "2026-10", "orphan.private")), true);
+
+    assert.throws(
+      () => service.deleteCurrentCohort("not-the-active-cohort"),
+      (error) => error.code === "cohort_delete_target_mismatch" && error.statusCode === 409,
+    );
+    assert.equal(database.getCohortBySlot("current").cohortId, october.current.cohortId);
+    assert.equal(existsSync(path.join(storage.audioDirectory, "2026-10", "orphan.private")), true);
+
+    const deleted = service.deleteCurrentCohort(october.current.cohortId);
+    assert.equal(deleted.deletedCohortId, october.current.cohortId);
+    assert.equal(database.getCohortBySlot("current"), null);
+    assert.equal(database.getCohortBySlot("previous").cohortId, september.current.cohortId);
+    assert.equal(database.getApplication(octoberSubmission.application.applicationId), null);
+    assert.equal(existsSync(path.join(storage.audioDirectory, "2026-10")), false);
+    assert.throws(
+      () => service.validateApplicantSession(octoberSession.sessionPayload),
+      (error) => error.code === "applicant_session_expired",
+    );
+    assert.equal(service.getApplicantStatus(octoberSession.sessionPayload).state, "unavailable");
+
+    const november = await service.createAndActivateCohort({
+      slug: "2026-11",
+      displayName: "November 2026",
+      password: "shared-november-password",
+      opensAt: "2026-11-01T00:00",
+      closesAt: "2026-11-30T23:59",
+    });
+    assert.equal(november.current.slug, "2026-11");
+    assert.equal(november.previous.cohortId, september.current.cohortId);
+
+    service.deleteCurrentCohort(november.current.cohortId);
+    const decemberDraft = await service.createNextCohort({
+      slug: "2026-12",
+      displayName: "December 2026",
+      password: "shared-december-password",
+      opensAt: "2026-12-01T00:00",
+      closesAt: "2026-12-31T23:59",
+    });
+    const december = service.activateNextCohort(decemberDraft.cohortId);
+    assert.equal(december.current.slug, "2026-12");
+    assert.equal(
+      december.previous.cohortId,
+      september.current.cohortId,
+      "legacy activation must retain previous history when no current cohort exists",
+    );
+  } finally {
+    database.close();
+    rmSync(dataRoot, { recursive: true, force: true });
+  }
+});
+
+test("one-step activation restores quarantined recordings if the database transition fails", async () => {
+  const dataRoot = temporaryDataRoot("recruitment-one-step-rollback");
+  const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });
+  storage.initialize();
+  mkdirSync(path.join(storage.audioDirectory, "2026-09"), { recursive: true });
+  const privateAudioPath = path.join(storage.audioDirectory, "2026-09", "private-recording.webm");
+  writeFileSync(privateAudioPath, "private-audio");
+  const service = createRecruitmentService({
+    database: {
+      previewCreateAndActivate: () => ({
+        purgeCohortMonths: ["2026-09"],
+        purgeAudioStorageKeys: ["2026-09/private-recording.webm"],
+      }),
+      createAndActivateCohort() { throw new Error("simulated activation failure"); },
+    },
+    storage,
+    emailSender: { configured: true, async sendOutcome() { return { ok: true }; } },
+    now: () => new Date("2026-10-01T10:00:00.000Z"),
+  });
+
+  try {
+    await assert.rejects(
+      service.createAndActivateCohort({
+        slug: "2026-10",
+        displayName: "October 2026",
+        password: "shared-october-password",
+        opensAt: "2026-10-01T00:00",
+        closesAt: "2026-10-31T23:59",
+      }),
+      /simulated activation failure/,
+    );
+    assert.equal(readFileSync(privateAudioPath, "utf8"), "private-audio");
+    assert.deepEqual(readdirSync(path.join(dataRoot, ".trash")), []);
+  } finally {
+    rmSync(dataRoot, { recursive: true, force: true });
+  }
+});
+
+test("active-cohort deletion restores the full recording folder if the database transition fails", () => {
+  const dataRoot = temporaryDataRoot("recruitment-delete-rollback");
+  const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });
+  storage.initialize();
+  mkdirSync(path.join(storage.audioDirectory, "2026-10"), { recursive: true });
+  const privateAudioPath = path.join(storage.audioDirectory, "2026-10", "private-recording.webm");
+  const orphanPath = path.join(storage.audioDirectory, "2026-10", "orphan.private");
+  writeFileSync(privateAudioPath, "private-audio");
+  writeFileSync(orphanPath, "orphan-audio");
+  const service = createRecruitmentService({
+    database: {
+      previewDeleteCurrentCohort: () => ({
+        expectedCurrentId: "current",
+        monthKey: "2026-10",
+        audioStorageKeys: ["2026-10/private-recording.webm"],
+      }),
+      deleteCurrentCohort() { throw new Error("simulated deletion failure"); },
+    },
+    storage,
+    emailSender: { configured: true, async sendOutcome() { return { ok: true }; } },
+  });
+
+  try {
+    assert.throws(() => service.deleteCurrentCohort("current"), /simulated deletion failure/);
+    assert.equal(readFileSync(privateAudioPath, "utf8"), "private-audio");
+    assert.equal(readFileSync(orphanPath, "utf8"), "orphan-audio");
+    assert.deepEqual(readdirSync(path.join(dataRoot, ".trash")), []);
+  } finally {
+    rmSync(dataRoot, { recursive: true, force: true });
+  }
+});
+
+test("a committed cohort transition is not reported as failed when trash cleanup is deferred", async () => {
+  const current = {
+    cohortId: "new-current",
+    monthKey: "2026-10",
+    displayName: "October 2026",
+    slot: "current",
+    opensAt: "2026-09-30T22:00:00.000Z",
+    closesAt: "2026-10-31T22:59:00.000Z",
+    applicationCount: 0,
+    pendingCount: 0,
+    processedCount: 0,
+  };
+  let cleanupAttempts = 0;
+  const service = createRecruitmentService({
+    database: {
+      previewCreateAndActivate: () => ({ purgeCohortMonths: [], purgeAudioStorageKeys: [] }),
+      createAndActivateCohort: () => ({ current, previous: null, purgedCohortIds: [] }),
+      previewDeleteCurrentCohort: () => ({
+        expectedCurrentId: current.cohortId,
+        monthKey: current.monthKey,
+        audioStorageKeys: [],
+      }),
+      deleteCurrentCohort: () => ({
+        deletedCohortId: current.cohortId,
+        deletedMonthKey: current.monthKey,
+      }),
+    },
+    storage: {
+      quarantineCohorts: () => ({ operationDirectory: "/private/quarantine" }),
+      rollbackQuarantine() {},
+      commitQuarantine() {
+        cleanupAttempts += 1;
+        throw new Error("simulated post-commit cleanup failure");
+      },
+    },
+    emailSender: { configured: true, async sendOutcome() { return { ok: true }; } },
+    now: () => new Date("2026-10-15T10:00:00.000Z"),
+  });
+
+  const activated = await service.createAndActivateCohort({
+    slug: "2026-10",
+    displayName: "October 2026",
+    password: "shared-october-password",
+    opensAt: "2026-10-01T00:00",
+    closesAt: "2026-10-31T23:59",
+  });
+  assert.equal(activated.current.cohortId, current.cohortId);
+  assert.equal(service.deleteCurrentCohort(current.cohortId).deletedCohortId, current.cohortId);
+  assert.equal(cleanupAttempts, 2);
+});
+
+test("applicant unlock rechecks the active cohort after password verification", async () => {
+  const dataRoot = temporaryDataRoot("recruitment-unlock-race");
+  const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });
+  storage.initialize();
+  const database = createRecruitmentDatabase({ databasePath: storage.databasePath });
+  const now = new Date("2026-09-15T10:00:00.000Z");
+  const service = createRecruitmentService({
+    database,
+    storage,
+    emailSender: { configured: true, async sendOutcome() { return { ok: true }; } },
+    now: () => now,
+  });
+
+  try {
+    const september = await service.createAndActivateCohort({
+      slug: "2026-09",
+      displayName: "September 2026",
+      password: "shared-september-password",
+      opensAt: "2026-09-01T00:00",
+      closesAt: "2026-09-30T23:59",
+    });
+    const unlock = service.unlockApplicant("shared-september-password");
+    service.deleteCurrentCohort(september.current.cohortId);
+    await assert.rejects(
+      unlock,
+      (error) => error.code === "cohort_not_open" && error.statusCode === 403,
+    );
+  } finally {
+    database.close();
+    rmSync(dataRoot, { recursive: true, force: true });
+  }
 });
 
 test("a missing outcome-email configuration cannot consume a decision", async () => {
@@ -367,6 +655,8 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
 
   let submitted;
   let activatedId;
+  let createdAndActivated;
+  let deletedId;
   const currentCohort = {
     id: "current",
     cohortId: "current",
@@ -411,6 +701,17 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
     getReviewerAudio: () => ({ filePath: audioPath, fileSize: 10, mimeType: "audio/webm" }),
     async decideApplication() { return { application: history[0], email: { status: "sent" } }; },
     async createNextCohort(input) { return { id: "next", cohortId: "next", slug: input.slug }; },
+    async createAndActivateCohort(input) {
+      createdAndActivated = input;
+      return {
+        current: { id: "new-current", cohortId: "new-current", slug: input.slug },
+        previous: currentCohort,
+      };
+    },
+    deleteCurrentCohort(id) {
+      deletedId = id;
+      return { deletedCohortId: id, deletedMonthKey: "2026-09", deletedAudioCount: 1 };
+    },
     activateNextCohort(id) { activatedId = id; return { current: { id }, previous: currentCohort }; },
   };
   const app = await createRecruitmentApp({
@@ -501,6 +802,32 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
     });
     assert.equal(created.status, 201);
     assert.equal((await created.json()).cohort.slug, "2026-10");
+    assert.equal(createdAndActivated.displayName, "October 2026");
+
+    const anonymousDelete = await fetch(`${baseUrl}/api/recruitment/reviewer/cohorts/current`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: true }),
+    });
+    assert.equal(anonymousDelete.status, 401);
+    assert.equal(deletedId, undefined);
+
+    const unconfirmedDelete = await fetch(`${baseUrl}/api/recruitment/reviewer/cohorts/current`, {
+      method: "DELETE",
+      headers: { Cookie: reviewerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: false }),
+    });
+    assert.equal(unconfirmedDelete.status, 400);
+    assert.equal(deletedId, undefined);
+
+    const confirmedDelete = await fetch(`${baseUrl}/api/recruitment/reviewer/cohorts/current`, {
+      method: "DELETE",
+      headers: { Cookie: reviewerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: true }),
+    });
+    assert.equal(confirmedDelete.status, 200);
+    assert.equal((await confirmedDelete.json()).deletedCohortId, "current");
+    assert.equal(deletedId, "current");
 
     const audio = await fetch(`${baseUrl}/api/recruitment/reviewer/applications/application-one/audio`, {
       headers: { Cookie: reviewerCookie, Range: "bytes=2-5" },

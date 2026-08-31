@@ -142,6 +142,15 @@ export function createRecruitmentService(options = {}) {
     return date;
   }
 
+  function finishCommittedQuarantine(quarantine) {
+    try {
+      storage.commitQuarantine(quarantine);
+    } catch (_error) {
+      // The database transition is already durable. Startup recovery safely removes
+      // any committed quarantine that could not be cleaned up immediately.
+    }
+  }
+
   function getApplicantStatus(sessionPayload = null) {
     const instant = currentTime();
     const session = validateApplicantSession(sessionPayload, { throwOnFailure: false, now: instant });
@@ -173,14 +182,26 @@ export function createRecruitmentService(options = {}) {
     if (!await verifyCohortPassword(password, cohort)) {
       throw new RecruitmentServiceError("That application code is not valid.", "invalid_cohort_password", 401);
     }
-    const expiresAt = new Date(cohort.closesAt);
+    const confirmedCohort = database.getCohortBySlot("current");
+    if (
+      !confirmedCohort
+      || confirmedCohort.cohortId !== cohort.cohortId
+      || cohortWindowState(confirmedCohort, currentTime()) !== "open"
+    ) {
+      throw new RecruitmentServiceError(
+        "This application cohort is not currently open.",
+        "cohort_not_open",
+        403,
+      );
+    }
+    const expiresAt = new Date(confirmedCohort.closesAt);
     return {
-      cohort: publicCohort(cohort, instant),
+      cohort: publicCohort(confirmedCohort, instant),
       expiresAt,
       sessionPayload: Object.freeze({
         v: 1,
         kind: "applicant",
-        cohortId: cohort.cohortId,
+        cohortId: confirmedCohort.cohortId,
         exp: Math.floor(expiresAt.getTime() / 1000),
       }),
     };
@@ -317,7 +338,7 @@ export function createRecruitmentService(options = {}) {
     };
   }
 
-  async function createNextCohort(input) {
+  async function prepareCohort(input) {
     const monthKey = assertMonthKey(input.monthKey ?? input.slug);
     const displayName = requiredText(input.displayName ?? monthKey, "Cohort display name", 120);
     const opensAt = normalizeMadridTimestamp(input.opensAt);
@@ -332,7 +353,7 @@ export function createRecruitmentService(options = {}) {
       );
     }
     const password = await hashCohortPassword(input.password);
-    const cohort = database.createNextCohort({
+    return {
       monthKey,
       displayName,
       opensAt,
@@ -341,8 +362,54 @@ export function createRecruitmentService(options = {}) {
       passwordHash: password.hash,
       passwordParameters: password.parameters,
       createdAt: currentTime().toISOString(),
-    });
+    };
+  }
+
+  async function createNextCohort(input) {
+    const prepared = await prepareCohort(input);
+    const cohort = database.createNextCohort(prepared);
     return publicCohort(cohort, currentTime());
+  }
+
+  async function createAndActivateCohort(input) {
+    const prepared = await prepareCohort(input);
+    const preview = database.previewCreateAndActivate(prepared.monthKey);
+    const quarantine = storage.quarantineCohorts(preview.purgeCohortMonths);
+    let result;
+    try {
+      result = database.createAndActivateCohort(preview, {
+        ...prepared,
+        activatedAt: currentTime().toISOString(),
+      });
+    } catch (error) {
+      storage.rollbackQuarantine(quarantine);
+      throw error;
+    }
+    finishCommittedQuarantine(quarantine);
+    const instant = currentTime();
+    return {
+      current: publicCohort(result.current, instant),
+      previous: publicCohort(result.previous, instant),
+      purgedCohortIds: result.purgedCohortIds,
+      purgedAudioCount: preview.purgeAudioStorageKeys.length,
+    };
+  }
+
+  function deleteCurrentCohort(expectedCohortId) {
+    const preview = database.previewDeleteCurrentCohort(expectedCohortId);
+    const quarantine = storage.quarantineCohorts([preview.monthKey]);
+    let result;
+    try {
+      result = database.deleteCurrentCohort(preview);
+    } catch (error) {
+      storage.rollbackQuarantine(quarantine);
+      throw error;
+    }
+    finishCommittedQuarantine(quarantine);
+    return {
+      ...result,
+      deletedAudioCount: preview.audioStorageKeys.length,
+    };
   }
 
   function activateNextCohort(expectedCohortId = "") {
@@ -370,7 +437,7 @@ export function createRecruitmentService(options = {}) {
       storage.rollbackQuarantine(quarantine);
       throw error;
     }
-    storage.commitQuarantine(quarantine);
+    finishCommittedQuarantine(quarantine);
     return {
       current: publicCohort(result.current, currentTime()),
       previous: publicCohort(result.previous, currentTime()),
@@ -410,6 +477,8 @@ export function createRecruitmentService(options = {}) {
     getReviewerAudio,
     decideApplication,
     createNextCohort,
+    createAndActivateCohort,
+    deleteCurrentCohort,
     activateNextCohort,
     listCohortControls,
     healthCheck,
