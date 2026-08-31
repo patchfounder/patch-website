@@ -12,6 +12,11 @@ const routes = [
     description: 'Your Patch meeting link.',
   },
   {
+    path: 'coaching',
+    title: 'Patch Coaching',
+    description: 'Your Patch coaching link.',
+  },
+  {
     path: 'pre',
     title: 'Patch Pre-Masterclass',
     description: 'Prepare for your Patch pre-masterclass session.',
