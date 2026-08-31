@@ -34,6 +34,11 @@ test("service preserves only current/previous cohorts and attempts each outcome 
   const service = createRecruitmentService({ database, storage, emailSender, now: () => now });
 
   try {
+    await assert.rejects(
+      service.unlockApplicant("unused-password"),
+      (error) => error.code === "cohort_not_open" && error.statusCode === 403,
+      "no cohort means no applicant can log in",
+    );
     const septemberDraft = await service.createNextCohort({
       slug: "2026-09",
       displayName: "September 2026",
@@ -44,6 +49,11 @@ test("service preserves only current/previous cohorts and attempts each outcome 
     assert.equal(septemberDraft.slug, "2026-09");
     assert.equal(septemberDraft.displayName, "September 2026");
     service.activateNextCohort(septemberDraft.cohortId);
+    await assert.rejects(
+      service.unlockApplicant("shared-september-password"),
+      (error) => error.code === "cohort_not_open" && error.statusCode === 403,
+      "a cohort password cannot be used before its opening time",
+    );
 
     now = new Date("2026-09-15T10:00:00.000Z");
     await assert.rejects(
