@@ -1,0 +1,1300 @@
+.coach-recruitment-ui {
+  --coach-accent: var(--turquoise, #00a5c0);
+  --coach-action: #007f95;
+  --coach-action-hover: #006b7e;
+  --coach-ink: var(--black, #000000);
+  --coach-copy: var(--grey, #464646);
+  --coach-line: var(--line, #dfe3e5);
+  --coach-paper: var(--white, #ffffff);
+  --coach-soft: var(--soft, #f4f6f6);
+  --coach-soft-blue: var(--soft-blue, #eef5f7);
+  --coach-navy: var(--navy, #08375d);
+  --coach-error: #9a2f2f;
+  --coach-success: #167a5c;
+}
+
+.coach-recruitment-ui .coach-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.coach-recruitment-ui .coach-control {
+  min-height: 48px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.2;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.coach-recruitment-ui .coach-control:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.coach-recruitment-ui .coach-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.coach-recruitment-ui .coach-control:focus-visible,
+.coach-recruitment-ui .coach-field-input:focus-visible,
+.coach-recruitment-ui .coach-player-seek:focus-visible,
+.coach-recruitment-ui .coach-confirmation input:focus-visible,
+.coach-recruitment-ui .coach-gate-mobile-brand:focus-visible,
+.coach-recruitment-ui .coach-gate-home-link:focus-visible,
+.coach-recruitment-ui .coach-inline-link:focus-visible,
+.coach-recruitment-ui .coach-review-details a:focus-visible {
+  outline: 3px solid rgba(0, 127, 149, 0.32);
+  outline-offset: 3px;
+}
+
+.coach-recruitment-ui .coach-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.86rem 1.25rem;
+  background: var(--coach-action);
+  color: var(--coach-paper);
+  box-shadow: 0 12px 28px rgba(8, 55, 93, 0.13);
+}
+
+.coach-recruitment-ui .coach-primary-button:hover:not(:disabled) {
+  background: var(--coach-action-hover);
+}
+
+.coach-recruitment-ui .coach-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.84rem 1.2rem;
+  border-color: #b9c4c7;
+  background: var(--coach-paper);
+  color: var(--coach-ink);
+}
+
+.coach-recruitment-ui .coach-secondary-button:hover:not(:disabled) {
+  border-color: #84969b;
+  background: #f8fafa;
+}
+
+.coach-recruitment-ui .coach-field {
+  display: grid;
+  gap: 0.48rem;
+  color: var(--coach-ink);
+}
+
+.coach-recruitment-ui .coach-field > span {
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+.coach-recruitment-ui .coach-field-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.78rem 0.9rem;
+  border: 1px solid #bdc7ca;
+  border-radius: 10px;
+  outline: 0;
+  background: var(--coach-paper);
+  color: var(--coach-ink);
+  font-size: 16px;
+  line-height: 1.35;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.coach-recruitment-ui .coach-field-input:hover {
+  border-color: #8fa0a5;
+}
+
+.coach-recruitment-ui .coach-field-input:focus {
+  border-color: var(--coach-action);
+  box-shadow: 0 0 0 4px rgba(0, 127, 149, 0.12);
+}
+
+.coach-recruitment-ui .coach-field-input[aria-invalid="true"] {
+  border-color: var(--coach-error);
+}
+
+.coach-recruitment-ui .coach-field small {
+  color: #6c7476;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.coach-recruitment-ui .coach-field .coach-field-error,
+.coach-recruitment-ui .coach-field-error {
+  color: var(--coach-error);
+  font-weight: 500;
+}
+
+.coach-recruitment-ui .coach-message,
+.coach-recruitment-ui .coach-error-summary {
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(154, 47, 47, 0.28);
+  border-radius: 10px;
+  background: #fff6f5;
+  color: #7f2525;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.coach-recruitment-ui .coach-error-summary:focus {
+  outline: 3px solid rgba(154, 47, 47, 0.2);
+  outline-offset: 2px;
+}
+
+/* Password gate */
+.coach-recruitment-ui.coach-gate-shell {
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--coach-soft);
+}
+
+.coach-recruitment-ui .coach-gate-brand-panel {
+  position: relative;
+  display: flex;
+  min-height: 210px;
+  align-items: flex-start;
+  justify-content: space-between;
+  overflow: hidden;
+  padding:
+    max(1.25rem, env(safe-area-inset-top))
+    max(1.25rem, env(safe-area-inset-right))
+    3.8rem
+    max(1.25rem, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 78% 25%, rgba(0, 165, 192, 0.64), transparent 31%),
+    linear-gradient(145deg, #062f50 0%, #07425d 52%, #006b7d 100%);
+  color: var(--coach-paper);
+}
+
+.coach-recruitment-ui .coach-gate-brand-word {
+  position: relative;
+  z-index: 2;
+  font-size: 1.12rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+}
+
+.coach-recruitment-ui .coach-gate-brand-panel > p {
+  position: relative;
+  z-index: 2;
+  max-width: 180px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.86rem;
+  line-height: 1.42;
+  text-align: right;
+}
+
+.coach-recruitment-ui .coach-gate-orbit {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+}
+
+.coach-recruitment-ui .coach-gate-orbit-one {
+  right: -60px;
+  bottom: -135px;
+  width: 300px;
+  height: 300px;
+}
+
+.coach-recruitment-ui .coach-gate-orbit-two {
+  right: 22px;
+  bottom: -68px;
+  width: 170px;
+  height: 170px;
+}
+
+.coach-recruitment-ui .coach-gate-signal {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.9rem;
+  display: flex;
+  height: 52px;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.76;
+  transform: rotate(-8deg);
+}
+
+.coach-recruitment-ui .coach-gate-signal i {
+  display: block;
+  width: 3px;
+  height: calc(9px + (var(--coach-bar-height, 1) * 3px));
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.coach-recruitment-ui .coach-gate-signal i:nth-child(3n + 1) {
+  height: 18px;
+}
+
+.coach-recruitment-ui .coach-gate-signal i:nth-child(4n + 2) {
+  height: 34px;
+}
+
+.coach-recruitment-ui .coach-gate-signal i:nth-child(5n) {
+  height: 48px;
+}
+
+.coach-recruitment-ui .coach-gate-form-panel {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  min-height: calc(100dvh - 182px);
+  align-content: center;
+  margin-top: -28px;
+  padding:
+    3rem
+    max(1.25rem, env(safe-area-inset-right))
+    max(2rem, calc(env(safe-area-inset-bottom) + 1.25rem))
+    max(1.25rem, env(safe-area-inset-left));
+  border-radius: 28px 28px 0 0;
+  background: var(--coach-paper);
+}
+
+.coach-recruitment-ui .coach-gate-form,
+.coach-recruitment-ui .coach-gate-state {
+  width: min(100%, 470px);
+  margin: 0 auto;
+}
+
+.coach-recruitment-ui .coach-gate-mobile-brand {
+  position: absolute;
+  top: 1.15rem;
+  left: max(1.25rem, env(safe-area-inset-left));
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  color: var(--coach-ink);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+}
+
+.coach-recruitment-ui .coach-gate-kicker,
+.coach-recruitment-ui .coach-success-kicker,
+.coach-recruitment-ui .coach-recorder-kicker,
+.coach-recruitment-ui .coach-review-heading > span {
+  display: block;
+  margin-bottom: 0.85rem;
+  color: var(--coach-action);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.coach-recruitment-ui .coach-gate-form h1,
+.coach-recruitment-ui .coach-gate-state h1 {
+  max-width: 430px;
+  margin-bottom: 1rem;
+  font-size: clamp(2rem, 10vw, 3.2rem);
+  font-weight: 400;
+  line-height: 0.98;
+}
+
+.coach-recruitment-ui .coach-gate-form > p,
+.coach-recruitment-ui .coach-gate-state > p {
+  max-width: 430px;
+  margin-bottom: 1.7rem;
+  color: #5a6264;
+  font-size: 0.97rem;
+  line-height: 1.6;
+}
+
+.coach-recruitment-ui .coach-gate-password {
+  margin-top: 1.4rem;
+}
+
+.coach-recruitment-ui .coach-gate-submit {
+  width: 100%;
+  margin-top: 1.35rem;
+}
+
+.coach-recruitment-ui .coach-gate-help {
+  margin: 1.15rem 0 0 !important;
+  color: #7b8284 !important;
+  font-size: 0.76rem !important;
+  line-height: 1.5 !important;
+}
+
+.coach-recruitment-ui .coach-gate-state-mark {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  margin-bottom: 1.4rem;
+  border-radius: 50%;
+  background: var(--coach-soft-blue);
+  color: var(--coach-action);
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.coach-recruitment-ui .coach-gate-state .coach-secondary-button {
+  margin-right: 1rem;
+}
+
+.coach-recruitment-ui .coach-gate-home-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--coach-action);
+  font-size: 0.86rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.coach-recruitment-ui .coach-gate-loading {
+  text-align: center;
+}
+
+.coach-recruitment-ui .coach-gate-loading h1,
+.coach-recruitment-ui .coach-gate-loading p {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.coach-recruitment-ui .coach-loading-mark {
+  display: block;
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 1.4rem;
+  border: 3px solid #dfe8ea;
+  border-top-color: var(--coach-action);
+  border-radius: 50%;
+  animation: coach-spin 760ms linear infinite;
+}
+
+@keyframes coach-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Application-specific additions */
+.coach-application-page .coach-stage-one-cta {
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.coach-application-page .coach-stage-one-cta:hover {
+  background: var(--coach-action-hover);
+  transform: translateY(-1px);
+}
+
+.coach-application-page .coach-stage-one-cta:focus-visible {
+  outline: 3px solid rgba(0, 127, 149, 0.28);
+  outline-offset: 3px;
+}
+
+.coach-application-page .coach-inline-link {
+  color: var(--coach-action);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.coach-application-page .coach-submission-section {
+  scroll-margin-top: 90px;
+  padding-right: env(safe-area-inset-right);
+  padding-left: env(safe-area-inset-left);
+  background: var(--coach-soft-blue);
+}
+
+.coach-application-page .coach-submission-heading {
+  max-width: 780px;
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.coach-application-page .coach-submission-heading h2 {
+  margin-bottom: 1rem;
+}
+
+.coach-application-page .coach-submission-heading p {
+  max-width: 680px;
+  margin-bottom: 0;
+  color: #505a5d;
+  font-size: clamp(1rem, 1.55vw, 1.12rem);
+  line-height: 1.65;
+}
+
+.coach-application-page .coach-application-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.coach-application-page .coach-form-card,
+.coach-application-page .coach-review-card {
+  padding: 1.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 18px;
+  background: var(--coach-paper);
+  box-shadow: 0 22px 64px rgba(8, 55, 93, 0.08);
+}
+
+.coach-application-page .coach-form-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-bottom: 1.4rem;
+}
+
+.coach-application-page .coach-form-card-heading > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--coach-soft-blue);
+  color: var(--coach-action);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.coach-application-page .coach-form-card-heading h3 {
+  margin-bottom: 0.25rem;
+  color: var(--coach-ink);
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+
+.coach-application-page .coach-form-card-heading p {
+  margin-bottom: 0;
+  color: #747c7e;
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.coach-application-page .coach-error-summary {
+  margin-bottom: 1.2rem;
+}
+
+.coach-application-page .coach-fields-grid {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.coach-application-page .coach-form-actions {
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.35rem;
+}
+
+.coach-application-page .coach-form-actions > p {
+  margin: 0;
+  color: #697274;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.coach-application-page .coach-review-button {
+  width: 100%;
+}
+
+/* Recorder */
+.coach-application-page .coach-recorder {
+  overflow: hidden;
+  border: 1px solid #d2dcde;
+  border-radius: 14px;
+  background: #f9fbfb;
+}
+
+.coach-application-page .coach-recorder-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #dce4e6;
+  background: var(--coach-paper);
+}
+
+.coach-application-page .coach-recorder-kicker {
+  margin-bottom: 0.28rem;
+  font-size: 0.64rem;
+}
+
+.coach-application-page .coach-recorder-heading h3 {
+  margin: 0;
+  color: var(--coach-ink);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.coach-application-page .coach-recorder-limit {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: var(--coach-soft-blue);
+  color: #536063;
+  font-size: 0.67rem;
+}
+
+.coach-application-page .coach-recorder-start-state,
+.coach-application-page .coach-recorder-live-state,
+.coach-application-page .coach-recorder-review-state,
+.coach-application-page .coach-recorder-unavailable {
+  padding: 1.15rem;
+}
+
+.coach-application-page .coach-recorder-start-state {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.coach-application-page .coach-recorder-mark {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  margin-bottom: 1rem;
+  border: 1px solid #d6e1e3;
+  border-radius: 50%;
+  background: var(--coach-paper);
+  box-shadow: 0 12px 30px rgba(8, 55, 93, 0.08);
+}
+
+.coach-application-page .coach-recorder-mark > span {
+  width: 22px;
+  height: 30px;
+  border: 2px solid var(--coach-action);
+  border-radius: 12px;
+}
+
+.coach-application-page .coach-recorder-mark > span::after {
+  display: block;
+  width: 32px;
+  height: 18px;
+  margin: 15px 0 0 -7px;
+  border-right: 2px solid var(--coach-action);
+  border-bottom: 2px solid var(--coach-action);
+  border-left: 2px solid var(--coach-action);
+  border-radius: 0 0 16px 16px;
+  content: "";
+}
+
+.coach-application-page .coach-recorder-start-state > p {
+  max-width: 520px;
+  margin-bottom: 1rem;
+  color: #687174;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.coach-application-page .coach-record-button {
+  width: min(100%, 250px);
+}
+
+.coach-application-page .coach-record-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.coach-application-page .coach-recorder-live-status,
+.coach-application-page .coach-recorder-ready-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #4e585a;
+  font-size: 0.78rem;
+}
+
+.coach-application-page .coach-recorder-live-status > span,
+.coach-application-page .coach-recorder-ready-line > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 500;
+}
+
+.coach-application-page .coach-recorder-live-status i,
+.coach-application-page .coach-recorder-ready-line i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d43e3e;
+}
+
+.coach-application-page .coach-recorder-ready-line i {
+  background: var(--coach-success);
+}
+
+.coach-application-page .coach-recorder-live-status strong {
+  color: var(--coach-ink);
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.coach-application-page .coach-recorder-wave {
+  display: flex;
+  height: 82px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin: 0.75rem 0 1rem;
+  overflow: hidden;
+}
+
+.coach-application-page .coach-recorder-wave i {
+  display: block;
+  width: 3px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--coach-accent);
+  animation: coach-wave 760ms ease-in-out infinite alternate;
+  animation-delay: calc(var(--coach-wave-index) * -43ms);
+}
+
+.coach-application-page .coach-recorder-wave i:nth-child(3n) {
+  height: 30px;
+}
+
+.coach-application-page .coach-recorder-wave i:nth-child(5n) {
+  height: 46px;
+}
+
+.coach-application-page .coach-recorder-wave i:nth-child(7n) {
+  height: 62px;
+}
+
+@keyframes coach-wave {
+  from { transform: scaleY(0.42); }
+  to { transform: scaleY(1); }
+}
+
+.coach-application-page .coach-stop-button {
+  display: flex;
+  width: min(100%, 250px);
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin: 0 auto;
+  border-color: #c5cdcf;
+  background: var(--coach-paper);
+  color: var(--coach-ink);
+}
+
+.coach-application-page .coach-stop-button > span {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: #c63737;
+}
+
+.coach-application-page .coach-recorder-ready-line {
+  margin-bottom: 0.85rem;
+}
+
+.coach-application-page .coach-recorder-review-state > .coach-secondary-button {
+  width: 100%;
+  margin-top: 0.85rem;
+}
+
+.coach-application-page .coach-recorder-unavailable strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--coach-ink);
+}
+
+.coach-application-page .coach-recorder-unavailable p {
+  margin-bottom: 0;
+  color: #616b6d;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.coach-application-page .coach-recorder > .coach-message {
+  margin: 0 1.15rem 1.15rem;
+}
+
+.coach-application-page .coach-recording-field-error {
+  display: block;
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+}
+
+/* Custom audio player */
+.coach-recruitment-ui .coach-audio-player {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border: 1px solid #d2dcde;
+  border-radius: 12px;
+  background: var(--coach-paper);
+}
+
+.coach-recruitment-ui .coach-player-toggle {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  min-height: 48px;
+  place-items: center;
+  padding: 0;
+  background: var(--coach-action);
+}
+
+.coach-recruitment-ui .coach-player-toggle:hover:not(:disabled) {
+  background: var(--coach-action-hover);
+}
+
+.coach-recruitment-ui .coach-player-play-icon {
+  width: 0;
+  height: 0;
+  margin-left: 3px;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 11px solid #ffffff;
+}
+
+.coach-recruitment-ui .coach-player-pause-icon {
+  width: 12px;
+  height: 16px;
+  border-right: 4px solid #ffffff;
+  border-left: 4px solid #ffffff;
+}
+
+.coach-recruitment-ui .coach-player-timeline {
+  min-width: 0;
+}
+
+.coach-recruitment-ui .coach-player-seek {
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.coach-recruitment-ui .coach-player-seek::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--coach-action) 0,
+    var(--coach-action) var(--coach-player-progress),
+    #d5dfe1 var(--coach-player-progress),
+    #d5dfe1 100%
+  );
+}
+
+.coach-recruitment-ui .coach-player-seek::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 3px solid var(--coach-paper);
+  border-radius: 50%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--coach-action);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.coach-recruitment-ui .coach-player-seek::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: #d5dfe1;
+}
+
+.coach-recruitment-ui .coach-player-seek::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--coach-action);
+}
+
+.coach-recruitment-ui .coach-player-seek::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 3px solid var(--coach-paper);
+  border-radius: 50%;
+  background: var(--coach-action);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.coach-recruitment-ui .coach-player-times {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -9px;
+  color: #747d7f;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-recruitment-ui .coach-inline-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--coach-error);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+/* Final review */
+.coach-application-page .coach-review-card {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.coach-application-page .coach-review-heading {
+  padding-bottom: 1.35rem;
+  border-bottom: 1px solid var(--coach-line);
+}
+
+.coach-application-page .coach-review-heading h3 {
+  margin-bottom: 0.65rem;
+  color: var(--coach-ink);
+  font-size: clamp(1.65rem, 5vw, 2.35rem);
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.coach-application-page .coach-review-heading h3:focus {
+  outline: none;
+}
+
+.coach-application-page .coach-review-heading p {
+  margin-bottom: 0;
+  color: #667073;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.coach-application-page .coach-review-details {
+  display: grid;
+  margin: 0;
+}
+
+.coach-application-page .coach-review-details > div {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.7fr) minmax(0, 1.3fr);
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--coach-line);
+}
+
+.coach-application-page .coach-review-details dt {
+  color: #70797b;
+  font-size: 0.76rem;
+}
+
+.coach-application-page .coach-review-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--coach-ink);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.coach-application-page .coach-review-details a {
+  color: var(--coach-action);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.coach-application-page .coach-review-audio {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--coach-line);
+}
+
+.coach-application-page .coach-review-audio > span {
+  color: #70797b;
+  font-size: 0.76rem;
+}
+
+.coach-application-page .coach-confirmation {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  color: #3f484a;
+  cursor: pointer;
+  font-size: 0.83rem;
+  line-height: 1.55;
+}
+
+.coach-application-page .coach-confirmation input {
+  width: 22px;
+  height: 22px;
+  margin: 0.05rem 0 0;
+  accent-color: var(--coach-action);
+}
+
+.coach-application-page .coach-upload-status {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--coach-soft-blue);
+}
+
+.coach-application-page .coach-upload-status > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.55rem;
+  color: var(--coach-ink);
+  font-size: 0.8rem;
+}
+
+.coach-application-page .coach-upload-status strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-application-page .coach-upload-status progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  accent-color: var(--coach-action);
+}
+
+.coach-application-page .coach-upload-status p {
+  margin: 0.6rem 0 0;
+  color: #657073;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.coach-application-page .coach-review-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-top: 1.3rem;
+}
+
+/* Success */
+.coach-recruitment-ui.coach-success-screen {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  place-items: center;
+  overflow: hidden;
+  padding:
+    max(1.25rem, env(safe-area-inset-top))
+    max(1.25rem, env(safe-area-inset-right))
+    max(1.25rem, env(safe-area-inset-bottom))
+    max(1.25rem, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 85% 10%, rgba(0, 165, 192, 0.2), transparent 34%),
+    linear-gradient(145deg, #f8fbfb 0%, #edf5f6 100%);
+}
+
+.coach-recruitment-ui .coach-success-decoration span {
+  position: absolute;
+  border: 1px solid rgba(0, 127, 149, 0.14);
+  border-radius: 50%;
+}
+
+.coach-recruitment-ui .coach-success-decoration span:nth-child(1) {
+  top: -90px;
+  right: -80px;
+  width: 260px;
+  height: 260px;
+}
+
+.coach-recruitment-ui .coach-success-decoration span:nth-child(2) {
+  bottom: -160px;
+  left: -130px;
+  width: 360px;
+  height: 360px;
+}
+
+.coach-recruitment-ui .coach-success-decoration span:nth-child(3) {
+  right: 12%;
+  bottom: 10%;
+  width: 90px;
+  height: 90px;
+}
+
+.coach-recruitment-ui .coach-success-card {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 680px);
+  padding: clamp(1.5rem, 6vw, 3.5rem);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 30px 90px rgba(8, 55, 93, 0.13);
+  text-align: center;
+}
+
+.coach-recruitment-ui .coach-success-mark {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  margin: 0 auto 1.35rem;
+  border-radius: 50%;
+  background: #e5f5ef;
+  color: var(--coach-success);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.coach-recruitment-ui .coach-success-card h1 {
+  max-width: 560px;
+  margin: 0 auto 1.15rem;
+  color: var(--coach-ink);
+  font-size: clamp(2rem, 9vw, 3.8rem);
+  font-weight: 400;
+  line-height: 0.98;
+}
+
+.coach-recruitment-ui .coach-success-card h1:focus {
+  outline: none;
+}
+
+.coach-recruitment-ui .coach-success-card > p {
+  max-width: 520px;
+  margin-right: auto;
+  margin-left: auto;
+  color: #596366;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.coach-recruitment-ui .coach-success-final-note {
+  font-size: 0.78rem !important;
+}
+
+.coach-recruitment-ui .coach-success-action {
+  margin-top: 0.8rem;
+}
+
+.coach-recruitment-ui .coach-success-redirect {
+  margin-top: 1.1rem !important;
+  margin-bottom: 0 !important;
+  color: #798184 !important;
+  font-size: 0.72rem !important;
+}
+
+@media (min-width: 700px) {
+  .coach-application-page .coach-form-card,
+  .coach-application-page .coach-review-card {
+    padding: clamp(1.6rem, 4vw, 2.4rem);
+  }
+
+  .coach-application-page .coach-fields-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+
+  .coach-application-page .coach-field-wide {
+    grid-column: 1 / -1;
+  }
+
+  .coach-application-page .coach-form-actions {
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+  }
+
+  .coach-application-page .coach-form-actions > p {
+    max-width: 440px;
+  }
+
+  .coach-application-page .coach-review-button {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .coach-application-page .coach-recorder-start-state,
+  .coach-application-page .coach-recorder-live-state,
+  .coach-application-page .coach-recorder-review-state,
+  .coach-application-page .coach-recorder-unavailable {
+    padding: 1.5rem;
+  }
+
+  .coach-application-page .coach-review-actions {
+    grid-template-columns: minmax(140px, 0.35fr) minmax(210px, 0.65fr);
+  }
+}
+
+@media (min-width: 840px) {
+  .coach-recruitment-ui.coach-gate-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(480px, 0.9fr);
+  }
+
+  .coach-recruitment-ui .coach-gate-brand-panel {
+    min-height: 100vh;
+    min-height: 100dvh;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: clamp(2rem, 5vw, 4rem);
+  }
+
+  .coach-recruitment-ui .coach-gate-brand-word {
+    font-size: 1.35rem;
+  }
+
+  .coach-recruitment-ui .coach-gate-brand-panel > p {
+    max-width: 420px;
+    font-size: clamp(1.8rem, 3.6vw, 3.7rem);
+    font-weight: 300;
+    line-height: 1.02;
+    text-align: left;
+  }
+
+  .coach-recruitment-ui .coach-gate-orbit-one {
+    right: -120px;
+    bottom: -170px;
+    width: 520px;
+    height: 520px;
+  }
+
+  .coach-recruitment-ui .coach-gate-orbit-two {
+    right: 40px;
+    bottom: -20px;
+    width: 260px;
+    height: 260px;
+  }
+
+  .coach-recruitment-ui .coach-gate-signal {
+    right: 8%;
+    bottom: 17%;
+    height: 100px;
+    gap: 6px;
+  }
+
+  .coach-recruitment-ui .coach-gate-signal i {
+    width: 4px;
+  }
+
+  .coach-recruitment-ui .coach-gate-form-panel {
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin-top: 0;
+    padding: clamp(2.5rem, 6vw, 5rem);
+    border-radius: 0;
+  }
+
+  .coach-recruitment-ui .coach-gate-mobile-brand {
+    top: 2rem;
+    left: clamp(2.5rem, 6vw, 5rem);
+  }
+}
+
+@media (max-width: 430px) {
+  .coach-application-page .coach-form-card,
+  .coach-application-page .coach-review-card {
+    padding: 1.05rem;
+    border-radius: 15px;
+  }
+
+  .coach-application-page .coach-recorder-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .coach-recruitment-ui .coach-audio-player {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 0.65rem;
+    padding: 0.7rem;
+  }
+
+  .coach-recruitment-ui .coach-player-toggle {
+    width: 46px;
+    height: 46px;
+    min-height: 46px;
+  }
+
+  .coach-application-page .coach-review-details > div {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-application-page .application-logo-track,
+  .coach-application-page .testimonial-progress i,
+  .coach-application-page .testimonial-copy {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .coach-recruitment-ui .coach-control,
+  .coach-recruitment-ui .coach-field-input,
+  .coach-application-page .coach-stage-one-cta {
+    transition: none;
+  }
+
+  .coach-recruitment-ui .coach-control:hover:not(:disabled),
+  .coach-application-page .coach-stage-one-cta:hover {
+    transform: none;
+  }
+
+  .coach-recruitment-ui .coach-loading-mark {
+    animation: none;
+  }
+
+  .coach-application-page .coach-recorder-wave i {
+    animation: none;
+    transform: none;
+  }
+}
+
+.coach-application-page .site-header .brand,
+.coach-application-page .application-copy a {
+  min-height: 44px;
+  align-items: center;
+}
+
+.coach-application-page .site-header .brand {
+  justify-content: center;
+}
+
+.coach-application-page .application-copy a {
+  display: inline-flex;
+}
+
+.coach-application-page .coach-inline-link,
+.coach-application-page .application-intern-name {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+
+.coach-application-page .testimonial-arrow {
+  min-width: 44px;
+  min-height: 44px;
+}
