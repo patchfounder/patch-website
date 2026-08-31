@@ -46,29 +46,9 @@ function safeLinkedInUrl(value) {
   }
 }
 
-function cohortDisplayName(cohort) {
-  const monthKey = cohort?.monthKey || cohort?.month_key || cohort?.slug;
-  const match = /^(\d{4})-(\d{2})$/.exec(String(monthKey || ''));
-  const monthLabel = match
-    ? new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
-        new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1)),
-      )
-    : '';
-
-  return (
-    cohort?.displayName ||
-    cohort?.display_name ||
-    cohort?.name ||
-    monthLabel ||
-    monthKey ||
-    'Current cohort'
-  );
-}
-
 export default function AssessmentQueue({
   application,
   waitingCount = 0,
-  cohort,
   onDecision,
   isDeciding = false,
 }) {
@@ -122,7 +102,6 @@ export default function AssessmentQueue({
     'createdAt',
     'created_at',
   );
-  const cohortLabel = cohortDisplayName(cohort);
   const audioSource = id
     ? `/api/recruitment/reviewer/applications/${encodeURIComponent(String(id))}/audio`
     : '';
@@ -173,7 +152,7 @@ export default function AssessmentQueue({
   return (
     <section className="assessment-review" aria-labelledby="assessment-applicant-name">
       <div className="assessment-review-progress">
-        <span>{cohortLabel}</span>
+        <span>Applications</span>
         <span>{waitingCount === 1 ? 'Last applicant' : `${waitingCount} applicants waiting`}</span>
       </div>
 

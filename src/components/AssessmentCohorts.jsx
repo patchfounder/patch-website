@@ -11,6 +11,10 @@ function cohortId(cohort) {
   return cohortValue(cohort, 'id', 'cohortId', 'cohort_id');
 }
 
+function cohortSlug(cohort) {
+  return cohortValue(cohort, 'slug', 'monthKey', 'month_key');
+}
+
 function cohortName(cohort, fallback = 'Cohort') {
   const explicitName = cohortValue(cohort, 'displayName', 'display_name', 'name');
   if (explicitName) return explicitName;
@@ -26,10 +30,6 @@ function cohortName(cohort, fallback = 'Cohort') {
   }
 
   return monthKey || fallback;
-}
-
-function cohortSlug(cohort) {
-  return cohortValue(cohort, 'slug', 'monthKey', 'month_key');
 }
 
 function formatDateTime(value) {
@@ -140,32 +140,6 @@ function availableMonthOptions(currentCohort, previousCohort) {
   });
 }
 
-function sameCohort(left, right) {
-  if (!left || !right) return false;
-  const leftIds = [cohortId(left), cohortSlug(left)].filter(Boolean).map(String);
-  const rightIds = [cohortId(right), cohortSlug(right)].filter(Boolean).map(String);
-  return leftIds.some((value) => rightIds.includes(value));
-}
-
-function statusFor(cohort, currentCohort, previousCohort) {
-  if (sameCohort(cohort, currentCohort) || cohort?.active === true) return 'Active';
-  if (sameCohort(cohort, previousCohort)) return 'Previous';
-
-  const slot = String(cohortValue(cohort, 'slot') || '').toLowerCase();
-  if (slot === 'current') return 'Active';
-  if (slot === 'previous') return 'Previous';
-  if (slot === 'next') return 'Next';
-
-  const declaredStatus = String(cohortValue(cohort, 'status', 'state') || '').toLowerCase();
-  if (declaredStatus === 'previous' || declaredStatus === 'archived') return 'Previous';
-  if (declaredStatus === 'next') return 'Next';
-  if (declaredStatus === 'draft') return 'Draft';
-
-  const closesAt = cohortValue(cohort, 'closesAt', 'closes_at');
-  if (closesAt && Date.parse(closesAt) < Date.now()) return 'Closed';
-  return 'Draft';
-}
-
 function numericCount(cohort, ...keys) {
   const value = cohortValue(cohort, ...keys);
   const number = Number(value);
@@ -186,33 +160,10 @@ function processedCount(cohort) {
   return applications === '—' || pending === '—' ? '—' : Math.max(0, applications - pending);
 }
 
-function mergeCohorts(cohorts, currentCohort, previousCohort) {
-  const all = [...(Array.isArray(cohorts) ? cohorts : []), currentCohort, previousCohort]
-    .filter(Boolean)
-    .filter((cohort) => String(cohortValue(cohort, 'slot')).toLowerCase() !== 'next');
-  const seen = new Set();
-
-  return all
-    .filter((cohort) => {
-      const identity = String(cohortId(cohort) || cohortSlug(cohort) || cohortName(cohort));
-      if (seen.has(identity)) return false;
-      seen.add(identity);
-      return true;
-    })
-    .sort((left, right) => {
-      const leftDate = Date.parse(cohortValue(left, 'opensAt', 'opens_at')) || 0;
-      const rightDate = Date.parse(cohortValue(right, 'opensAt', 'opens_at')) || 0;
-      return rightDate - leftDate;
-    });
-}
-
 export default function AssessmentCohorts({
-  cohorts = [],
   currentCohort,
   previousCohort,
-  isLoading = false,
-  error = '',
-  onReload,
+  showCreateForm = false,
   onCreateAndActivate,
   onDeleteActive,
 }) {
@@ -226,11 +177,13 @@ export default function AssessmentCohorts({
   const [formError, setFormError] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const createHeadingRef = useRef(null);
   const deleteTriggerRef = useRef(null);
   const deleteCancelRef = useRef(null);
+  const currentId = cohortId(currentCohort);
 
   useEffect(() => {
     if (!formTouched) {
@@ -243,13 +196,17 @@ export default function AssessmentCohorts({
   }, [defaults, form.password, form.slug, formTouched, monthOptions]);
 
   useEffect(() => {
-    if (deleteTarget) deleteCancelRef.current?.focus();
-  }, [deleteTarget]);
+    if (showCreateForm) createHeadingRef.current?.focus();
+  }, [showCreateForm]);
 
-  const visibleCohorts = useMemo(
-    () => mergeCohorts(cohorts, currentCohort, previousCohort),
-    [cohorts, currentCohort, previousCohort],
-  );
+  useEffect(() => {
+    if (deleteOpen) deleteCancelRef.current?.focus();
+  }, [deleteOpen]);
+
+  useEffect(() => {
+    setDeleteOpen(false);
+    setDeleteError('');
+  }, [currentId]);
 
   const updateField = (event) => {
     const { name, value } = event.target;
@@ -299,6 +256,7 @@ export default function AssessmentCohorts({
       setForm((current) => ({ ...current, password: '' }));
       setPasswordVisible(false);
       setFormTouched(false);
+      window.requestAnimationFrame(() => document.querySelector('.assessment-add-cohort')?.focus());
     } catch (requestError) {
       setFormError(requestError?.message || 'The cohort and password could not be activated.');
     } finally {
@@ -307,17 +265,14 @@ export default function AssessmentCohorts({
   };
 
   const deleteActiveCohort = async () => {
-    const id = cohortId(deleteTarget);
-    if (!id || isDeleting) return;
+    if (!currentId || isDeleting) return;
 
     setDeleteError('');
     setIsDeleting(true);
     try {
-      await onDeleteActive(id);
-      setDeleteTarget(null);
-      window.requestAnimationFrame(() => {
-        document.querySelector('.assessment-navigation [aria-current="page"]')?.focus();
-      });
+      await onDeleteActive(currentId);
+      setDeleteOpen(false);
+      window.requestAnimationFrame(() => document.querySelector('.assessment-add-cohort')?.focus());
     } catch (requestError) {
       setDeleteError(requestError?.message || 'The active cohort could not be deleted.');
     } finally {
@@ -326,247 +281,233 @@ export default function AssessmentCohorts({
   };
 
   const cancelDelete = () => {
-    setDeleteTarget(null);
+    setDeleteOpen(false);
     setDeleteError('');
     window.requestAnimationFrame(() => deleteTriggerRef.current?.focus());
   };
 
   return (
     <div className="assessment-cohorts">
-      {error && (
-        <div className="assessment-inline-error" role="alert">
-          <p>{error}</p>
-          <button type="button" onClick={onReload}>
-            Reload cohorts
-          </button>
-        </div>
-      )}
-
-      <section className="assessment-cohort-list-section" aria-labelledby="assessment-cohort-list-title">
-        <div className="assessment-cohort-list-heading">
-          <h3 id="assessment-cohort-list-title">Monthly cohorts</h3>
-          {isLoading && <span role="status">Updating…</span>}
-        </div>
-
-        {visibleCohorts.length === 0 && !isLoading ? (
-          <div className="assessment-history-empty">
-            <p>No cohorts have been created yet.</p>
-          </div>
-        ) : (
-          <div className="assessment-cohort-list">
-            {visibleCohorts.map((cohort) => {
-              const id = cohortId(cohort);
-              const status = statusFor(cohort, currentCohort, previousCohort);
-              const canDelete = status === 'Active' && Boolean(id);
-              const isDeleteTarget = sameCohort(cohort, deleteTarget);
-              const deletePanelId = `assessment-delete-${String(id || 'cohort').replace(/[^A-Za-z0-9_-]/g, '-')}`;
-
-              return (
-                <article className="assessment-cohort-card" key={String(id || cohortSlug(cohort))}>
-                  <header>
-                    <div>
-                      <span className={`assessment-cohort-status is-${status.toLowerCase()}`}>
-                        {status}
-                      </span>
-                      <h4>{cohortName(cohort)}</h4>
-                      <p>{cohortSlug(cohort) || 'Monthly cohort'}</p>
-                    </div>
-                    {canDelete && (
-                      <button
-                        className="assessment-button assessment-cohort-delete-trigger"
-                        type="button"
-                        aria-expanded={isDeleteTarget}
-                        aria-controls={deletePanelId}
-                        onClick={(event) => {
-                          deleteTriggerRef.current = event.currentTarget;
-                          setDeleteTarget(cohort);
-                          setDeleteError('');
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                          <path d="M4 7h16" />
-                          <path d="M9 7V4h6v3" />
-                          <path d="m6.5 7 .75 13h9.5l.75-13" />
-                          <path d="M10 11v5M14 11v5" />
-                        </svg>
-                        <span>Delete</span>
-                      </button>
-                    )}
-                  </header>
-
-                  <dl className="assessment-cohort-dates">
-                    <div>
-                      <dt>Opens</dt>
-                      <dd>{formatDateTime(cohortValue(cohort, 'opensAt', 'opens_at'))}</dd>
-                    </div>
-                    <div>
-                      <dt>Closes</dt>
-                      <dd>{formatDateTime(cohortValue(cohort, 'closesAt', 'closes_at'))}</dd>
-                    </div>
-                  </dl>
-
-                  <dl className="assessment-cohort-counts">
-                    <div>
-                      <dt>Applications</dt>
-                      <dd>{numericCount(cohort, 'applicationCount', 'applicationsCount', 'application_count')}</dd>
-                    </div>
-                    <div>
-                      <dt>Waiting</dt>
-                      <dd>{numericCount(cohort, 'pendingCount', 'waitingCount', 'pending_count')}</dd>
-                    </div>
-                    <div>
-                      <dt>Processed</dt>
-                      <dd>{processedCount(cohort)}</dd>
-                    </div>
-                  </dl>
-
-                  {isDeleteTarget && (
-                    <div
-                      className="assessment-cohort-delete-confirmation"
-                      id={deletePanelId}
-                      role="group"
-                      aria-labelledby={`${deletePanelId}-question`}
-                    >
-                      <p id={`${deletePanelId}-question`}>
-                        Delete {cohortName(cohort)} and all its applications and recordings?
-                      </p>
-                      {deleteError && (
-                        <p className="assessment-confirmation-error" role="alert">
-                          {deleteError}
-                        </p>
-                      )}
-                      <div>
-                        <button
-                          className="assessment-button assessment-button-secondary"
-                          type="button"
-                          ref={deleteCancelRef}
-                          onClick={cancelDelete}
-                          disabled={isDeleting}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          className="assessment-button assessment-button-danger"
-                          type="button"
-                          onClick={deleteActiveCohort}
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? 'Deleting…' : 'Delete cohort'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <section className="assessment-cohort-create" aria-labelledby="assessment-cohort-create-title">
-        <h3 id="assessment-cohort-create-title">Activate cohort and password</h3>
-
-        <form onSubmit={submitCohort} noValidate>
-          <div className="assessment-field-row">
-            <label className="assessment-field">
-              <span>Cohort month</span>
-              <select
-                name="slug"
-                value={form.slug}
-                onChange={updateField}
-                required
-              >
-                {monthOptions.map((option) => (
-                  <option value={option.value} key={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="assessment-field">
-              <span>Display name</span>
-              <input
-                name="displayName"
-                type="text"
-                value={form.displayName}
-                onChange={updateField}
-                placeholder="October 2026"
-                required
-              />
-            </label>
-          </div>
-
-          <div className="assessment-field">
-            <label htmlFor="assessment-shared-password">Shared applicant password</label>
-            <div className="assessment-password-control">
-              <input
-                id="assessment-shared-password"
-                name="password"
-                type={passwordVisible ? 'text' : 'password'}
-                value={form.password}
-                onChange={updateField}
-                autoComplete="new-password"
-                spellCheck="false"
-                required
-              />
+      {currentCohort && (
+        <section className="assessment-current-cohort" aria-labelledby="assessment-current-cohort-title">
+          <header>
+            <div>
+              <span className="assessment-cohort-status is-active">Active</span>
+              <h2 id="assessment-current-cohort-title">{cohortName(currentCohort)}</h2>
+              <p>{cohortSlug(currentCohort) || 'Monthly cohort'}</p>
+            </div>
+            {currentId && (
               <button
+                className="assessment-button assessment-cohort-delete-trigger"
                 type="button"
-                onClick={() => setPasswordVisible((visible) => !visible)}
-                aria-label={passwordVisible ? 'Hide password' : 'Show password'}
-                aria-pressed={passwordVisible}
+                ref={deleteTriggerRef}
+                aria-expanded={deleteOpen}
+                aria-controls={deleteOpen ? 'assessment-delete-current-cohort' : undefined}
+                onClick={() => {
+                  setDeleteOpen(true);
+                  setDeleteError('');
+                }}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-                  <circle cx="12" cy="12" r="2.75" />
-                  {passwordVisible && <path d="M4 4 20 20" />}
+                  <path d="M4 7h16" />
+                  <path d="M9 7V4h6v3" />
+                  <path d="m6.5 7 .75 13h9.5l.75-13" />
+                  <path d="M10 11v5M14 11v5" />
                 </svg>
+                <span>Delete</span>
               </button>
+            )}
+          </header>
+
+          <dl className="assessment-cohort-dates">
+            <div>
+              <dt>Opens</dt>
+              <dd>{formatDateTime(cohortValue(currentCohort, 'opensAt', 'opens_at'))}</dd>
             </div>
-          </div>
+            <div>
+              <dt>Closes</dt>
+              <dd>{formatDateTime(cohortValue(currentCohort, 'closesAt', 'closes_at'))}</dd>
+            </div>
+          </dl>
 
-          <div className="assessment-field-row">
-            <label className="assessment-field">
-              <span>Application opens · Madrid time</span>
-              <input
-                name="opensAt"
-                type="datetime-local"
-                value={form.opensAt}
-                onChange={updateField}
-                required
-              />
-            </label>
-            <label className="assessment-field">
-              <span>Application deadline · Madrid time</span>
-              <input
-                name="closesAt"
-                type="datetime-local"
-                value={form.closesAt}
-                onChange={updateField}
-                required
-              />
-            </label>
-          </div>
+          <dl className="assessment-cohort-counts">
+            <div>
+              <dt>Applications</dt>
+              <dd>
+                {numericCount(
+                  currentCohort,
+                  'applicationCount',
+                  'applicationsCount',
+                  'application_count',
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt>Waiting</dt>
+              <dd>{numericCount(currentCohort, 'pendingCount', 'waitingCount', 'pending_count')}</dd>
+            </div>
+            <div>
+              <dt>Processed</dt>
+              <dd>{processedCount(currentCohort)}</dd>
+            </div>
+          </dl>
 
-          {formError && (
-            <p className="assessment-form-error" role="alert">
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M12 3.5 21 20H3L12 3.5Z" />
-                <path d="M12 9v5" />
-                <path d="M12 17.25h.01" />
-              </svg>
-              <span>{formError}</span>
-            </p>
+          {deleteOpen && (
+            <div
+              className="assessment-cohort-delete-confirmation"
+              id="assessment-delete-current-cohort"
+              role="group"
+              aria-labelledby="assessment-delete-current-cohort-question"
+            >
+              <p id="assessment-delete-current-cohort-question">
+                Delete {cohortName(currentCohort)} and all its applications and recordings?
+              </p>
+              {deleteError && (
+                <p className="assessment-confirmation-error" role="alert">
+                  {deleteError}
+                </p>
+              )}
+              <div>
+                <button
+                  className="assessment-button assessment-button-secondary"
+                  type="button"
+                  ref={deleteCancelRef}
+                  onClick={cancelDelete}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="assessment-button assessment-button-danger"
+                  type="button"
+                  onClick={deleteActiveCohort}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting…' : 'Delete cohort'}
+                </button>
+              </div>
+            </div>
           )}
+        </section>
+      )}
 
-          <button
-            className="assessment-button assessment-button-primary"
-            type="submit"
-            disabled={isCreating}
-          >
-            {isCreating ? 'Activating cohort and password…' : 'Activate cohort and password'}
-          </button>
-        </form>
-      </section>
+      {showCreateForm && (
+        <section
+          className="assessment-cohort-create"
+          id="assessment-cohort-create"
+          aria-labelledby="assessment-cohort-create-title"
+        >
+          <h2 id="assessment-cohort-create-title" ref={createHeadingRef} tabIndex="-1">
+            Activate cohort and password
+          </h2>
+
+          <form onSubmit={submitCohort} noValidate>
+            <div className="assessment-field-row">
+              <label className="assessment-field">
+                <span>Cohort month</span>
+                <select name="slug" value={form.slug} onChange={updateField} required>
+                  {monthOptions.map((option) => (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="assessment-field">
+                <span>Display name</span>
+                <input
+                  name="displayName"
+                  type="text"
+                  value={form.displayName}
+                  onChange={updateField}
+                  placeholder="October 2026"
+                  required
+                />
+              </label>
+            </div>
+
+            <div className="assessment-field">
+              <label htmlFor="assessment-shared-password">Shared applicant password</label>
+              <div className="assessment-password-control">
+                <input
+                  id="assessment-shared-password"
+                  name="password"
+                  type={passwordVisible ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={updateField}
+                  autoComplete="new-password"
+                  spellCheck="false"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                  aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+                  aria-pressed={passwordVisible}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                    <circle cx="12" cy="12" r="2.75" />
+                    {passwordVisible && <path d="M4 4 20 20" />}
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="assessment-field-row">
+              <label className="assessment-field">
+                <span>Application opens · Madrid time</span>
+                <input
+                  name="opensAt"
+                  type="datetime-local"
+                  value={form.opensAt}
+                  onChange={updateField}
+                  required
+                />
+              </label>
+              <label className="assessment-field">
+                <span>Application deadline · Madrid time</span>
+                <input
+                  name="closesAt"
+                  type="datetime-local"
+                  value={form.closesAt}
+                  onChange={updateField}
+                  required
+                />
+              </label>
+            </div>
+
+            {formError && (
+              <p className="assessment-form-error" id="assessment-cohort-form-error" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3.5 21 20H3L12 3.5Z" />
+                  <path d="M12 9v5" />
+                  <path d="M12 17.25h.01" />
+                </svg>
+                <span>{formError}</span>
+              </p>
+            )}
+
+            <button
+              className="assessment-button assessment-button-primary"
+              type="submit"
+              disabled={isCreating}
+            >
+              {isCreating ? 'Activating cohort and password…' : 'Activate cohort and password'}
+            </button>
+          </form>
+        </section>
+      )}
+
+      {!currentCohort && !showCreateForm && (
+        <section className="assessment-cohort-empty" aria-labelledby="assessment-no-cohort-title">
+          <span className="assessment-cohort-empty-icon" aria-hidden="true">
+            +
+          </span>
+          <h2 id="assessment-no-cohort-title">No active cohort</h2>
+          <p>Use the + Add cohort button above.</p>
+        </section>
+      )}
     </div>
   );
 }

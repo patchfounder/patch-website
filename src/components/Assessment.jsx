@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AssessmentQueue from './AssessmentQueue.jsx';
-import AssessmentHistory from './AssessmentHistory.jsx';
 import AssessmentCohorts from './AssessmentCohorts.jsx';
 import '../assessment.css';
 
@@ -56,7 +55,6 @@ function normalizeReviewerState(payload) {
       : [];
   const currentCohort = state.currentCohort || state.current_cohort || null;
   const previousCohort = state.previousCohort || state.previous_cohort || null;
-  const history = state.history || state.processedApplications || [];
 
   const countFrom = (...values) => {
     for (const value of values) {
@@ -66,16 +64,6 @@ function normalizeReviewerState(payload) {
     }
     return 0;
   };
-  const loadedHistoryCount = Array.isArray(history)
-    ? history.length
-    : [history?.current, history?.previous]
-        .filter(Array.isArray)
-        .reduce((total, items) => total + items.length, 0);
-  const cohortProcessedCounts = [currentCohort?.processedCount, previousCohort?.processedCount]
-    .filter((value) => value !== undefined && value !== null && value !== '');
-  const cohortProcessedTotal = cohortProcessedCounts.length
-    ? cohortProcessedCounts.reduce((total, value) => total + (Number(value) || 0), 0)
-    : undefined;
 
   return {
     authenticated: state.authenticated === true,
@@ -83,9 +71,7 @@ function normalizeReviewerState(payload) {
     previousCohort,
     queue,
     current: state.current || state.currentApplication || queue[0] || null,
-    history,
     pendingTotal: countFrom(state.pendingTotal, currentCohort?.pendingCount, queue.length),
-    processedTotal: countFrom(state.processedTotal, cohortProcessedTotal, loadedHistoryCount),
   };
 }
 
@@ -119,91 +105,11 @@ function buildQueue(current, queue) {
     .sort((left, right) => applicationTimestamp(left) - applicationTimestamp(right));
 }
 
-function addToHistory(history, application) {
-  const id = applicationId(application);
-  const withoutApplication = (items) =>
-    (Array.isArray(items) ? items : []).filter(
-      (candidate) => String(applicationId(candidate)) !== String(id),
-    );
-
-  if (Array.isArray(history)) {
-    return [application, ...withoutApplication(history)];
-  }
-
-  if (history && typeof history === 'object') {
-    const currentKey = ['current', 'currentCohort', 'current_cohort', 'active'].find(
-      (key) => Array.isArray(history[key]),
-    ) || 'current';
-    return {
-      ...history,
-      [currentKey]: [application, ...withoutApplication(history[currentKey])],
-    };
-  }
-
-  return [application];
-}
-
 function cohortIdentity(cohort) {
   if (!cohort) return [];
   return [cohort.id, cohort.cohortId, cohort.slug, cohort.monthKey, cohort.month_key]
     .filter((value) => value !== undefined && value !== null)
     .map(String);
-}
-
-function historyCohortIdentity(application) {
-  return [
-    application?.cohortId,
-    application?.cohort_id,
-    application?.cohortSlug,
-    application?.cohort_slug,
-    application?.cohortMonth,
-    application?.cohort_month,
-    application?.monthKey,
-    application?.month_key,
-    application?.cohort?.id,
-    application?.cohort?.slug,
-    application?.cohort?.monthKey,
-    application?.cohort?.month_key,
-  ]
-    .filter((value) => value !== undefined && value !== null)
-    .map(String);
-}
-
-function belongsToCohort(application, cohort) {
-  const expected = cohortIdentity(cohort);
-  if (!expected.length) return false;
-  return historyCohortIdentity(application).some((value) => expected.includes(value));
-}
-
-function splitHistory(history, currentCohort, previousCohort) {
-  if (history && !Array.isArray(history) && typeof history === 'object') {
-    return {
-      current:
-        history.current ||
-        history.currentCohort ||
-        history.current_cohort ||
-        history.active ||
-        [],
-      previous:
-        history.previous ||
-        history.previousCohort ||
-        history.previous_cohort ||
-        history.archived ||
-        [],
-    };
-  }
-
-  const items = Array.isArray(history) ? history : [];
-  const hasCohortMarkers = items.some((item) => historyCohortIdentity(item).length > 0);
-
-  if (!hasCohortMarkers) {
-    return { current: items, previous: [] };
-  }
-
-  return {
-    current: items.filter((item) => belongsToCohort(item, currentCohort)),
-    previous: items.filter((item) => belongsToCohort(item, previousCohort)),
-  };
 }
 
 function cohortName(cohort, fallback) {
@@ -264,28 +170,20 @@ export default function Assessment() {
     previousCohort: null,
     queue: [],
     current: null,
-    history: [],
     pendingTotal: 0,
-    processedTotal: 0,
   });
-  const [view, setView] = useState('queue');
+  const [isCohortFormOpen, setIsCohortFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
   const [notice, setNotice] = useState('');
   const [isDeciding, setIsDeciding] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [signedOut, setSignedOut] = useState(false);
-  const [cohorts, setCohorts] = useState([]);
-  const [cohortsLoading, setCohortsLoading] = useState(false);
-  const [cohortsError, setCohortsError] = useState('');
-  const [cohortsLoaded, setCohortsLoaded] = useState(false);
 
   const invalidateReviewerSession = useCallback(({ afterLogout = false } = {}) => {
     setSignedOut(afterLogout);
     setReviewerState(normalizeReviewerState({ authenticated: false }));
-    setCohorts([]);
-    setCohortsLoaded(false);
-    setCohortsError('');
+    setIsCohortFormOpen(false);
     setNotice('');
     setPageError('');
   }, []);
@@ -350,53 +248,15 @@ export default function Assessment() {
     }
   }, [invalidateReviewerSession]);
 
-  const loadCohorts = useCallback(async () => {
-    setCohortsLoading(true);
-    setCohortsError('');
-
-    try {
-      const payload = await reviewerRequest('/cohorts');
-      const items = Array.isArray(payload) ? payload : payload?.cohorts;
-      const normalizedItems = Array.isArray(items) ? items : [];
-      setCohorts(normalizedItems);
-      setCohortsLoaded(true);
-      return normalizedItems;
-    } catch (error) {
-      if (error?.status === 401 || error?.status === 403) {
-        invalidateReviewerSession();
-      } else {
-        setCohortsError(error?.message || 'Cohorts could not be loaded.');
-      }
-    } finally {
-      setCohortsLoading(false);
-    }
-  }, [invalidateReviewerSession]);
-
   useEffect(() => {
     const controller = new AbortController();
     loadReviewerState({ signal: controller.signal });
     return () => controller.abort();
   }, [loadReviewerState]);
 
-  useEffect(() => {
-    if (reviewerState.authenticated && view === 'cohorts' && !cohortsLoaded) {
-      loadCohorts();
-    }
-  }, [cohortsLoaded, loadCohorts, reviewerState.authenticated, view]);
-
   const queue = useMemo(
     () => buildQueue(reviewerState.current, reviewerState.queue),
     [reviewerState.current, reviewerState.queue],
-  );
-
-  const history = useMemo(
-    () =>
-      splitHistory(
-        reviewerState.history,
-        reviewerState.currentCohort,
-        reviewerState.previousCohort,
-      ),
-    [reviewerState.currentCohort, reviewerState.history, reviewerState.previousCohort],
   );
 
   const handleDecision = async (application, decision) => {
@@ -408,20 +268,13 @@ export default function Assessment() {
     setPageError('');
 
     try {
-      const result = await reviewerRequest(
+      await reviewerRequest(
         `/applications/${encodeURIComponent(String(id))}/decision`,
         {
           method: 'POST',
           body: { decision },
         },
       );
-      const decidedApplication = result?.application || {
-        ...application,
-        decision,
-        reviewedAt: new Date().toISOString(),
-        emailStatus: result?.email?.status || 'unknown',
-      };
-
       // The POST is authoritative and irreversible. Remove the decided applicant
       // before refreshing so a failed refresh can never offer the same action twice.
       setReviewerState((state) => {
@@ -438,9 +291,7 @@ export default function Assessment() {
           ...state,
           current: nextQueue[0] || null,
           queue: nextQueue,
-          history: addToHistory(state.history, decidedApplication),
           pendingTotal,
-          processedTotal: Number(state.processedTotal || 0) + 1,
           currentCohort: state.currentCohort
             ? {
                 ...state.currentCohort,
@@ -486,21 +337,34 @@ export default function Assessment() {
 
   const handleCreateAndActivateCohort = async (cohort) => {
     try {
-      await reviewerRequest('/cohorts', { method: 'POST', body: cohort });
-      await Promise.all([loadCohorts(), loadReviewerState({ quiet: true })]);
-      setNotice(`${cohort.displayName} is active.`);
+      const result = await reviewerRequest('/cohorts', { method: 'POST', body: cohort });
+      const activatedCohort = result?.current || result?.cohort || null;
+      setReviewerState((state) => ({
+        ...state,
+        currentCohort: activatedCohort || state.currentCohort,
+        previousCohort:
+          result && Object.hasOwn(result, 'previous') ? result.previous : state.previousCohort,
+        queue: [],
+        current: null,
+        pendingTotal: 0,
+      }));
+      const refreshed = await loadReviewerState({ quiet: true });
+      setIsCohortFormOpen(false);
+      setNotice(
+        refreshed
+          ? `${cohort.displayName} is active.`
+          : `${cohort.displayName} is active. Reload the page to refresh its latest counts.`,
+      );
     } catch (error) {
       if (error?.status === 401 || error?.status === 403) {
         invalidateReviewerSession();
         throw error;
       }
       if (error?.status) throw error;
-      const [, refreshed] = await Promise.all([
-        loadCohorts(),
-        loadReviewerState({ quiet: true }),
-      ]);
+      const refreshed = await loadReviewerState({ quiet: true });
       const requestedMonth = String(cohort.slug || cohort.monthKey || '');
       if (cohortIdentity(refreshed?.currentCohort).includes(requestedMonth)) {
+        setIsCohortFormOpen(false);
         setNotice(`${cohort.displayName} is active.`);
         return;
       }
@@ -514,29 +378,28 @@ export default function Assessment() {
         method: 'DELETE',
         body: { confirm: true },
       });
-      await Promise.all([loadCohorts(), loadReviewerState({ quiet: true })]);
-      setNotice('The active cohort was deleted. Applicant access is closed.');
+      setReviewerState((state) => ({
+        ...state,
+        currentCohort: null,
+        queue: [],
+        current: null,
+        pendingTotal: 0,
+      }));
+      const refreshed = await loadReviewerState({ quiet: true });
+      setNotice(
+        refreshed
+          ? 'The active cohort was deleted. Applicant access is closed.'
+          : 'The active cohort was deleted. Applicant access is closed. Reload to confirm the latest state.',
+      );
     } catch (error) {
       if (error?.status === 401 || error?.status === 403) {
         invalidateReviewerSession();
         throw error;
       }
       if (error?.status) throw error;
-      const [refreshedCohorts, refreshed] = await Promise.all([
-        loadCohorts(),
-        loadReviewerState({ quiet: true }),
-      ]);
-      const targetId = String(id);
-      const retained = [
-        ...(Array.isArray(refreshedCohorts) ? refreshedCohorts : []),
-        refreshed?.currentCohort,
-        refreshed?.previousCohort,
-      ].filter(Boolean);
-      const targetStillExists = retained.some((cohort) => cohortIdentity(cohort).includes(targetId));
+      const refreshed = await loadReviewerState({ quiet: true });
       if (
         refreshed?.authenticated
-        && Array.isArray(refreshedCohorts)
-        && !targetStillExists
         && !refreshed.currentCohort
       ) {
         setNotice('The active cohort was deleted. Applicant access is closed.');
@@ -621,43 +484,36 @@ export default function Assessment() {
           </p>
         </section>
 
-        <nav className="assessment-navigation" aria-label="Assessment sections">
+        <div className="assessment-page-actions" role="group" aria-label="Assessment actions">
           <button
             type="button"
-            className={view === 'queue' ? 'is-active' : ''}
-            aria-current={view === 'queue' ? 'page' : undefined}
-            onClick={() => setView('queue')}
+            className="assessment-icon-action assessment-add-cohort"
+            aria-label={isCohortFormOpen ? 'Close cohort form' : 'Add cohort'}
+            title={isCohortFormOpen ? 'Close cohort form' : 'Add cohort'}
+            aria-expanded={isCohortFormOpen}
+            aria-controls={isCohortFormOpen ? 'assessment-cohort-create' : undefined}
+            onClick={() => {
+              setNotice('');
+              setIsCohortFormOpen((isOpen) => !isOpen);
+            }}
           >
-            Review
-            <span>{waitingTotal}</span>
-          </button>
-          <button
-            type="button"
-            className={view === 'history' ? 'is-active' : ''}
-            aria-current={view === 'history' ? 'page' : undefined}
-            onClick={() => setView('history')}
-          >
-            History
-          </button>
-          <button
-            type="button"
-            className={view === 'cohorts' ? 'is-active' : ''}
-            aria-current={view === 'cohorts' ? 'page' : undefined}
-            onClick={() => setView('cohorts')}
-          >
-            Cohorts
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
           </button>
           <a
-            className="assessment-view-application"
-            href="/coach-application"
+            className="assessment-icon-action assessment-view-application"
+            href="/coach-application/"
             target="_blank"
             rel="noreferrer"
-            aria-label="View the applicant-facing application page"
+            aria-label="View the applicant-facing application page in a new tab"
             title="View applicant page"
           >
-            <span aria-hidden="true">↗</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M7 17 17 7M9 7h8v8" />
+            </svg>
           </a>
-        </nav>
+        </div>
 
         <div className="assessment-live-region" role="status" aria-live="polite">
           {notice}
@@ -672,35 +528,20 @@ export default function Assessment() {
           </div>
         )}
 
-        {view === 'queue' && (
+        <AssessmentCohorts
+          currentCohort={reviewerState.currentCohort}
+          previousCohort={reviewerState.previousCohort}
+          showCreateForm={isCohortFormOpen}
+          onCreateAndActivate={handleCreateAndActivateCohort}
+          onDeleteActive={handleDeleteActiveCohort}
+        />
+
+        {reviewerState.currentCohort && (
           <AssessmentQueue
             application={queue[0] || null}
             waitingCount={waitingTotal}
-            cohort={reviewerState.currentCohort}
             onDecision={handleDecision}
             isDeciding={isDeciding}
-          />
-        )}
-
-        {view === 'history' && (
-          <AssessmentHistory
-            currentItems={history.current}
-            previousItems={history.previous}
-            currentCohort={reviewerState.currentCohort}
-            previousCohort={reviewerState.previousCohort}
-          />
-        )}
-
-        {view === 'cohorts' && (
-          <AssessmentCohorts
-            cohorts={cohorts}
-            currentCohort={reviewerState.currentCohort}
-            previousCohort={reviewerState.previousCohort}
-            isLoading={cohortsLoading}
-            error={cohortsError}
-            onReload={loadCohorts}
-            onCreateAndActivate={handleCreateAndActivateCohort}
-            onDeleteActive={handleDeleteActiveCohort}
           />
         )}
       </main>

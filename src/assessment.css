@@ -94,17 +94,6 @@
   color: inherit;
 }
 
-.assessment-sr-only {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
-}
-
 .assessment-header {
   position: sticky;
   top: 0;
@@ -201,94 +190,32 @@
   line-height: 1;
 }
 
-.assessment-navigation {
+.assessment-page-actions {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
   padding: 0;
   border: 0;
   background: transparent;
 }
 
-.assessment-navigation > button {
-  display: inline-flex;
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 44px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 8px 12px;
-  border-top: 1px solid #d9e0e2;
-  border-bottom: 1px solid #d9e0e2;
-  border-radius: 0;
-  background: #edf1f1;
-  color: #556164;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 500;
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease;
-}
-
-.assessment-navigation > button:first-child {
-  border-left: 1px solid #d9e0e2;
-  border-radius: 11px 0 0 11px;
-}
-
-.assessment-navigation > button:nth-of-type(2),
-.assessment-navigation > button:nth-of-type(3) {
-  border-left: 1px solid #d9e0e2;
-}
-
-.assessment-navigation > button:nth-of-type(3) {
-  border-right: 1px solid #d9e0e2;
-  border-radius: 0 11px 11px 0;
-}
-
-.assessment-navigation > button:not(.is-active):hover {
-  background: #f5f7f7;
-  color: var(--assessment-black);
-}
-
-.assessment-navigation > button.is-active {
-  position: relative;
-  z-index: 1;
-  background: var(--assessment-white);
-  color: var(--assessment-black);
-  box-shadow:
-    inset 0 0 0 1px #cbd5d7,
-    0 1px 4px rgba(8, 55, 93, 0.1);
-}
-
-.assessment-navigation > button span {
-  display: grid;
-  min-width: 20px;
-  height: 20px;
-  place-items: center;
-  border-radius: 999px;
-  background: rgba(8, 55, 93, 0.07);
-  color: #36536a;
-  font-size: 0.68rem;
-  font-weight: 600;
-}
-
-.assessment-view-application {
+.assessment-icon-action {
   display: grid;
   width: 44px;
   min-width: 44px;
   height: 44px;
-  margin-left: 8px;
+  min-height: 44px;
+  flex: 0 0 44px;
   place-items: center;
-  border: 1px solid #d9e0e2;
+  padding: 0;
+  border: 1px solid #d9e0e2 !important;
   border-radius: 11px;
   background: var(--assessment-white);
   color: var(--assessment-navy);
   box-shadow: 0 1px 3px rgba(8, 55, 93, 0.06);
-  font-size: 1rem;
-  font-weight: 600;
+  cursor: pointer;
   text-decoration: none;
   transition:
     background-color 150ms ease,
@@ -296,24 +223,42 @@
     box-shadow 150ms ease;
 }
 
-.assessment-view-application:hover {
+.assessment-icon-action svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.assessment-icon-action:hover,
+.assessment-add-cohort[aria-expanded="true"] {
   background: var(--assessment-soft-blue);
-  border-color: #c4d0d3;
+  border-color: #c4d0d3 !important;
   color: var(--assessment-navy);
   box-shadow: 0 2px 6px rgba(8, 55, 93, 0.08);
 }
 
-.assessment-view-application:focus-visible {
+.assessment-icon-action:focus-visible {
   outline: 2px solid var(--assessment-turquoise);
   outline-offset: 2px;
 }
 
 .assessment-live-region {
-  min-height: 38px;
-  padding: 10px 2px 8px;
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--assessment-success-soft);
   color: var(--assessment-success);
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+.assessment-live-region:empty {
+  margin: 0;
+  padding: 0;
 }
 
 .assessment-inline-error {
@@ -359,8 +304,8 @@
 }
 
 .assessment-applicant-card,
-.assessment-history-group,
-.assessment-cohort-list-section,
+.assessment-current-cohort,
+.assessment-cohort-empty,
 .assessment-cohort-create {
   border: 1px solid var(--assessment-line);
   border-radius: 20px;
@@ -417,7 +362,6 @@
 }
 
 .assessment-applicant-details dt,
-.assessment-history-meta dt,
 .assessment-cohort-dates dt,
 .assessment-cohort-counts dt {
   margin-bottom: 5px;
@@ -429,7 +373,6 @@
 }
 
 .assessment-applicant-details dd,
-.assessment-history-meta dd,
 .assessment-cohort-dates dd,
 .assessment-cohort-counts dd {
   min-width: 0;
@@ -440,8 +383,7 @@
   overflow-wrap: anywhere;
 }
 
-.assessment-applicant-details a,
-.assessment-history-link {
+.assessment-applicant-details a {
   color: var(--assessment-navy);
   font-weight: 600;
   text-decoration: underline;
@@ -449,8 +391,7 @@
   text-underline-offset: 3px;
 }
 
-.assessment-applicant-details a,
-.assessment-history-link {
+.assessment-applicant-details a {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
@@ -749,108 +690,6 @@
   margin-bottom: 0;
 }
 
-.assessment-section-intro {
-  margin-bottom: 24px;
-}
-
-.assessment-section-intro h2 {
-  margin-bottom: 12px;
-}
-
-.assessment-section-intro > p:last-child {
-  max-width: 620px;
-  margin-bottom: 0;
-}
-
-.assessment-history {
-  display: grid;
-  gap: 20px;
-}
-
-.assessment-history-group {
-  overflow: hidden;
-  box-shadow: none;
-}
-
-.assessment-history-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 22px 20px;
-  border-bottom: 1px solid var(--assessment-line);
-}
-
-.assessment-history-heading h2 {
-  font-size: 1.35rem;
-  font-weight: 600;
-}
-
-.assessment-history-heading > span,
-.assessment-cohort-list-heading > span {
-  padding-top: 3px;
-  color: #758083;
-  font-size: 0.74rem;
-  white-space: nowrap;
-}
-
-.assessment-history-empty {
-  padding: 28px 20px;
-  background: #fafcfc;
-}
-
-.assessment-history-empty p {
-  margin-bottom: 0;
-  font-size: 0.88rem;
-}
-
-.assessment-history-limit-note {
-  margin: 0;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--assessment-line);
-  background: #fafcfc;
-  color: var(--assessment-muted);
-  font-size: 0.78rem;
-}
-
-.assessment-history-list {
-  display: grid;
-}
-
-.assessment-history-card {
-  display: grid;
-  gap: 18px;
-  padding: 20px;
-  border-bottom: 1px solid var(--assessment-line);
-}
-
-.assessment-history-card:last-child {
-  border-bottom: 0;
-}
-
-.assessment-history-person {
-  display: flex;
-  min-width: 0;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.assessment-history-person > div {
-  min-width: 0;
-}
-
-.assessment-history-person h3 {
-  margin-bottom: 4px;
-}
-
-.assessment-history-person p {
-  margin-bottom: 0;
-  font-size: 0.8rem;
-  overflow-wrap: anywhere;
-}
-
-.assessment-decision-badge,
 .assessment-cohort-status {
   display: inline-flex;
   min-height: 28px;
@@ -863,147 +702,89 @@
   font-weight: 720;
 }
 
-.assessment-decision-badge.is-pass,
 .assessment-cohort-status.is-active {
   background: var(--assessment-success-soft);
   color: var(--assessment-success);
 }
 
-.assessment-decision-badge.is-fail {
-  background: var(--assessment-danger-soft);
-  color: var(--assessment-danger);
-}
-
-.assessment-decision-badge.is-unknown,
-.assessment-cohort-status.is-previous,
-.assessment-cohort-status.is-closed {
-  background: #eef1f1;
-  color: #596365;
-}
-
-.assessment-cohort-status.is-draft,
-.assessment-cohort-status.is-next {
-  background: var(--assessment-soft-blue);
-  color: var(--assessment-navy);
-}
-
-.assessment-history-meta {
-  display: grid;
-  gap: 14px;
-  margin: 0;
-}
-
-.assessment-email-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.assessment-email-status > span {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 8px;
-  border-radius: 50%;
-  background: #8a9496;
-}
-
-.assessment-email-status.is-sent {
-  color: var(--assessment-success);
-}
-
-.assessment-email-status.is-sent > span {
-  background: var(--assessment-success);
-}
-
-.assessment-email-status.is-failed {
-  color: var(--assessment-danger);
-}
-
-.assessment-email-status.is-failed > span {
-  background: var(--assessment-danger);
-}
-
-.assessment-email-status.is-pending {
-  color: #82620c;
-}
-
-.assessment-email-status.is-pending > span {
-  background: #b68b17;
-}
-
-.assessment-history-link {
-  width: fit-content;
-  font-size: 0.82rem;
-}
-
 .assessment-cohorts {
   display: grid;
   gap: 22px;
+  margin-bottom: 22px;
 }
 
-.assessment-cohort-list-section,
-.assessment-cohort-create {
+.assessment-current-cohort,
+.assessment-cohort-create,
+.assessment-cohort-empty {
   padding: 20px;
   border-color: #dbe2e3;
   box-shadow: 0 10px 30px rgba(8, 55, 93, 0.045);
 }
 
-.assessment-cohort-list-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.assessment-cohort-list-heading h3 {
-  margin-bottom: 0;
-}
-
-.assessment-cohort-list {
-  display: grid;
-  gap: 12px;
-}
-
-.assessment-cohort-card {
+.assessment-current-cohort {
   display: grid;
   width: 100%;
   gap: 20px;
-  padding: 17px;
-  border: 1px solid #e0e6e7;
-  border-radius: 15px;
-  background: #fbfcfc;
-  box-shadow: 0 1px 2px rgba(8, 55, 93, 0.025);
 }
 
-.assessment-cohort-card > header {
+.assessment-current-cohort > header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.assessment-cohort-card > header > div {
+.assessment-current-cohort > header > div {
   min-width: 0;
 }
 
-.assessment-cohort-card h4 {
+.assessment-current-cohort h2 {
   margin-top: 9px;
+  font-size: 1.35rem;
   overflow-wrap: anywhere;
 }
 
-.assessment-cohort-card header p {
+.assessment-current-cohort header p {
   margin: 3px 0 0;
-  color: #7a8588;
+  color: #616d70;
   font-size: 0.75rem;
 }
 
-.assessment-cohort-card .assessment-button {
+.assessment-current-cohort .assessment-button {
   min-width: 88px;
   min-height: 44px;
   padding: 8px 13px;
+}
+
+.assessment-cohort-empty {
+  display: grid;
+  min-height: 250px;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.assessment-cohort-empty-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 18px;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--assessment-soft-blue);
+  color: var(--assessment-navy);
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.assessment-cohort-empty h2 {
+  margin-bottom: 8px;
+  font-size: 1.35rem;
+}
+
+.assessment-cohort-empty p {
+  margin: 0;
+  font-size: 0.88rem;
 }
 
 .assessment-cohort-delete-trigger {
@@ -1028,7 +809,7 @@
   stroke-width: 1.65;
 }
 
-.assessment-cohort-card .assessment-cohort-delete-trigger:not(:disabled):hover,
+.assessment-current-cohort .assessment-cohort-delete-trigger:not(:disabled):hover,
 .assessment-cohort-delete-trigger[aria-expanded="true"] {
   transform: none;
   background: var(--assessment-danger-soft);
@@ -1109,8 +890,21 @@
   gap: 24px;
 }
 
-.assessment-cohort-create > h3 {
+.assessment-cohort-create > h2 {
   margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.assessment-cohort-create > h2:focus {
+  outline: none;
+}
+
+.assessment-cohort-create > h2:focus-visible {
+  outline: 2px solid var(--assessment-turquoise);
+  outline-offset: 5px;
+  border-radius: 4px;
 }
 
 .assessment-cohort-create form {
@@ -1371,18 +1165,14 @@
     padding: 16px;
   }
 
-  .assessment-history-meta,
   .assessment-cohort-dates,
   .assessment-field-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .assessment-history-card {
-    padding: 22px 24px;
-  }
-
-  .assessment-cohort-list-section,
-  .assessment-cohort-create {
+  .assessment-current-cohort,
+  .assessment-cohort-create,
+  .assessment-cohort-empty {
     padding: 26px;
   }
 
@@ -1412,22 +1202,6 @@
     padding-bottom: 4px;
   }
 
-  .assessment-navigation {
-    width: 100%;
-  }
-
-  .assessment-navigation > button {
-    flex: 0 0 128px;
-  }
-
-  .assessment-view-application {
-    margin-left: auto;
-  }
-
-  .assessment-live-region {
-    min-height: 44px;
-  }
-
   .assessment-applicant-header {
     padding-top: 30px;
     padding-bottom: 28px;
@@ -1441,10 +1215,6 @@
   .assessment-confirmation-actions {
     max-width: 520px;
     margin: 0 auto;
-  }
-
-  .assessment-history-heading {
-    padding: 26px 24px;
   }
 
 }
@@ -1470,23 +1240,7 @@
     padding: 0 34px;
   }
 
-  .assessment-history-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .assessment-history-card:nth-child(odd) {
-    border-right: 1px solid var(--assessment-line);
-  }
-
-  .assessment-history-card:nth-last-child(-n + 2) {
-    border-bottom: 0;
-  }
-
-  .assessment-history-card:last-child:nth-child(odd) {
-    border-bottom: 0;
-  }
-
-  .assessment-cohort-card {
+  .assessment-current-cohort {
     grid-template-columns: minmax(180px, 0.78fr) minmax(250px, 1.1fr) minmax(250px, 0.9fr);
     align-items: center;
     padding: 22px 24px;
