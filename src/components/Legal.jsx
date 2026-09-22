@@ -1,20 +1,18 @@
 import { useEffect } from 'react';
 import Footer from './Footer.jsx';
 
-const LEGAL_EMAIL = 'mail@patch.app';
+const LEGAL_EMAIL = 'support@patch.app';
 
 const ACCOUNT_DELETION_CONTENT = {
   title: 'Account Deletion',
   sections: [
     [
       'Patch users may request deletion of their Patch account and associated app data at any time.',
-      'To request account deletion, please email:',
+      'To request account deletion, open Message Support in the Patch app and submit an account-deletion request. If you cannot access the app, please email:',
     ],
     [
-      'Use the subject line:',
-      'Patch Account Deletion Request',
-      'In your email, please include the email address or phone number connected with your Patch account so that we can identify the correct account.',
-      'Once we receive your request, we will verify the account and process deletion within a reasonable period. When your account is deleted, we will delete or anonymise personal data associated with your Patch account unless we are required or permitted to retain certain information for legitimate legal, security, fraud prevention, tax, accounting, dispute resolution, or regulatory reasons.',
+      'Use the subject line “Patch Account Deletion Request” and include the email address or phone number connected with your Patch account so that we can identify the correct account.',
+      'We will verify the request, confirm the expected completion timeframe, and process deletion manually. When your account is deleted, we will delete or anonymise personal data associated with your Patch account unless we are required or permitted to retain certain information for legitimate legal, security, fraud prevention, tax, accounting, dispute resolution, or regulatory reasons.',
     ],
   ],
   deletedItems: [
@@ -28,28 +26,38 @@ const ACCOUNT_DELETION_CONTENT = {
 };
 
 const PRIVACY_PARAGRAPHS = [
-  'Last updated: June 15, 2026',
+  'Last updated: September 22, 2026',
   'Patch is operated by Patch App LLC.',
   'Patch collects and processes personal information only where necessary to provide, operate, improve, and support the Patch service.',
   'The information we may process includes account information, contact details, learning activity, communication records, payment-related information, device information, and support correspondence.',
   'We use this information to provide the service, manage user accounts, schedule and support coaching sessions, process payments, improve the product, prevent misuse, and comply with legal obligations.',
   'We do not sell personal information.',
   'Where we use third-party service providers, we do so only where necessary for hosting, analytics, communication, payments, customer support, or other operational purposes connected with the Patch service.',
+  'Patch calls use the device microphone to provide live two-way coaching. Where a call includes a Patch recording, audio may be stored as a session record and made available to the relevant participants and authorised Patch staff.',
+  'If a call or Patch feature uses transcription or artificial intelligence, the relevant audio, transcript, or session information may be processed by the service providers needed to provide that feature. We do not use those materials for unrelated advertising.',
+  'We retain information only for as long as needed to provide the service, meet legal and accounting obligations, resolve disputes, prevent misuse, and protect Patch and its users. You may request deletion or withdraw consent by contacting us or using the in-app support flow where available.',
+  'We do not sell personal information or share it for unrelated advertising. Any sharing with hosting, communications, payment, analytics, transcription, or AI providers is limited to operating, supporting, securing, or improving Patch and is covered by appropriate contractual and privacy safeguards.',
   'For privacy requests, please contact:',
 ];
 
 const TERMS_PARAGRAPHS = [
-  'Last updated: June 15, 2026',
+  'Last updated: September 22, 2026',
   'Patch is operated by Patch App LLC.',
   'By accessing or using the Patch website, mobile applications, or related services, you agree to use the service lawfully and in accordance with these terms.',
   'Patch provides speaking, communication, and coaching-related services for legal professionals and related users.',
+  'Patch coaching sessions are real-time, one-to-one services. Any payment, cancellation, refund, or scheduling terms presented for a particular service form part of the agreement for that service.',
+  'Before joining a call, the Wait screen may explain that pressing GO means you agree to these Terms. Calls may be recorded, transcribed, or processed with artificial intelligence where the app clearly says so and you proceed after that notice.',
   'You are responsible for the information you provide when using Patch and for keeping your account details accurate and secure.',
+  'You must not record, copy, redistribute, scrape, reverse engineer, interfere with, or attempt unauthorised access to Patch, its calls, messages, recordings, metrics, or other users’ information.',
+  'You must communicate respectfully and must not use Patch to harass, threaten, impersonate, discriminate against, or otherwise abuse another person. We may restrict or suspend access where necessary to protect users or the service.',
   'You must not misuse the service, interfere with its operation, attempt to access it without authorisation, or use it in a way that infringes the rights of Patch, its users, coaches, clients, or service providers.',
   'Patch may update, change, suspend, improve, or discontinue parts of the service from time to time.',
   'All content, branding, software, designs, text, graphics, and other materials made available through Patch are owned by Patch App LLC or its licensors unless otherwise stated.',
   'The service may contain links to third-party services or websites. Patch is not responsible for third-party websites, services, or content.',
   'To the maximum extent permitted by applicable law, Patch provides the service on an “as is” and “as available” basis and does not guarantee uninterrupted availability or error-free operation.',
   'To the maximum extent permitted by applicable law, Patch App LLC will not be liable for indirect, incidental, special, consequential, or exemplary damages arising from use of the service.',
+  'Patch provides coaching and communication practice, not medical, legal, financial, employment, or other professional advice, and does not guarantee a particular learning or business outcome.',
+  'You may request account deletion through Message Support in the app. See the Account Deletion section and Privacy Policy for the data-handling consequences of deletion.',
   'For legal questions, please contact:',
 ];
 
