@@ -165,7 +165,6 @@ const visibleOffsets = [-1, 0, 1];
 const APPLICATION_NAVIGATION = [
   { href: '#role', label: 'The Role' },
   { href: '#stage-one', label: 'Stage One' },
-  { href: '#stage-two', label: 'Stage Two' },
   { href: '#interns', label: 'Interns' },
 ];
 
@@ -424,31 +423,6 @@ export default function CoachApplication() {
           onSuccess={setSuccessDetails}
           onAccessExpired={() => setIsUnlocked(false)}
         />
-
-        <section className="application-section application-stage-two-section" id="stage-two">
-          <div className="page-shell">
-            <div className="application-instructions">
-              <div className="application-instructions-copy">
-                <span className="application-section-label">Stage Two: Interview</span>
-                <h2>Video Interview</h2>
-                <p className="application-closing">
-                  Successful applicants receive an email invitation to interview with Patrick on
-                  Google Meet. The interview covers the role and your availability, with time for your
-                  questions. You may then be invited to join the team as a Legal Speaking Coach.
-                </p>
-              </div>
-
-              <div className="application-steps-card application-stage-two-card">
-                <h3>What happens:</h3>
-                <ol>
-                  <li>Receive your Stage Two invitation by email.</li>
-                  <li>Arrange your interview using the email invitation.</li>
-                  <li>Join the video interview on Google Meet.</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <section className="application-section application-interns-section" id="interns">
           <div className="page-shell">
