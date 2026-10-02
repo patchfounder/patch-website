@@ -619,23 +619,17 @@
   box-shadow: 0 12px 30px rgba(8, 55, 93, 0.08);
 }
 
-.coach-application-page .coach-recorder-mark > span {
-  width: 22px;
-  height: 30px;
-  border: 2px solid var(--coach-action);
-  border-radius: 12px;
-}
-
-.coach-application-page .coach-recorder-mark > span::after {
+.coach-application-page .coach-recorder-mark svg {
   display: block;
-  width: 32px;
-  height: 18px;
-  margin: 15px 0 0 -7px;
-  border-right: 2px solid var(--coach-action);
-  border-bottom: 2px solid var(--coach-action);
-  border-left: 2px solid var(--coach-action);
-  border-radius: 0 0 16px 16px;
-  content: "";
+  width: 38px;
+  height: 38px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+  vector-effect: non-scaling-stroke;
 }
 
 .coach-application-page .coach-recorder-start-state > p {

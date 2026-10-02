@@ -330,7 +330,12 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
           {(recorderState === 'idle' || recorderState === 'requesting') && (
             <div className="coach-recorder-start-state">
               <div className="coach-recorder-mark" aria-hidden="true">
-                <span />
+                <svg viewBox="0 0 48 48" focusable="false">
+                  <rect x="17" y="4" width="14" height="24" rx="7" />
+                  <path d="M21 14h6M21 19h6" />
+                  <path d="M10 19v2a14 14 0 0 0 28 0v-2" />
+                  <path d="M24 35v7M17 43h14" />
+                </svg>
               </div>
               <p>
                 You may record again as many times as you need before submitting. Audio stays in this
