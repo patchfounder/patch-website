@@ -24,7 +24,7 @@
 }
 
 .coach-recruitment-ui .coach-control {
-  min-height: 48px;
+  min-height: 52px;
   border: 1px solid transparent;
   border-radius: 999px;
   cursor: pointer;
@@ -432,6 +432,7 @@
 
 /* Application-specific additions */
 .coach-application-page .coach-stage-one-cta {
+  min-height: 52px;
   transition:
     background-color 160ms ease,
     transform 160ms ease;
@@ -552,7 +553,7 @@
 }
 
 .coach-application-page .coach-review-button {
-  width: 100%;
+  width: min(100%, 250px);
 }
 
 /* Recorder */
@@ -609,10 +610,10 @@
 
 .coach-application-page .coach-recorder-mark {
   display: grid;
-  width: 68px;
-  height: 68px;
+  width: 60px;
+  height: 60px;
   place-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   border: 1px solid #d6e1e3;
   border-radius: 50%;
   background: var(--coach-paper);
@@ -621,8 +622,8 @@
 
 .coach-application-page .coach-recorder-mark svg {
   display: block;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   overflow: visible;
   fill: none;
   stroke: currentColor;
@@ -638,6 +639,11 @@
   color: #687174;
   font-size: 0.78rem;
   line-height: 1.5;
+}
+
+.coach-application-page .coach-recorder-limit {
+  justify-self: center;
+  margin-bottom: 0.75rem;
 }
 
 .coach-application-page .coach-record-button {
@@ -748,9 +754,17 @@
   margin-bottom: 0.85rem;
 }
 
-.coach-application-page .coach-recorder-review-state > .coach-secondary-button {
-  width: 100%;
+.coach-application-page .coach-recorder-review-state > .coach-record-again-button {
+  display: flex;
+  width: min(100%, 250px);
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
   margin-top: 0.85rem;
+}
+
+.coach-application-page .coach-review-actions .coach-control {
+  width: 100%;
 }
 
 .coach-application-page .coach-recorder-unavailable strong {
@@ -1155,7 +1169,7 @@
 
   .coach-application-page .coach-form-actions {
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     flex-direction: row;
   }
 
@@ -1164,7 +1178,7 @@
   }
 
   .coach-application-page .coach-review-button {
-    width: auto;
+    width: min(100%, 250px);
     flex: 0 0 auto;
   }
 
@@ -1176,7 +1190,7 @@
   }
 
   .coach-application-page .coach-review-actions {
-    grid-template-columns: minmax(140px, 0.35fr) minmax(210px, 0.65fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

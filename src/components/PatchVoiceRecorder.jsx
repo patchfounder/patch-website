@@ -312,14 +312,6 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
 
   return (
     <div className={`coach-recorder coach-recorder-${recorderState}`}>
-      <div className="coach-recorder-heading">
-        <div>
-          <span className="coach-recorder-kicker">Voice note</span>
-          <h3>Record your message</h3>
-        </div>
-        <span className="coach-recorder-limit">Maximum 1:00</span>
-      </div>
-
       {!recordingSupported ? (
         <div className="coach-recorder-unavailable" role="alert">
           <strong>Recording is not available in this browser.</strong>
@@ -331,16 +323,11 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
             <div className="coach-recorder-start-state">
               <div className="coach-recorder-mark" aria-hidden="true">
                 <svg viewBox="0 0 48 48" focusable="false">
-                  <rect x="17" y="4" width="14" height="24" rx="7" />
-                  <path d="M21 14h6M21 19h6" />
-                  <path d="M10 19v2a14 14 0 0 0 28 0v-2" />
-                  <path d="M24 35v7M17 43h14" />
+                  <rect x="18" y="5" width="12" height="23" rx="6" />
+                  <path d="M12 22v2a12 12 0 0 0 24 0v-2M24 36v7m-7 0h14" />
                 </svg>
               </div>
-              <p>
-                You may record again as many times as you need before submitting. Audio stays in this
-                browser until you submit the final application.
-              </p>
+              <span className="coach-recorder-limit">Maximum 1:00</span>
               <button
                 className="coach-control coach-primary-button coach-record-button"
                 type="button"
@@ -392,7 +379,12 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
                 durationMs={recording.durationMs}
                 label="Review your recorded voice note"
               />
-              <button className="coach-control coach-secondary-button" type="button" onClick={recordAgain}>
+              <button
+                className="coach-control coach-secondary-button coach-record-again-button"
+                type="button"
+                onClick={recordAgain}
+              >
+                <span aria-hidden="true">←</span>
                 Record again
               </button>
             </div>

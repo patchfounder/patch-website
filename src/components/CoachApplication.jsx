@@ -384,13 +384,13 @@ export default function CoachApplication() {
                 <span className="application-section-label">Stage 1: Voice Note Submission</span>
                 <h2>How to submit your application?</h2>
                 <p>
-                  Your voice is central to this role. We are looking for a clear, energetic speaking
-                  voice and people whose values align with ours.
+                  Prepare a voice note of up to 60 seconds explaining why you would like to join Patch.
+                  You can also share how your values align with ours and a little about your
+                  professional strategy.
                 </p>
                 <p>
-                  Prepare a voice note of up to 60 seconds explaining why you would like to join Patch.
-                  You can also share how your values align with ours and a little about your professional
-                  strategy.
+                  Your voice is central to this role. We are looking for a clear, energetic speaking
+                  voice and people whose values align with ours.
                 </p>
                 <p className="application-closing">
                   You can listen back and record again below. Nothing is submitted until you review
@@ -432,19 +432,17 @@ export default function CoachApplication() {
                 <span className="application-section-label">Stage Two: Interview</span>
                 <h2>Video Interview</h2>
                 <p className="application-closing">
-                  Successful applicants receive an email linking to the{' '}
-                  <a className="coach-inline-link" href="https://www.patch.app/coaching">booking page</a>.
-                  Choose a time for a 30-minute video interview with Patrick on Google Meet. You will
-                  discuss the role and your availability, and have time to ask questions. From there,
-                  you may be invited to join the team as a Legal Speaking Coach.
+                  Successful applicants receive an email invitation to interview with Patrick on
+                  Google Meet. The interview covers the role and your availability, with time for your
+                  questions. You may then be invited to join the team as a Legal Speaking Coach.
                 </p>
               </div>
 
               <div className="application-steps-card application-stage-two-card">
-                <h3>What happens next:</h3>
+                <h3>What happens:</h3>
                 <ol>
                   <li>Receive your Stage Two invitation by email.</li>
-                  <li>Choose a time on the booking page.</li>
+                  <li>Arrange your interview using the email invitation.</li>
                   <li>Join the video interview on Google Meet.</li>
                 </ol>
               </div>

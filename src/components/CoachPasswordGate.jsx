@@ -249,9 +249,8 @@ export default function CoachPasswordGate({ onUnlocked }) {
                 disabled={!canUnlock || isUnlocking}
                 required
                 aria-invalid={Boolean(passwordError)}
-                aria-describedby={passwordError ? 'coach-password-error' : 'coach-password-note'}
+                aria-describedby={passwordError ? 'coach-password-error' : undefined}
               />
-              <small id="coach-password-note">Passwords are case-sensitive.</small>
               {passwordError && (
                 <small className="coach-field-error" id="coach-password-error" role="alert">
                   {passwordError}
@@ -286,10 +285,6 @@ export default function CoachPasswordGate({ onUnlocked }) {
               </button>
             )}
 
-            <p className="coach-gate-help">
-              The application includes a voice note of up to 60 seconds. Use Safari or Chrome and
-              allow microphone access when prompted.
-            </p>
           </form>
         )}
 

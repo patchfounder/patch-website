@@ -85,6 +85,8 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
   const requestRef = useRef(null);
   const reviewHeadingRef = useRef(null);
   const errorSummaryRef = useRef(null);
+  const reviewErrors = validateApplication({ ...formValues, recording }).errors;
+  const canReviewApplication = recording?.blob && Object.keys(reviewErrors).length === 0;
 
   useEffect(() => () => {
     requestRef.current?.abort();
@@ -237,8 +239,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
           <span className="application-section-label">Your application</span>
           <h2>Submit Your Voice Note</h2>
           <p>
-            Add your details and record a message of up to 60 seconds. Nothing is uploaded until you
-            review everything and press Submit application.
+            Add your details and record a message of up to 60 seconds.
           </p>
         </div>
 
@@ -337,7 +338,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
                 <span>02</span>
                 <div>
                   <h3>Your voice note</h3>
-                  <p>There is no minimum length. The recording stops automatically at 60 seconds.</p>
+                  <p>There is no minimum length.</p>
                 </div>
               </div>
 
@@ -357,8 +358,11 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
             </div>
 
             <div className="coach-form-actions">
-              <p>Your details and recording remain only on this screen until final submission.</p>
-              <button className="coach-control coach-primary-button coach-review-button" type="submit">
+              <button
+                className="coach-control coach-primary-button coach-review-button"
+                type="submit"
+                disabled={!canReviewApplication}
+              >
                 Review application
                 <span aria-hidden="true">→</span>
               </button>
