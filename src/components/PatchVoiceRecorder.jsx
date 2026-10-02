@@ -53,10 +53,10 @@ function recorderErrorMessage(error) {
   return 'The microphone could not start. Check your browser permissions and try again.';
 }
 
-export default function PatchVoiceRecorder({ onRecordingChange }) {
-  const [recorderState, setRecorderState] = useState('idle');
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [recording, setRecording] = useState(null);
+export default function PatchVoiceRecorder({ initialRecording = null, onRecordingChange, onStateChange }) {
+  const [recorderState, setRecorderState] = useState(initialRecording ? 'review' : 'idle');
+  const [elapsedMs, setElapsedMs] = useState(initialRecording?.durationMs || 0);
+  const [recording, setRecording] = useState(initialRecording);
   const [errorMessage, setErrorMessage] = useState('');
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
@@ -69,8 +69,10 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
   const recordingFailedRef = useRef(false);
   const mountedRef = useRef(true);
   const onRecordingChangeRef = useRef(onRecordingChange);
+  const onStateChangeRef = useRef(onStateChange);
 
   onRecordingChangeRef.current = onRecordingChange;
+  onStateChangeRef.current = onStateChange;
 
   const recordingSupported =
     typeof navigator !== 'undefined' &&
@@ -297,6 +299,10 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
   }, []);
 
   useEffect(() => {
+    onStateChangeRef.current?.(recorderState);
+  }, [recorderState]);
+
+  useEffect(() => {
     if (recorderState !== 'recording' && recorderState !== 'stopping') {
       return undefined;
     }
@@ -312,14 +318,6 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
 
   return (
     <div className={`coach-recorder coach-recorder-${recorderState}`}>
-      <div className="coach-recorder-heading">
-        <div>
-          <span className="coach-recorder-kicker">Voice note</span>
-          <h3>Record your message</h3>
-        </div>
-        <span className="coach-recorder-limit">Maximum 1:00</span>
-      </div>
-
       {!recordingSupported ? (
         <div className="coach-recorder-unavailable" role="alert">
           <strong>Recording is not available in this browser.</strong>
@@ -330,12 +328,13 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
           {(recorderState === 'idle' || recorderState === 'requesting') && (
             <div className="coach-recorder-start-state">
               <div className="coach-recorder-mark" aria-hidden="true">
-                <span />
+                <svg viewBox="0 0 32 36" focusable="false">
+                  <rect x="10" y="2" width="12" height="19" rx="6" />
+                  <path d="M6 17v1a10 10 0 0 0 20 0v-1" />
+                  <path d="M16 28v5" />
+                  <path d="M10 33h12" />
+                </svg>
               </div>
-              <p>
-                You may record again as many times as you need before submitting. Audio stays in this
-                browser until you submit the final application.
-              </p>
               <button
                 className="coach-control coach-primary-button coach-record-button"
                 type="button"
@@ -351,7 +350,7 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
           {(recorderState === 'recording' || recorderState === 'stopping') && (
             <div className="coach-recorder-live-state">
               <span className="coach-visually-hidden" role="status">
-                Recording started. It will stop automatically after 60 seconds.
+                Recording started.
               </span>
               <div className="coach-recorder-live-status">
                 <span><i aria-hidden="true" />Recording</span>
@@ -365,20 +364,25 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
                 ))}
               </div>
               <button
-                className="coach-control coach-stop-button"
+                className="coach-control coach-primary-button coach-stop-button"
                 type="button"
                 onClick={stopRecording}
                 disabled={recorderState === 'stopping'}
               >
                 <span aria-hidden="true" />
-                {recorderState === 'stopping' ? 'Finishing…' : 'Finish recording'}
+                {recorderState === 'stopping' ? 'Finishing…' : 'Stop recording'}
               </button>
             </div>
           )}
 
           {recorderState === 'review' && recording && (
             <div className="coach-recorder-review-state">
-              <div className="coach-recorder-ready-line">
+              <div
+                className="coach-recorder-ready-line"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
                 <span><i aria-hidden="true" />Recording ready</span>
                 <span>{formatTimer(recording.durationMs).replace(/\.\d$/, '')}</span>
               </div>

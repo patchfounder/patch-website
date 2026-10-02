@@ -457,14 +457,16 @@
 
 .coach-application-page .coach-submission-section {
   scroll-margin-top: 90px;
+  padding-top: clamp(3.25rem, 5vw, 4.75rem);
   padding-right: env(safe-area-inset-right);
+  padding-bottom: clamp(3rem, 5vw, 4.5rem);
   padding-left: env(safe-area-inset-left);
   background: var(--coach-soft-blue);
 }
 
 .coach-application-page .coach-submission-heading {
   max-width: 780px;
-  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+  margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
 }
 
 .coach-application-page .coach-submission-heading h2 {
@@ -538,67 +540,59 @@
 
 .coach-application-page .coach-form-actions {
   display: flex;
-  align-items: stretch;
-  flex-direction: column;
-  gap: 1rem;
+  justify-content: flex-end;
   padding-top: 0.35rem;
-}
-
-.coach-application-page .coach-form-actions > p {
-  margin: 0;
-  color: #697274;
-  font-size: 0.78rem;
-  line-height: 1.5;
 }
 
 .coach-application-page .coach-review-button {
   width: 100%;
 }
 
+.coach-application-page .coach-review-button:disabled {
+  border-color: #cbd1d3;
+  background: #dfe3e4;
+  box-shadow: none;
+  color: #747b7d;
+  opacity: 1;
+}
+
+.coach-application-page .coach-recording-card {
+  padding-bottom: 1.1rem;
+}
+
+.coach-application-page .coach-recording-card .coach-form-card-heading {
+  margin-bottom: 0.8rem;
+}
+
+.coach-application-page .coach-recording-guidance {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.95rem;
+}
+
+.coach-application-page .coach-recording-guidance p {
+  max-width: 760px;
+  margin: 0;
+  color: #596366;
+  font-size: 0.82rem;
+  line-height: 1.52;
+}
+
+.coach-application-page .coach-recording-guidance strong {
+  color: var(--coach-ink);
+  font-weight: 600;
+}
+
 /* Recorder */
 .coach-application-page .coach-recorder {
-  overflow: hidden;
-  border: 1px solid #d2dcde;
-  border-radius: 14px;
-  background: #f9fbfb;
-}
-
-.coach-application-page .coach-recorder-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem;
-  border-bottom: 1px solid #dce4e6;
-  background: var(--coach-paper);
-}
-
-.coach-application-page .coach-recorder-kicker {
-  margin-bottom: 0.28rem;
-  font-size: 0.64rem;
-}
-
-.coach-application-page .coach-recorder-heading h3 {
-  margin: 0;
-  color: var(--coach-ink);
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.coach-application-page .coach-recorder-limit {
-  flex: 0 0 auto;
-  padding: 0.35rem 0.55rem;
-  border-radius: 999px;
-  background: var(--coach-soft-blue);
-  color: #536063;
-  font-size: 0.67rem;
+  padding-top: 0.2rem;
 }
 
 .coach-application-page .coach-recorder-start-state,
 .coach-application-page .coach-recorder-live-state,
 .coach-application-page .coach-recorder-review-state,
 .coach-application-page .coach-recorder-unavailable {
-  padding: 1.15rem;
+  padding: 0;
 }
 
 .coach-application-page .coach-recorder-start-state {
@@ -609,41 +603,23 @@
 
 .coach-application-page .coach-recorder-mark {
   display: grid;
-  width: 68px;
-  height: 68px;
+  width: 48px;
+  height: 48px;
   place-items: center;
-  margin-bottom: 1rem;
-  border: 1px solid #d6e1e3;
-  border-radius: 50%;
-  background: var(--coach-paper);
-  box-shadow: 0 12px 30px rgba(8, 55, 93, 0.08);
+  margin-bottom: 0.7rem;
+  color: var(--coach-action);
 }
 
-.coach-application-page .coach-recorder-mark > span {
-  width: 22px;
-  height: 30px;
-  border: 2px solid var(--coach-action);
-  border-radius: 12px;
-}
-
-.coach-application-page .coach-recorder-mark > span::after {
-  display: block;
-  width: 32px;
-  height: 18px;
-  margin: 15px 0 0 -7px;
-  border-right: 2px solid var(--coach-action);
-  border-bottom: 2px solid var(--coach-action);
-  border-left: 2px solid var(--coach-action);
-  border-radius: 0 0 16px 16px;
-  content: "";
-}
-
-.coach-application-page .coach-recorder-start-state > p {
-  max-width: 520px;
-  margin-bottom: 1rem;
-  color: #687174;
-  font-size: 0.78rem;
-  line-height: 1.5;
+.coach-application-page .coach-recorder-mark svg {
+  width: 36px;
+  height: 40px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  vector-effect: non-scaling-stroke;
 }
 
 .coach-application-page .coach-record-button {
@@ -738,16 +714,13 @@
   justify-content: center;
   gap: 0.65rem;
   margin: 0 auto;
-  border-color: #c5cdcf;
-  background: var(--coach-paper);
-  color: var(--coach-ink);
 }
 
 .coach-application-page .coach-stop-button > span {
   width: 12px;
   height: 12px;
   border-radius: 2px;
-  background: #c63737;
+  background: var(--coach-paper);
 }
 
 .coach-application-page .coach-recorder-ready-line {
@@ -773,7 +746,7 @@
 }
 
 .coach-application-page .coach-recorder > .coach-message {
-  margin: 0 1.15rem 1.15rem;
+  margin: 0.85rem 0 0;
 }
 
 .coach-application-page .coach-recording-field-error {
@@ -1161,12 +1134,6 @@
 
   .coach-application-page .coach-form-actions {
     align-items: center;
-    justify-content: space-between;
-    flex-direction: row;
-  }
-
-  .coach-application-page .coach-form-actions > p {
-    max-width: 440px;
   }
 
   .coach-application-page .coach-review-button {
@@ -1178,7 +1145,7 @@
   .coach-application-page .coach-recorder-live-state,
   .coach-application-page .coach-recorder-review-state,
   .coach-application-page .coach-recorder-unavailable {
-    padding: 1.5rem;
+    padding: 0;
   }
 
   .coach-application-page .coach-review-actions {
@@ -1259,12 +1226,6 @@
   .coach-application-page .coach-review-card {
     padding: 1.05rem;
     border-radius: 15px;
-  }
-
-  .coach-application-page .coach-recorder-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.65rem;
   }
 
   .coach-recruitment-ui .coach-audio-player {

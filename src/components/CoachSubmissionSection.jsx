@@ -76,6 +76,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
     linkedin: '',
   });
   const [recording, setRecording] = useState(null);
+  const [recorderState, setRecorderState] = useState('idle');
   const [fieldErrors, setFieldErrors] = useState({});
   const [step, setStep] = useState('compose');
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -83,11 +84,16 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitError, setSubmitError] = useState('');
   const requestRef = useRef(null);
+  const recordingUrlRef = useRef('');
   const reviewHeadingRef = useRef(null);
   const errorSummaryRef = useRef(null);
 
   useEffect(() => () => {
     requestRef.current?.abort();
+    if (recordingUrlRef.current) {
+      URL.revokeObjectURL(recordingUrlRef.current);
+      recordingUrlRef.current = '';
+    }
   }, []);
 
   useEffect(() => {
@@ -122,12 +128,41 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
     setSubmitError('');
   };
 
+  const validateField = (field) => () => {
+    const validation = validateApplication({ ...formValues, recording });
+    setFieldErrors((current) => ({ ...current, [field]: validation.errors[field] || '' }));
+  };
+
+  const canReview =
+    recorderState === 'review' &&
+    Object.keys(validateApplication({ ...formValues, recording }).errors).length === 0;
+
+  const updateRecording = (nextRecording) => {
+    if (recordingUrlRef.current) {
+      URL.revokeObjectURL(recordingUrlRef.current);
+      recordingUrlRef.current = '';
+    }
+
+    if (!nextRecording?.blob) {
+      setRecording(null);
+      return;
+    }
+
+    const reviewUrl = URL.createObjectURL(nextRecording.blob);
+    recordingUrlRef.current = reviewUrl;
+    setRecording({ ...nextRecording, url: reviewUrl });
+  };
+
   const reviewApplication = (event) => {
     event.preventDefault();
     const validation = validateApplication({ ...formValues, recording });
 
-    if (Object.keys(validation.errors).length > 0) {
-      setFieldErrors(validation.errors);
+    if (!canReview || Object.keys(validation.errors).length > 0) {
+      const nextErrors = { ...validation.errors };
+      if (recorderState !== 'review' && !nextErrors.recording) {
+        nextErrors.recording = 'Wait until your voice note is ready before reviewing your application.';
+      }
+      setFieldErrors(nextErrors);
       setSubmitError('Check the highlighted items before continuing.');
       window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
       return;
@@ -235,10 +270,9 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
       <div className="page-shell">
         <div className="coach-submission-heading">
           <span className="application-section-label">Your application</span>
-          <h2>Submit Your Voice Note</h2>
+          <h2>Submit your application</h2>
           <p>
-            Add your details and record a message of up to 60 seconds. Nothing is uploaded until you
-            review everything and press Submit application.
+            Add your details, record your voice note and review everything before final submission.
           </p>
         </div>
 
@@ -269,6 +303,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
                     type="text"
                     value={formValues.fullName}
                     onChange={updateField('fullName')}
+                    onBlur={validateField('fullName')}
                     autoComplete="name"
                     maxLength="120"
                     required
@@ -291,6 +326,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
                     type="email"
                     value={formValues.email}
                     onChange={updateField('email')}
+                    onBlur={validateField('email')}
                     autoComplete="email"
                     inputMode="email"
                     maxLength="254"
@@ -314,6 +350,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
                     type="url"
                     value={formValues.linkedin}
                     onChange={updateField('linkedin')}
+                    onBlur={validateField('linkedin')}
                     inputMode="url"
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -332,18 +369,31 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
               </div>
             </div>
 
-            <div className="coach-form-card">
+            <div className="coach-form-card coach-recording-card">
               <div className="coach-form-card-heading">
                 <span>02</span>
                 <div>
                   <h3>Your voice note</h3>
-                  <p>There is no minimum length. The recording stops automatically at 60 seconds.</p>
                 </div>
               </div>
 
+              <div className="coach-recording-guidance">
+                <p>
+                  Tell us why you would like to join Patch. You can also share how your values align
+                  with ours and a little about your professional strategy.
+                </p>
+                <p><strong>Record up to 60 seconds. Recording stops automatically.</strong></p>
+                <p>
+                  You can listen back and record again before submitting. Your details and recording
+                  are only saved when you submit.
+                </p>
+              </div>
+
               <PatchVoiceRecorder
+                initialRecording={recording}
+                onStateChange={setRecorderState}
                 onRecordingChange={(nextRecording) => {
-                  setRecording(nextRecording);
+                  updateRecording(nextRecording);
                   setFieldErrors((current) => ({ ...current, recording: '' }));
                   setSubmitError('');
                 }}
@@ -357,8 +407,11 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
             </div>
 
             <div className="coach-form-actions">
-              <p>Your details and recording remain only on this screen until final submission.</p>
-              <button className="coach-control coach-primary-button coach-review-button" type="submit">
+              <button
+                className="coach-control coach-primary-button coach-review-button"
+                type="submit"
+                disabled={!canReview}
+              >
                 Review application
                 <span aria-hidden="true">→</span>
               </button>
