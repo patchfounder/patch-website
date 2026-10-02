@@ -362,9 +362,8 @@ export default function CoachApplication() {
             </div>
             <div className="application-copy">
               <p>
-                We work with lawyers who need a speaking voice that is precise and professional.
-                As a Legal Speaking Coach, you will learn to coach lawyers using our exclusive
-                system.
+                We help lawyers develop a precise, professional speaking voice. As a Legal Speaking
+                Coach, you will be trained to deliver specialist coaching using our exclusive system.
               </p>
               <p>
                 The six-month internship will give you valuable experience to draw on when applying

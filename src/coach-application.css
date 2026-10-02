@@ -13,6 +13,10 @@
   --coach-success: #167a5c;
 }
 
+.coach-application-page .application-logo-track {
+  animation-duration: 52.5s;
+}
+
 .coach-recruitment-ui .coach-visually-hidden {
   position: absolute;
   width: 1px;

@@ -34,21 +34,23 @@ function normalizeEmail(value) {
 
 function normalizeLinkedInUrl(value) {
   const raw = requiredText(value, "LinkedIn profile", 500);
+  const candidate = raw.startsWith("//")
+    ? `https:${raw}`
+    : /^[a-z][a-z\d+.-]*:/i.test(raw) ? raw : `https://${raw}`;
   let url;
   try {
-    url = new URL(raw);
+    url = new URL(candidate);
   } catch (_error) {
-    throw new RecruitmentServiceError("Enter a valid LinkedIn profile URL.", "invalid_linkedin");
+    throw new RecruitmentServiceError("Enter a valid website URL.", "invalid_linkedin");
   }
-  const hostname = url.hostname.toLowerCase();
   if (
-    url.protocol !== "https:"
-    || (hostname !== "linkedin.com" && !hostname.endsWith(".linkedin.com"))
-    || url.pathname === "/"
+    !["http:", "https:"].includes(url.protocol)
+    || !url.hostname
+    || url.username
+    || url.password
   ) {
-    throw new RecruitmentServiceError("Enter a valid LinkedIn profile URL.", "invalid_linkedin");
+    throw new RecruitmentServiceError("Enter a valid website URL.", "invalid_linkedin");
   }
-  url.hash = "";
   return url.toString();
 }
 

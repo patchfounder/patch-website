@@ -53,15 +53,13 @@ function recorderErrorMessage(error) {
   return 'The microphone could not start. Check your browser permissions and try again.';
 }
 
-export default function PatchVoiceRecorder({ onRecordingChange }) {
-  const [recorderState, setRecorderState] = useState('idle');
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [recording, setRecording] = useState(null);
+export default function PatchVoiceRecorder({ recording, onRecordingChange }) {
+  const [recorderState, setRecorderState] = useState(recording?.blob ? 'review' : 'idle');
+  const [elapsedMs, setElapsedMs] = useState(recording?.durationMs || 0);
   const [errorMessage, setErrorMessage] = useState('');
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
-  const objectUrlRef = useRef('');
   const startedAtRef = useRef(0);
   const stoppedAtRef = useRef(0);
   const frameRef = useRef(null);
@@ -94,16 +92,8 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
     streamRef.current = null;
   };
 
-  const releaseCurrentRecording = (notify = true) => {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = '';
-    }
-
-    setRecording(null);
-    if (notify) {
-      onRecordingChangeRef.current?.(null);
-    }
+  const releaseCurrentRecording = () => {
+    onRecordingChangeRef.current?.(null);
   };
 
   const updateTimer = () => {
@@ -126,7 +116,6 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
       cancelTimers();
       stoppedAtRef.current = performance.now();
       recorder.stop();
-      stopTracks();
     }
   };
 
@@ -232,18 +221,14 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
           return;
         }
 
-        const url = URL.createObjectURL(blob);
         const nextRecording = {
           blob,
-          url,
           durationMs,
           mimeType,
           fileName: `voice-note.${extensionForMimeType(mimeType)}`,
         };
 
-        objectUrlRef.current = url;
         setElapsedMs(durationMs);
-        setRecording(nextRecording);
         setRecorderState('review');
         onRecordingChangeRef.current?.(nextRecording);
       };
@@ -289,10 +274,6 @@ export default function PatchVoiceRecorder({ onRecordingChange }) {
       }
 
       stopTracks();
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = '';
-      }
     };
   }, []);
 

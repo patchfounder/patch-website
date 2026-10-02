@@ -6,19 +6,15 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function normaliseLinkedInUrl(value) {
   const trimmedValue = value.trim();
-  const candidate = /^https?:\/\//i.test(trimmedValue) ? trimmedValue : `https://${trimmedValue}`;
+  const candidate = trimmedValue.startsWith('//')
+    ? `https:${trimmedValue}`
+    : /^[a-z][a-z\d+.-]*:/i.test(trimmedValue) ? trimmedValue : `https://${trimmedValue}`;
   const url = new URL(candidate);
-  const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
 
-  if (url.protocol !== 'https:' || (hostname !== 'linkedin.com' && !hostname.endsWith('.linkedin.com'))) {
+  if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) {
     throw new Error('invalid-linkedin');
   }
 
-  if (!/^\/(in|pub)\//i.test(url.pathname)) {
-    throw new Error('invalid-linkedin');
-  }
-
-  url.hash = '';
   return url.toString();
 }
 
@@ -28,7 +24,7 @@ function validateApplication({ fullName, email, linkedin, recording }) {
   const trimmedEmail = email.trim().toLowerCase();
   let normalisedLinkedIn = '';
 
-  if (trimmedName.length < 2) {
+  if (!trimmedName) {
     errors.fullName = 'Enter your full name.';
   } else if (trimmedName.length > 120) {
     errors.fullName = 'Your full name must be 120 characters or fewer.';
@@ -43,7 +39,7 @@ function validateApplication({ fullName, email, linkedin, recording }) {
   try {
     normalisedLinkedIn = normaliseLinkedInUrl(linkedin);
   } catch {
-    errors.linkedin = 'Enter a valid LinkedIn profile URL.';
+    errors.linkedin = 'Enter a valid website URL.';
   }
 
   if (!recording?.blob || recording.blob.size === 0) {
@@ -83,13 +79,22 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitError, setSubmitError] = useState('');
   const requestRef = useRef(null);
+  const recordingUrlRef = useRef('');
   const reviewHeadingRef = useRef(null);
   const errorSummaryRef = useRef(null);
-  const reviewErrors = validateApplication({ ...formValues, recording }).errors;
-  const canReviewApplication = recording?.blob && Object.keys(reviewErrors).length === 0;
+  const canReviewApplication = Boolean(
+    formValues.fullName.trim() &&
+    formValues.email.trim() &&
+    formValues.linkedin.trim() &&
+    recording?.blob?.size > 0
+  );
 
   useEffect(() => () => {
     requestRef.current?.abort();
+    if (recordingUrlRef.current) {
+      URL.revokeObjectURL(recordingUrlRef.current);
+      recordingUrlRef.current = '';
+    }
   }, []);
 
   useEffect(() => {
@@ -121,6 +126,19 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
   const updateField = (field) => (event) => {
     setFormValues((current) => ({ ...current, [field]: event.target.value }));
     setFieldErrors((current) => ({ ...current, [field]: '' }));
+    setSubmitError('');
+  };
+
+  const handleRecordingChange = (nextRecording) => {
+    // The application owns this URL so switching between compose and review
+    // cannot revoke the recording while the next player still needs it.
+    const nextUrl = nextRecording?.blob ? URL.createObjectURL(nextRecording.blob) : '';
+    if (recordingUrlRef.current) {
+      URL.revokeObjectURL(recordingUrlRef.current);
+    }
+    recordingUrlRef.current = nextUrl;
+    setRecording(nextRecording ? { ...nextRecording, url: nextUrl } : null);
+    setFieldErrors((current) => ({ ...current, recording: '' }));
     setSubmitError('');
   };
 
@@ -250,7 +268,6 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
                 <span>01</span>
                 <div>
                   <h3>Your details</h3>
-                  <p>All three fields are required.</p>
                 </div>
               </div>
 
@@ -338,16 +355,12 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
                 <span>02</span>
                 <div>
                   <h3>Your voice note</h3>
-                  <p>There is no minimum length.</p>
                 </div>
               </div>
 
               <PatchVoiceRecorder
-                onRecordingChange={(nextRecording) => {
-                  setRecording(nextRecording);
-                  setFieldErrors((current) => ({ ...current, recording: '' }));
-                  setSubmitError('');
-                }}
+                recording={recording}
+                onRecordingChange={handleRecordingChange}
               />
 
               {fieldErrors.recording && (
@@ -373,7 +386,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
             <div className="coach-review-heading">
               <span>Final review</span>
               <h3 ref={reviewHeadingRef} tabIndex="-1">Check your application</h3>
-              <p>Nothing has been submitted yet. Check each detail and listen to your voice note.</p>
+              <p>Check each detail and listen to your voice note.</p>
             </div>
 
             <dl className="coach-review-details">
