@@ -287,8 +287,8 @@ export default function CoachPasswordGate({ onUnlocked }) {
             )}
 
             <p className="coach-gate-help">
-              The application includes a voice note. Use Safari or Chrome and allow microphone
-              access when prompted.
+              The application includes a voice note of up to 60 seconds. Use Safari or Chrome and
+              allow microphone access when prompted.
             </p>
           </form>
         )}
