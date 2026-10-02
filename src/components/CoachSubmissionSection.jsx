@@ -387,11 +387,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
               </div>
               <div>
                 <dt>LinkedIn</dt>
-                <dd>
-                  <a href={formValues.linkedin} target="_blank" rel="noreferrer">
-                    View profile
-                  </a>
-                </dd>
+                <dd>{formValues.linkedin}</dd>
               </div>
             </dl>
 
@@ -412,8 +408,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
                 disabled={isSubmitting}
               />
               <span>
-                I confirm these details and this voice note are final. I understand that I cannot edit
-                this application after it is submitted.
+                I understand that I cannot edit this application after it is submitted.
               </span>
             </label>
 
