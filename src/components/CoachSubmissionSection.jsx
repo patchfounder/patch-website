@@ -257,7 +257,9 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
           <span className="application-section-label">Your application</span>
           <h2>Submit Your Voice Note</h2>
           <p>
-            Add your details and record a message of up to 60 seconds.
+            {step === 'review'
+              ? 'Successful applicants receive an email linking to a booking page.'
+              : 'Add your details and record a message.'}
           </p>
         </div>
 

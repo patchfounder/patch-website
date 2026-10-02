@@ -543,7 +543,7 @@
 
 .coach-application-page .coach-form-actions {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   flex-direction: column;
   gap: 1rem;
   padding-top: 0.35rem;

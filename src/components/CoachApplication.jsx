@@ -390,11 +390,6 @@ export default function CoachApplication() {
                   Your voice is central to this role. We are looking for a clear, energetic speaking
                   voice and people whose values align with ours.
                 </p>
-                <p className="application-closing">
-                  You can listen back and record again below. Nothing is submitted until you review
-                  everything and press the final Submit application button. Every applicant receives
-                  an outcome by email.
-                </p>
               </div>
 
               <div className="application-stage-one-aside">
@@ -405,12 +400,6 @@ export default function CoachApplication() {
                     <li>Mention how your values align with ours.</li>
                     <li>Record, listen back and submit below.</li>
                   </ol>
-                  <a className="application-whatsapp-cta coach-stage-one-cta" href="#submit-voice-note">
-                    Record your voice note
-                  </a>
-                  <p className="application-whatsapp-cta-note">
-                    You will be asked for microphone access when you start recording.
-                  </p>
                 </div>
                 <StageOneProcessFlow />
               </div>
