@@ -539,12 +539,19 @@ export default function Assessment() {
         />
 
         {reviewerState.currentCohort && !isWindowFormOpen && activeView === 'inbox' && (
-          <AssessmentQueue
-            key="inbox"
-            application={queue[0] || null}
-            onDecision={handleDecision}
-            isDeciding={isDeciding}
-          />
+          <section className="assessment-outcome-list" aria-label="Inbox voice notes">
+            {queue.length ? queue.map((application, index) => (
+              <AssessmentQueue
+                key={`inbox-${applicationId(application)}`}
+                application={application}
+                onDecision={handleDecision}
+                isDeciding={isDeciding}
+                focusOnLoad={index === 0}
+              />
+            )) : (
+              <AssessmentQueue application={null} />
+            )}
+          </section>
         )}
 
         {!isWindowFormOpen && activeView !== 'inbox' && (

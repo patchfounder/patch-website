@@ -37,6 +37,7 @@ export default function AssessmentQueue({
   onDecision,
   isDeciding = false,
   readOnly = false,
+  focusOnLoad = true,
 }) {
   const [pendingDecision, setPendingDecision] = useState('');
   const [decisionError, setDecisionError] = useState('');
@@ -59,8 +60,10 @@ export default function AssessmentQueue({
   useEffect(() => {
     setPendingDecision('');
     setDecisionError('');
-    if (application && canDecide) applicantHeadingRef.current?.focus({ preventScroll: true });
-  }, [id, canDecide]);
+    if (application && canDecide && focusOnLoad) {
+      applicantHeadingRef.current?.focus({ preventScroll: true });
+    }
+  }, [id, canDecide, focusOnLoad]);
 
   useEffect(() => {
     if (pendingDecision && canDecide) confirmationHeadingRef.current?.focus();
