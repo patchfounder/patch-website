@@ -27,10 +27,10 @@ This gate overrides convenience, inferred permission, implementation approval, a
 ## APPLICATION ROUTE — APPROVED RECRUITMENT REPLACEMENT
 
 - On 2026-10-03, Patrick explicitly approved replacing the old WhatsApp-based `/application/` page with the existing recruitment experience from `/coach-application/`, removing the legacy `src/components/Application.jsx`, and committing, pushing, and deploying this migration through the Website service.
-- `/application/` is now the canonical recruitment route. `/coach-application/` must redirect to it so existing invitation links continue to work.
+- `/application/` is now the canonical recruitment route. Patrick subsequently specified that `/coach-application/` must not redirect; retire the old route with a 404 response.
 - This is a bounded exception to the former protection of the legacy page, not permission to access Patch OS, change unrelated Website pages, or alter recruitment storage, passwords, application windows, or assessment behaviour.
 - Preserve recruitment-specific components, styles, metadata, tests, server modules, and storage. Update applicant links to the canonical route without changing the assessment back-office workflow.
-- Verify the migrated password gate and application flow at the agreed mobile, tablet, and desktop sizes, and verify that the old URL redirects correctly.
+- Verify the migrated password gate and application flow at the agreed mobile, tablet, and desktop sizes, and verify that the old URL returns 404 without redirecting.
 
 ## IMPLEMENTATION GUARDRAILS
 

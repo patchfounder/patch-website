@@ -17,7 +17,7 @@ This file is a handoff checklist, not deployment approval. A live release, Railw
 7. Set a new exact 12-character `RECRUITMENT_REVIEWER_SECRET` for the private `/assessment/<secret>` link.
 8. Configure Website-only Resend values: `RESEND_API_KEY`, `RECRUITMENT_EMAIL_FROM`, optional `RECRUITMENT_EMAIL_REPLY_TO`, and `RECRUITMENT_BOOKING_URL=https://www.patch.app/coaching`.
 9. Confirm the Cal.com event now describes a 30-minute Google Meet video interview; changing Cal.com remains a separate action.
-10. Run `npm test`, `npm run build`, and verify the recruitment password gate and application flow at `/application/` at mobile, tablet, and desktop sizes. Confirm that `/coach-application/` redirects to `/application/` and that the assessment back office still works.
+10. Run `npm test`, `npm run build`, and verify the recruitment password gate and application flow at `/application/` at mobile, tablet, and desktop sizes. Confirm that `/coach-application/` returns 404 without redirecting and that the assessment back office still works.
 11. Release the Website service live using this repository's `railway.json` build, start, and health-check commands.
 12. Confirm `/health` returns `200` only after SQLite, private storage, Website-volume acknowledgement, and email configuration are ready.
 13. Open the private reviewer link, create the first application window, and send its shared password to invited applicants. Opening and deadline values are entered in UK time; the password works only from the opening instant until the deadline.
@@ -26,7 +26,7 @@ No separate production/staging architecture is introduced. The recruitment runti
 
 ## Applicant URL
 
-On 2026-10-03, Patrick approved replacing the legacy WhatsApp application page with the existing recruitment experience. `/application/` is the canonical applicant page; `/coach-application/` is retained only as a permanent redirect. This route migration does not change existing application windows, passwords, sessions, recordings, review decisions, or the private assessment URL.
+On 2026-10-03, Patrick approved replacing the legacy WhatsApp application page with the existing recruitment experience. `/application/` is the canonical applicant page. Per Patrick's subsequent instruction, `/coach-application/` is retired with a 404 response and does not redirect. This route migration does not change existing application windows, passwords, sessions, recordings, review decisions, or the private assessment URL.
 
 ## Still required before release
 

@@ -1063,10 +1063,11 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
     for (const method of ["GET", "HEAD"]) {
       for (const oldPath of ["/coach-application", "/coach-application/"]) {
         for (const query of ["", "?invitation=hello%20there&next=https%3A%2F%2Fexample.com%2F"]) {
-          const redirected = await fetch(`${baseUrl}${oldPath}${query}`, { method, redirect: "manual" });
-          assert.equal(redirected.status, 308);
-          assert.equal(redirected.headers.get("location"), `/application/${query}`);
-          if (method === "HEAD") assert.equal(await redirected.text(), "");
+          const removedRoute = await fetch(`${baseUrl}${oldPath}${query}`, { method, redirect: "manual" });
+          assert.equal(removedRoute.status, 404);
+          assert.equal(removedRoute.headers.get("location"), null);
+          assert.match(removedRoute.headers.get("cache-control"), /no-store/);
+          assert.equal(await removedRoute.text(), method === "HEAD" ? "" : "Not found.");
         }
       }
     }
@@ -1075,8 +1076,10 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
     assert.equal(canonicalApplication.headers.get("location"), null);
     assert.equal(await canonicalApplication.text(), applicationPage);
     const existingInvitation = await fetch(`${baseUrl}/coach-application/?invitation=existing`);
-    assert.equal(existingInvitation.url, `${baseUrl}/application/?invitation=existing`);
-    assert.equal(await existingInvitation.text(), applicationPage);
+    assert.equal(existingInvitation.status, 404);
+    assert.equal(existingInvitation.redirected, false);
+    assert.equal(existingInvitation.url, `${baseUrl}/coach-application/?invitation=existing`);
+    assert.equal(await existingInvitation.text(), "Not found.");
     const assessment = await fetch(`${baseUrl}/assessment`, { redirect: "manual" });
     assert.equal(assessment.status, 200);
     assert.equal(assessment.headers.get("location"), null);

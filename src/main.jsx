@@ -45,14 +45,9 @@ function normalisePathname(pathname) {
 
 const pathname = normalisePathname(window.location.pathname);
 
-if (pathname === '/coach-application') {
-  // The server redirects old invitation links; keep static/preview entry points consistent.
-  window.location.replace(`/application/${window.location.search}${window.location.hash}`);
-} else {
-  const RootComponent = bookingRoutes[pathname] || App;
-  createRoot(document.getElementById('root')).render(
-    <React.StrictMode>
-      <RootComponent />
-    </React.StrictMode>,
-  );
-}
+const RootComponent = bookingRoutes[pathname] || App;
+createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <RootComponent />
+  </React.StrictMode>,
+);
