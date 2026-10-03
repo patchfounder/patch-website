@@ -204,8 +204,8 @@ export default function CoachPasswordGate({ onUnlocked }) {
         }
       : gateState === 'unavailable'
         ? {
-            title: 'Applications are not currently open',
-            copy: 'No application password is active. Use the timing and password in your LinkedIn invitation, then check again.',
+            title: 'Applications are currently closed.',
+            copy: 'No application password is active. The deadline for this application window has now passed.',
           }
         : gateState === 'not_open'
           ? {
@@ -214,8 +214,8 @@ export default function CoachPasswordGate({ onUnlocked }) {
             }
           : gateState === 'closed'
             ? {
-                title: 'This application window has closed',
-                copy: 'This application password is no longer active. Follow the timing in your LinkedIn invitation.',
+                title: 'Applications are currently closed.',
+                copy: 'No application password is active. The deadline for this application window has now passed.',
               }
             : null;
 
