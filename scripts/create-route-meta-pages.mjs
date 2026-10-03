@@ -63,6 +63,12 @@ const routes = [
     robots: 'noindex, nofollow, noarchive',
   },
   {
+    path: 'administration',
+    title: 'Administration | Patch',
+    description: 'Private Patch recruitment administration sign in.',
+    robots: 'noindex, nofollow, noarchive',
+  },
+  {
     path: 'assessment',
     title: 'Recruitment Assessment | Patch',
     description: 'Private Patch recruitment assessment.',

@@ -123,15 +123,15 @@ function InvalidSession({ signedOut = false }) {
       <section className="assessment-access-card" aria-labelledby="assessment-access-title">
         <p className="assessment-eyebrow">Private reviewer access</p>
         <h1 id="assessment-access-title">
-          {signedOut ? 'You have been signed out.' : 'This assessment link is invalid or has expired.'}
+          {signedOut ? 'You have been signed out.' : 'Sign in to the application back office.'}
         </h1>
         <p>
           {signedOut
-            ? 'Use your private assessment link when you are ready to return.'
-            : 'Open the latest private assessment link issued to you. For security, there is no password entry or recovery form on this page.'}
+            ? 'Use your master password when you are ready to return.'
+            : 'Your session is unavailable or has expired. Enter your master password to continue.'}
         </p>
-        <a className="assessment-button assessment-button-primary" href="/">
-          Return to Patch
+        <a className="assessment-button assessment-button-primary" href="/administration">
+          Sign in
         </a>
       </section>
     </main>

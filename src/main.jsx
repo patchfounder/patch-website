@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import Assessment from './components/Assessment.jsx';
+import Administration from './components/Administration.jsx';
 import CoachApplication from './components/CoachApplication.jsx';
 import Legal from './components/Legal.jsx';
 import Meeting from './components/Meeting.jsx';
@@ -20,6 +21,7 @@ import './styles.css';
 
 const bookingRoutes = {
   '/application': CoachApplication,
+  '/administration': Administration,
   '/assessment': Assessment,
   '/legal': Legal,
   '/meeting': Meeting,

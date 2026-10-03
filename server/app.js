@@ -13,6 +13,7 @@ import {
   validateReviewerSecret,
 } from "./recruitment-access.js";
 import { inspectRecruitmentAudio } from "./recruitment-audio.js";
+import { createAdminPasswordAuth, validateAdminPasswordHash } from "./recruitment-admin-auth.js";
 import { createRecruitmentDatabase } from "./recruitment-db.js";
 import { createRecruitmentEmailSender } from "./recruitment-email.js";
 import { createRecruitmentService } from "./recruitment-service.js";
@@ -147,6 +148,8 @@ export function mountRecruitmentRoutes(app, options) {
     service,
     cookieCodec,
     reviewerSecret,
+    adminPasswordHash,
+    reviewerNow = Date.now,
     secureCookies = process.env.NODE_ENV === "production",
     reviewerSessionMinutes = DEFAULT_REVIEWER_SESSION_MINUTES,
     maxAudioBytes = DEFAULT_MAX_AUDIO_BYTES,
@@ -158,6 +161,7 @@ export function mountRecruitmentRoutes(app, options) {
   }
 
   const reviewerTtlMinutes = safeReviewerSessionMinutes(reviewerSessionMinutes);
+  const adminPasswordAuth = createAdminPasswordAuth({ passwordHash: adminPasswordHash, now: reviewerNow });
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
@@ -169,7 +173,7 @@ export function mountRecruitmentRoutes(app, options) {
   });
 
   const establishReviewerSession = (res) => {
-    const expiresAt = new Date(Date.now() + reviewerTtlMinutes * 60_000);
+    const expiresAt = new Date(Number(reviewerNow()) + reviewerTtlMinutes * 60_000);
     const payload = {
       v: 1,
       kind: "reviewer",
@@ -183,11 +187,32 @@ export function mountRecruitmentRoutes(app, options) {
   };
 
   app.disable("x-powered-by");
+  app.post("/api/recruitment/reviewer/login", (req, res, next) => {
+    noStore(res);
+    if (!req.is("application/json")) {
+      return res.status(415).json({ ok: false, code: "admin_login_json_required", message: "Use a JSON login request." });
+    }
+    return next();
+  }, express.json({ limit: "1kb", strict: true }), asyncRoute(async (req, res) => {
+    const result = await adminPasswordAuth.authenticate(req.body?.password);
+    if (!result.ok) {
+      if (result.retryAfterSeconds) res.set("Retry-After", String(result.retryAfterSeconds));
+      return res.status(result.statusCode).json({ ok: false, code: result.code, message: result.message });
+    }
+    establishReviewerSession(res);
+    return res.json({ ok: true, redirectTo: "/assessment" });
+  }), (error, _req, res, next) => {
+    if (error?.type === "entity.parse.failed" || error?.type === "entity.too.large") {
+      return res.status(error.type === "entity.too.large" ? 413 : 400)
+        .json({ ok: false, code: "invalid_admin_login_request", message: "Invalid login request." });
+    }
+    return next(error);
+  });
   app.use("/api/recruitment", express.json({ limit: "32kb", strict: true }));
 
   const requireReviewer = (req, res, next) => {
     const payload = cookiePayload(req, REVIEWER_COOKIE_NAME, cookieCodec);
-    const nowSeconds = Math.floor(Date.now() / 1000);
+    const nowSeconds = Math.floor(Number(reviewerNow()) / 1000);
     if (
       !payload
       || payload.v !== 1
@@ -464,6 +489,7 @@ export async function createRecruitmentApp(options = {}) {
 
 export async function createRecruitmentRuntime(options = {}) {
   const env = options.env || process.env;
+  const adminPasswordHash = validateAdminPasswordHash(options.adminPasswordHash ?? env.RECRUITMENT_ADMIN_PASSWORD_HASH);
   const dataRoot = options.dataRoot || resolveRecruitmentDataRoot(env);
   const storage = options.storage || createRecruitmentStorage({
     dataRoot,
@@ -504,6 +530,7 @@ export async function createRecruitmentRuntime(options = {}) {
       service,
       cookieCodec,
       reviewerSecret,
+      adminPasswordHash,
       reviewerSessionMinutes: options.reviewerSessionMinutes || env.RECRUITMENT_REVIEWER_SESSION_MINUTES,
       secureCookies: options.secureCookies ?? env.NODE_ENV === "production",
       maxAudioBytes: storage.maxAudioBytes,

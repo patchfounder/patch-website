@@ -34,6 +34,8 @@ This gate overrides convenience, inferred permission, implementation approval, a
 
 ## IMPLEMENTATION GUARDRAILS
 
+- On 2026-10-03, Patrick separately approved implementing, committing, pushing, and deploying a Website-only `/administration` master-password login to the existing recruitment back office, including setting its server-only password hash on the Website service. This does not authorize changes to applicant passwords, application windows, recordings, email configuration, or Patch OS. Never commit the real master password or its hash; retain the existing secret-link access unless separately instructed otherwise.
+
 - Applicant and reviewer surfaces are mobile-first. Begin visual implementation and verification at 375x812, 390x844, and 430x932 before tablet or desktop.
 - Reuse Website design tokens and proven Website patterns. Scope all new recruitment CSS to recruitment routes; do not change existing `.application-*` or broad global selectors.
 - Uploaded audio must never be stored in Git, source directories, `public/`, repository-local temporary folders, or Patch OS. It must use the approved private Website recruitment storage path with authenticated playback.
