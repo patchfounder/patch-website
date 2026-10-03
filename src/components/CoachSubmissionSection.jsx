@@ -65,7 +65,7 @@ function responseMessage(status) {
   return 'Your application could not be submitted. Check your connection and try again.';
 }
 
-export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
+export default function CoachSubmissionSection({ step, onStepChange, onSuccess, onAccessExpired }) {
   const [formValues, setFormValues] = useState({
     fullName: '',
     email: '',
@@ -73,7 +73,6 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
   });
   const [recording, setRecording] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [step, setStep] = useState('compose');
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -99,7 +98,8 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
 
   useEffect(() => {
     if (step === 'review') {
-      reviewHeadingRef.current?.focus();
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      reviewHeadingRef.current?.focus({ preventScroll: true });
     }
   }, [step]);
 
@@ -157,13 +157,13 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
     setFieldErrors({});
     setSubmitError('');
     setIsConfirmed(false);
-    setStep('review');
+    onStepChange('review');
   };
 
   const returnToApplication = () => {
     setSubmitError('');
     setIsConfirmed(false);
-    setStep('compose');
+    onStepChange('compose');
     window.requestAnimationFrame(() => {
       document.getElementById('coach-full-name')?.focus();
     });
@@ -387,7 +387,7 @@ export default function CoachSubmissionSection({ onSuccess, onAccessExpired }) {
           <div className="coach-review-card" aria-busy={isSubmitting}>
             <div className="coach-review-heading">
               <span>Final review</span>
-              <h3 ref={reviewHeadingRef} tabIndex="-1">Check your application</h3>
+              <h1 ref={reviewHeadingRef} tabIndex="-1">Check your application</h1>
               <p>Check each detail and listen to your voice note.</p>
             </div>
 

@@ -17,17 +17,17 @@ const LAW_FIRMS = [
 
 const CAROUSEL_FIRMS = Array.from({ length: 4 }, () => LAW_FIRMS).flat();
 
-function CoachApplicationHeader() {
+function CoachApplicationHeader({ showNavigation = true }) {
   return (
     <header className="site-header">
       <div className="nav-shell">
-        <nav className="nav-links" aria-label="Main navigation">
+        {showNavigation && <nav className="nav-links" aria-label="Main navigation">
           {APPLICATION_NAVIGATION.map((item) => (
             <a href={item.href} key={item.href}>
               {item.label}
             </a>
           ))}
-        </nav>
+        </nav>}
 
         <a className="brand" href="/" aria-label="Patch home">
           <span className="brand-logo-crop">
@@ -318,6 +318,8 @@ function PreviousInternsCarousel() {
 export default function CoachApplication() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [successDetails, setSuccessDetails] = useState(null);
+  const [applicationStep, setApplicationStep] = useState('compose');
+  const isReviewing = applicationStep === 'review';
   useNoIndexPage('Legal Speaking Coach Application | Patch');
 
   if (successDetails) {
@@ -329,9 +331,10 @@ export default function CoachApplication() {
   }
 
   return (
-    <div className="application-page coach-application-page coach-recruitment-ui">
-      <CoachApplicationHeader />
+    <div className={`application-page coach-application-page coach-recruitment-ui${isReviewing ? ' coach-application-review' : ''}`}>
+      <CoachApplicationHeader showNavigation={!isReviewing} />
       <main>
+        {!isReviewing && <>
         <section className="application-hero">
           <div className="page-shell application-hero-shell">
             <span className="application-kicker">Application Stage 1</span>
@@ -407,12 +410,19 @@ export default function CoachApplication() {
           </div>
         </section>
 
+        </>}
+
         <CoachSubmissionSection
+          step={applicationStep}
+          onStepChange={setApplicationStep}
           onSuccess={setSuccessDetails}
-          onAccessExpired={() => setIsUnlocked(false)}
+          onAccessExpired={() => {
+            setApplicationStep('compose');
+            setIsUnlocked(false);
+          }}
         />
 
-        <section className="application-section application-interns-section" id="interns">
+        {!isReviewing && <section className="application-section application-interns-section" id="interns">
           <div className="page-shell">
             <div className="application-section-heading">
               <span className="application-section-label">PATCH INTERNS</span>
@@ -424,7 +434,7 @@ export default function CoachApplication() {
 
             <PreviousInternsCarousel />
           </div>
-        </section>
+        </section>}
       </main>
 
       <Footer hideColumns logoSrc="/patch-logo-2.png" />

@@ -17,6 +17,39 @@
   animation-duration: 65.625s;
 }
 
+.coach-application-page .application-intern-carousel .testimonial-carousel {
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: clamp(0.5rem, 2vw, 1.5rem);
+  max-width: 100%;
+  padding: 6px;
+}
+
+.coach-application-page .application-intern-carousel .testimonial-arrow {
+  position: relative;
+  inset: auto;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.coach-application-page .application-intern-name {
+  color: var(--coach-action);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.coach-application-page .application-intern-name:hover {
+  color: var(--coach-action-hover);
+}
+
+.coach-application-page .application-intern-carousel .testimonial-arrow:focus-visible,
+.coach-application-page .application-intern-name:focus-visible {
+  outline: 2px solid var(--coach-action);
+  outline-offset: 3px;
+}
+
 .coach-recruitment-ui .coach-visually-hidden {
   position: absolute;
   width: 1px;
@@ -484,6 +517,17 @@
   line-height: 1.65;
 }
 
+.coach-application-review .coach-submission-section {
+  min-height: calc(100dvh - 72px);
+  padding-top: clamp(2rem, 5vw, 4rem);
+}
+
+.coach-application-review .coach-submission-heading {
+  max-width: 860px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
 .coach-application-page .coach-application-form {
   display: grid;
   gap: 1.25rem;
@@ -764,7 +808,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  margin-top: 0.85rem;
+  margin: 0.85rem auto 0;
 }
 
 .coach-application-page .coach-review-actions .coach-control {
@@ -923,7 +967,7 @@
   border-bottom: 1px solid var(--coach-line);
 }
 
-.coach-application-page .coach-review-heading h3 {
+.coach-application-page .coach-review-heading h1 {
   margin-bottom: 0.65rem;
   color: var(--coach-ink);
   font-size: clamp(1.65rem, 5vw, 2.35rem);
@@ -931,7 +975,7 @@
   line-height: 1.05;
 }
 
-.coach-application-page .coach-review-heading h3:focus {
+.coach-application-page .coach-review-heading h1:focus {
   outline: none;
 }
 
@@ -1173,7 +1217,7 @@
 
   .coach-application-page .coach-form-actions {
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
     flex-direction: row;
   }
 
