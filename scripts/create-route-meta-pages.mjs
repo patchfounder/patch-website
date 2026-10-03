@@ -57,7 +57,7 @@ const routes = [
     description: 'Legal information for Patch, including privacy, terms, and account deletion.',
   },
   {
-    path: 'coach-application',
+    path: 'application',
     title: 'Legal Speaking Coach Application | Patch',
     description: 'Apply to become a Legal Speaking Coach at Patch.',
     robots: 'noindex, nofollow, noarchive',

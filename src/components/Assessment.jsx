@@ -497,7 +497,7 @@ export default function Assessment() {
           </button>
           <a
             className="assessment-icon-action assessment-view-application"
-            href="/coach-application/"
+            href="/application/"
             target="_blank"
             rel="noreferrer"
             aria-label="View the applicant-facing application page in a new tab"

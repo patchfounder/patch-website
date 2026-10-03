@@ -428,6 +428,12 @@ export function mountRecruitmentRoutes(app, options) {
     return res.status(404).json({ ok: false, code: "recruitment_route_missing", message: "Not found." });
   });
 
+  app.get(/^\/coach-application\/?$/, (req, res) => {
+    const queryIndex = req.originalUrl.indexOf("?");
+    const query = queryIndex === -1 ? "" : req.originalUrl.slice(queryIndex);
+    return res.redirect(308, `/application/${query}`);
+  });
+
   if (staticDirectory) {
     const absoluteStaticDirectory = path.resolve(staticDirectory);
     app.use(express.static(absoluteStaticDirectory, { index: "index.html", fallthrough: true }));

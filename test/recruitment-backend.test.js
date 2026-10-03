@@ -833,9 +833,14 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
   const staticRoot = path.join(fixtureRoot, "site");
   mkdirSync(path.join(staticRoot, "generated"), { recursive: true });
   mkdirSync(path.join(staticRoot, "assets"), { recursive: true });
+  mkdirSync(path.join(staticRoot, "application"), { recursive: true });
+  mkdirSync(path.join(staticRoot, "coach-application"), { recursive: true });
   writeFileSync(path.join(staticRoot, "index.html"), "<main>website-index</main>");
   writeFileSync(path.join(staticRoot, "generated", "index.html"), "<main>generated-route</main>");
   writeFileSync(path.join(staticRoot, "assets", "asset.txt"), "asset-body");
+  const applicationPage = '<title>Apply to become a Legal Speaking Coach | Patch</title><link rel="canonical" href="https://www.patch.app/application/"><main>recruitment-application</main>';
+  writeFileSync(path.join(staticRoot, "application", "index.html"), applicationPage);
+  writeFileSync(path.join(staticRoot, "coach-application", "index.html"), "<main>obsolete-route</main>");
   const audioPath = path.join(fixtureRoot, "audio.webm");
   writeFileSync(audioPath, "0123456789");
 
@@ -1055,6 +1060,27 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
     assert.equal(await (await fetch(`${baseUrl}/generated/`)).text(), "<main>generated-route</main>");
     assert.equal(await (await fetch(`${baseUrl}/assets/asset.txt`)).text(), "asset-body");
     assert.equal(await (await fetch(`${baseUrl}/client-side-route`)).text(), "<main>website-index</main>");
+    for (const method of ["GET", "HEAD"]) {
+      for (const oldPath of ["/coach-application", "/coach-application/"]) {
+        for (const query of ["", "?invitation=hello%20there&next=https%3A%2F%2Fexample.com%2F"]) {
+          const redirected = await fetch(`${baseUrl}${oldPath}${query}`, { method, redirect: "manual" });
+          assert.equal(redirected.status, 308);
+          assert.equal(redirected.headers.get("location"), `/application/${query}`);
+          if (method === "HEAD") assert.equal(await redirected.text(), "");
+        }
+      }
+    }
+    const canonicalApplication = await fetch(`${baseUrl}/application/`, { redirect: "manual" });
+    assert.equal(canonicalApplication.status, 200);
+    assert.equal(canonicalApplication.headers.get("location"), null);
+    assert.equal(await canonicalApplication.text(), applicationPage);
+    const existingInvitation = await fetch(`${baseUrl}/coach-application/?invitation=existing`);
+    assert.equal(existingInvitation.url, `${baseUrl}/application/?invitation=existing`);
+    assert.equal(await existingInvitation.text(), applicationPage);
+    const assessment = await fetch(`${baseUrl}/assessment`, { redirect: "manual" });
+    assert.equal(assessment.status, 200);
+    assert.equal(assessment.headers.get("location"), null);
+    assert.equal(await assessment.text(), "<main>website-index</main>");
     assert.equal(readFileSync(audioPath, "utf8"), "0123456789");
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

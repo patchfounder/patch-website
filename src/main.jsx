@@ -1,7 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
-import Application from './components/Application.jsx';
 import Assessment from './components/Assessment.jsx';
 import CoachApplication from './components/CoachApplication.jsx';
 import Legal from './components/Legal.jsx';
@@ -20,9 +19,8 @@ import Training from './components/Training.jsx';
 import './styles.css';
 
 const bookingRoutes = {
-  '/application': Application,
+  '/application': CoachApplication,
   '/assessment': Assessment,
-  '/coach-application': CoachApplication,
   '/legal': Legal,
   '/meeting': Meeting,
   '/activity': Activity,
@@ -46,10 +44,15 @@ function normalisePathname(pathname) {
 }
 
 const pathname = normalisePathname(window.location.pathname);
-const RootComponent = bookingRoutes[pathname] || App;
 
-createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <RootComponent />
-  </React.StrictMode>,
-);
+if (pathname === '/coach-application') {
+  // The server redirects old invitation links; keep static/preview entry points consistent.
+  window.location.replace(`/application/${window.location.search}${window.location.hash}`);
+} else {
+  const RootComponent = bookingRoutes[pathname] || App;
+  createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <RootComponent />
+    </React.StrictMode>,
+  );
+}

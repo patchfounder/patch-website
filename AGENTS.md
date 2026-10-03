@@ -24,12 +24,13 @@ This gate overrides convenience, inferred permission, implementation approval, a
 - No production deployment, Railway change, DNS change, external-service configuration, database or volume provisioning, email sending, or live-data mutation may occur without Patrick's separate explicit approval.
 - Architecture or implementation approval does not count as deployment approval.
 
-## PROTECTED APPLICATION PAGE
+## APPLICATION ROUTE — APPROVED RECRUITMENT REPLACEMENT
 
-- `/application/` is production-protected.
-- `src/components/Application.jsx` may be changed only for the separately approved, targeted restoration of the known accidental recruitment prototype to its clean committed version.
-- Recruitment must use separate routes, components, styles, metadata, tests, server modules, and storage. Do not extract a shared editable base or change shared code in a way that risks altering `/application/`.
-- Verify the protected page before and after recruitment work at the agreed mobile, tablet, and desktop sizes.
+- On 2026-10-03, Patrick explicitly approved replacing the old WhatsApp-based `/application/` page with the existing recruitment experience from `/coach-application/`, removing the legacy `src/components/Application.jsx`, and committing, pushing, and deploying this migration through the Website service.
+- `/application/` is now the canonical recruitment route. `/coach-application/` must redirect to it so existing invitation links continue to work.
+- This is a bounded exception to the former protection of the legacy page, not permission to access Patch OS, change unrelated Website pages, or alter recruitment storage, passwords, application windows, or assessment behaviour.
+- Preserve recruitment-specific components, styles, metadata, tests, server modules, and storage. Update applicant links to the canonical route without changing the assessment back-office workflow.
+- Verify the migrated password gate and application flow at the agreed mobile, tablet, and desktop sizes, and verify that the old URL redirects correctly.
 
 ## IMPLEMENTATION GUARDRAILS
 
@@ -41,4 +42,4 @@ This gate overrides convenience, inferred permission, implementation approval, a
 
 ## STOP CONDITION
 
-If a target is ambiguous, an instruction conflicts with this file, an operation may affect Patch OS or `/application/`, or a required action would leave the Website deployment boundary, stop and ask Patrick before proceeding.
+If a target is ambiguous, an instruction conflicts with this file, an operation may affect Patch OS or change `/application/` beyond Patrick's approved recruitment scope, or a required action would leave the Website deployment boundary, stop and ask Patrick before proceeding.
