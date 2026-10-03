@@ -5,6 +5,12 @@ import { applicationInputValue, applicationWindowTitle } from '../recruitment-ti
 import '../assessment.css';
 
 const REVIEWER_API = '/api/recruitment/reviewer';
+const ASSESSMENT_VIEWS = new Set(['inbox', 'pass', 'fail']);
+
+function currentAssessmentView() {
+  const view = window.location.hash.slice(1);
+  return ASSESSMENT_VIEWS.has(view) ? view : 'inbox';
+}
 
 class ReviewerRequestError extends Error {
   constructor(message, status, payload) {
@@ -71,6 +77,9 @@ function normalizeReviewerState(payload) {
     currentCohort,
     previousCohort,
     queue,
+    history: Array.isArray(state.history)
+      ? state.history
+      : Array.isArray(state.processedApplications) ? state.processedApplications : [],
     current: state.current || state.currentApplication || queue[0] || null,
     pendingTotal: countFrom(state.pendingTotal, currentCohort?.pendingCount, queue.length),
   };
@@ -142,10 +151,12 @@ export default function Assessment() {
     currentCohort: null,
     previousCohort: null,
     queue: [],
+    history: [],
     current: null,
     pendingTotal: 0,
   });
   const [isWindowFormOpen, setIsWindowFormOpen] = useState(false);
+  const [activeView, setActiveView] = useState(currentAssessmentView);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
   const [notice, setNotice] = useState('');
@@ -158,6 +169,23 @@ export default function Assessment() {
     setNotice('');
     setPageError('');
   }, []);
+
+  useEffect(() => {
+    const restoreView = () => {
+      setActiveView(currentAssessmentView());
+      setIsWindowFormOpen(false);
+    };
+    window.addEventListener('hashchange', restoreView);
+    return () => window.removeEventListener('hashchange', restoreView);
+  }, []);
+
+  const selectView = (view) => {
+    if (!ASSESSMENT_VIEWS.has(view)) return;
+    setActiveView(view);
+    setIsWindowFormOpen(false);
+    setNotice('');
+    if (window.location.hash !== `#${view}`) window.location.hash = view;
+  };
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -229,16 +257,22 @@ export default function Assessment() {
     [reviewerState.current, reviewerState.queue],
   );
 
+  const outcomeLists = useMemo(() => ({
+    pass: reviewerState.history.filter((application) => application.decision === 'pass'),
+    fail: reviewerState.history.filter((application) => application.decision === 'fail'),
+  }), [reviewerState.history]);
+
   const handleDecision = async (application, decision) => {
     const id = applicationId(application);
-    if (!id || isDeciding) return;
+    if (!id || isDeciding || activeView !== 'inbox'
+      || application.decision === 'pass' || application.decision === 'fail') return;
 
     setIsDeciding(true);
     setNotice('');
     setPageError('');
 
     try {
-      await reviewerRequest(
+      const result = await reviewerRequest(
         `/applications/${encodeURIComponent(String(id))}/decision`,
         {
           method: 'POST',
@@ -261,6 +295,10 @@ export default function Assessment() {
           ...state,
           current: nextQueue[0] || null,
           queue: nextQueue,
+          history: [
+            { ...application, ...result?.application, decision },
+            ...state.history.filter((candidate) => String(applicationId(candidate)) !== String(id)),
+          ],
           pendingTotal,
           currentCohort: state.currentCohort
             ? {
@@ -323,9 +361,13 @@ export default function Assessment() {
         queue: [],
         current: null,
         pendingTotal: 0,
+        history: state.history.filter((application) => (
+          [activatedWindow?.id, activatedWindow?.cohortId, result?.previous?.id, result?.previous?.cohortId]
+            .filter(Boolean).map(String).includes(String(application.cohortId || application.cohort_id))
+        )),
       }));
       const refreshed = await loadReviewerState({ quiet: true });
-      setIsWindowFormOpen(false);
+      selectView('inbox');
       const title = applicationWindowTitle(
         refreshed?.currentCohort?.opensAt || activatedWindow?.opensAt,
       );
@@ -348,7 +390,7 @@ export default function Assessment() {
         applicationInputValue(refreshedWindow?.opensAt) === applicationWindow.opensAt
         && applicationInputValue(refreshedWindow?.closesAt) === applicationWindow.closesAt;
       if (refreshedWindowId && refreshedWindowId !== previousWindowId && matchesRequestedWindow) {
-        setIsWindowFormOpen(false);
+        selectView('inbox');
         setNotice(`${applicationWindowTitle(refreshedWindow.opensAt)} application window created.`);
         return refreshedWindow;
       }
@@ -369,8 +411,12 @@ export default function Assessment() {
         queue: [],
         current: null,
         pendingTotal: 0,
+        history: state.history.filter((application) => (
+          String(application.cohortId || application.cohort_id) !== String(id)
+        )),
       }));
       const refreshed = await loadReviewerState({ quiet: true });
+      selectView('inbox');
       setNotice(
         refreshed
           ? 'The application window was removed. Applicant access is closed.'
@@ -435,10 +481,6 @@ export default function Assessment() {
     );
   }
 
-  const currentWindowLabel = applicationWindowTitle(
-    reviewerState.currentCohort?.opensAt,
-    'No application window',
-  );
   const waitingTotal = Math.max(0, Number(reviewerState.pendingTotal || 0));
 
   return (
@@ -466,11 +508,6 @@ export default function Assessment() {
             <p className="assessment-eyebrow">Recruitment</p>
             <h1 id="assessment-title">Voice note assessment</h1>
           </div>
-          <p className="assessment-intro-status">
-            <strong>{waitingTotal}</strong> waiting
-            <span aria-hidden="true">·</span>
-            <span>{currentWindowLabel}</span>
-          </p>
         </section>
 
         <div className="assessment-page-actions" role="group" aria-label="Assessment actions">
@@ -508,17 +545,39 @@ export default function Assessment() {
         <AssessmentCohorts
           currentWindow={reviewerState.currentCohort}
           showCreateForm={isWindowFormOpen}
+          activeView={activeView}
+          onViewChange={selectView}
+          viewCounts={{ inbox: waitingTotal, pass: outcomeLists.pass.length, fail: outcomeLists.fail.length }}
           onCreate={handleCreateWindow}
           onRemove={handleRemoveWindow}
         />
 
-        {reviewerState.currentCohort && !isWindowFormOpen && (
+        {reviewerState.currentCohort && !isWindowFormOpen && activeView === 'inbox' && (
           <AssessmentQueue
+            key="inbox"
             application={queue[0] || null}
-            waitingCount={waitingTotal}
             onDecision={handleDecision}
             isDeciding={isDeciding}
           />
+        )}
+
+        {!isWindowFormOpen && activeView !== 'inbox' && (
+          <section
+            className="assessment-outcome-list"
+            aria-label={activeView === 'pass' ? 'Passed voice notes' : 'Failed voice notes'}
+          >
+            {outcomeLists[activeView].length ? outcomeLists[activeView].map((application) => (
+              <AssessmentQueue
+                key={`${activeView}-${applicationId(application)}`}
+                application={application}
+                readOnly
+              />
+            )) : (
+              <div className="assessment-outcome-empty" role="status">
+                <p>{activeView === 'pass' ? 'No passed recordings yet.' : 'No failed recordings yet.'}</p>
+              </div>
+            )}
+          </section>
         )}
       </main>
     </div>

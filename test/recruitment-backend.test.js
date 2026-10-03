@@ -188,6 +188,84 @@ test("service preserves only current/previous cohorts and attempts each outcome 
   }
 });
 
+test("processed listings include every retained outcome unless an explicit limit is requested", () => {
+  const database = createRecruitmentDatabase({ databasePath: ":memory:" });
+  const service = createRecruitmentService({ database, storage: {}, emailSender: {} });
+
+  function createWindow(monthKey, activate = true) {
+    const cohort = database.createNextCohort({
+      monthKey,
+      displayName: monthKey,
+      opensAt: `${monthKey}-01T00:00:00.000Z`,
+      closesAt: `${monthKey}-28T23:59:00.000Z`,
+      passwordSalt: Buffer.alloc(16),
+      passwordHash: Buffer.alloc(64),
+      passwordParameters: "test-only",
+      createdAt: `${monthKey}-01T00:00:00.000Z`,
+    });
+    if (activate) {
+      database.activateNext(database.previewActivateNext(), cohort.opensAt);
+    }
+    return cohort;
+  }
+
+  function createRecord(cohort, index, decision) {
+    const submittedAt = new Date(Date.parse(cohort.opensAt) + index * 1000).toISOString();
+    const application = database.createApplication({
+      cohortId: cohort.cohortId,
+      fullName: `Applicant ${index}`,
+      email: `applicant-${index}@example.com`,
+      linkedinUrl: "https://example.com/profile",
+      audioStorageKey: `${cohort.monthKey}/${index}.webm`,
+      audioMimeType: "audio/webm",
+      audioFileSize: 1,
+      audioDurationSeconds: 1,
+      submittedAt,
+    });
+    if (decision) database.decideApplication(application.applicationId, decision, submittedAt);
+    return application.applicationId;
+  }
+
+  try {
+    const previous = createWindow("2026-09");
+    const previousIds = Array.from({ length: 501 }, (_, index) => (
+      createRecord(previous, index, index % 2 ? "pass" : "fail")
+    ));
+    const current = createWindow("2026-10");
+    const currentIds = Array.from({ length: 501 }, (_, index) => (
+      createRecord(current, index, index % 2 ? "pass" : "fail")
+    ));
+    const pendingId = createRecord(current, 501);
+    const next = createWindow("2026-11", false);
+    const nextId = createRecord(next, 0, "pass");
+    const expectedIds = [...currentIds].reverse().concat([...previousIds].reverse());
+
+    const outcomes = service.listProcessedApplications();
+    assert.equal(outcomes.length, 1002, "neither retained window is silently capped at 500");
+    assert.deepEqual(outcomes.map((application) => application.applicationId), expectedIds);
+    assert.equal(outcomes.some((application) => application.applicationId === pendingId), false);
+    assert.equal(outcomes.some((application) => application.applicationId === nextId), false);
+    assert.equal(outcomes.some((application) => "audioStorageKey" in application), false);
+    assert.equal(outcomes.filter((application) => application.decision === "pass").length, 500);
+    assert.equal(outcomes.filter((application) => application.decision === "fail").length, 502);
+    assert.deepEqual(
+      service.listProcessedApplications(1).map((application) => application.applicationId),
+      [currentIds.at(-1), previousIds.at(-1)],
+      "explicit limits remain per retained window",
+    );
+    assert.equal(service.listProcessedApplications(0).length, 1000, "explicit invalid limits retain the 500 fallback");
+    assert.throws(
+      () => database.decideApplication(currentIds[0], "pass", "2026-10-03T00:00:00.000Z"),
+      (error) => error.code === "application_already_decided",
+      "listed outcomes remain immutable",
+    );
+    assert.equal(database.getApplication(currentIds[0]).decision, "fail");
+    assert.equal(database.getApplication(currentIds[0]).emailAttemptCount, 1);
+  } finally {
+    database.close();
+  }
+});
+
 test("the application window derives its title and access period from UK opening time", async () => {
   const dataRoot = temporaryDataRoot("recruitment-window-label");
   const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });

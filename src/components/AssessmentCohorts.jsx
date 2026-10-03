@@ -18,39 +18,12 @@ function windowId(applicationWindow) {
   return windowValue(applicationWindow, 'id', 'cohortId', 'cohort_id');
 }
 
-function numericCount(applicationWindow, ...keys) {
-  const value = windowValue(applicationWindow, ...keys);
-  const number = Number(value);
-  return value !== '' && Number.isFinite(number) ? number : '—';
-}
-
-function processedCount(applicationWindow) {
-  const explicit = numericCount(
-    applicationWindow,
-    'processedCount',
-    'decisionCount',
-    'processed_count',
-  );
-  if (explicit !== '—') return explicit;
-
-  const applications = numericCount(
-    applicationWindow,
-    'applicationCount',
-    'applicationsCount',
-    'application_count',
-  );
-  const pending = numericCount(
-    applicationWindow,
-    'pendingCount',
-    'waitingCount',
-    'pending_count',
-  );
-  return applications === '—' || pending === '—' ? '—' : Math.max(0, applications - pending);
-}
-
 export default function AssessmentCohorts({
   currentWindow,
   showCreateForm = false,
+  activeView = 'inbox',
+  onViewChange,
+  viewCounts = { inbox: 0, pass: 0, fail: 0 },
   onCreate,
   onRemove,
 }) {
@@ -70,6 +43,29 @@ export default function AssessmentCohorts({
   const opensAt = windowValue(currentWindow, 'opensAt', 'opens_at');
   const closesAt = windowValue(currentWindow, 'closesAt', 'closes_at');
   const title = applicationWindowTitle(opensAt);
+  const outcomeNavigation = (
+    <nav
+      className={`assessment-outcome-nav${currentWindow ? '' : ' assessment-outcome-nav-standalone'}`}
+      aria-label="Assessment views"
+    >
+      {[
+        ['inbox', 'Inbox'],
+        ['pass', 'Pass'],
+        ['fail', 'Fail'],
+      ].map(([view, label]) => (
+        <button
+          className="assessment-outcome-link"
+          type="button"
+          key={view}
+          aria-current={activeView === view ? 'page' : undefined}
+          onClick={() => onViewChange?.(view)}
+        >
+          <span>{label}</span>
+          <strong>{viewCounts[view] ?? 0}</strong>
+        </button>
+      ))}
+    </nav>
+  );
 
   useEffect(() => {
     if (!showCreateForm) return;
@@ -228,29 +224,11 @@ export default function AssessmentCohorts({
             </div>
           </dl>
 
-          <dl className="assessment-cohort-counts">
-            <div>
-              <dt>Applications</dt>
-              <dd>
-                {numericCount(
-                  currentWindow,
-                  'applicationCount',
-                  'applicationsCount',
-                  'application_count',
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>Waiting</dt>
-              <dd>{numericCount(currentWindow, 'pendingCount', 'waitingCount', 'pending_count')}</dd>
-            </div>
-            <div>
-              <dt>Processed</dt>
-              <dd>{processedCount(currentWindow)}</dd>
-            </div>
-          </dl>
+          {outcomeNavigation}
         </section>
       )}
+
+      {!currentWindow && !showCreateForm && outcomeNavigation}
 
       {currentWindow && !showCreateForm && removeOpen && (
         <div
@@ -288,7 +266,7 @@ export default function AssessmentCohorts({
                 onClick={cancelRemove}
                 disabled={isRemoving}
               >
-                No
+                Cancel
               </button>
               <button
                 className="assessment-button assessment-button-danger"
@@ -297,7 +275,7 @@ export default function AssessmentCohorts({
                 onClick={removeWindow}
                 disabled={isRemoving}
               >
-                {isRemoving ? 'Removing…' : 'Yes, remove'}
+                {isRemoving ? 'Removing…' : 'Remove'}
               </button>
             </div>
           </div>
@@ -396,7 +374,7 @@ export default function AssessmentCohorts({
         </section>
       )}
 
-      {!currentWindow && !showCreateForm && (
+      {!currentWindow && !showCreateForm && activeView === 'inbox' && (
         <section className="assessment-cohort-empty" aria-labelledby="assessment-no-window-title">
           <span className="assessment-cohort-empty-icon" aria-hidden="true">
             +

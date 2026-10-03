@@ -531,9 +531,10 @@ export function createRecruitmentDatabase(options = {}) {
     return rows.map(applicationFromRow);
   }
 
-  function listProcessedApplications(limit = 500) {
+  function listProcessedApplications(limit) {
     const requestedLimit = Number(limit);
-    const perCohortLimit = Math.max(
+    // Outcome lists include every retained card unless a caller requests a limit.
+    const perCohortLimit = limit === undefined ? -1 : Math.max(
       1,
       Math.min(2_500, Math.floor(requestedLimit) || 500),
     );

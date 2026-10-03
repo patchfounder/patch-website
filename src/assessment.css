@@ -300,21 +300,11 @@
   text-underline-offset: 3px;
 }
 
-.assessment-review-progress {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 10px;
-  padding: 0 4px;
-  color: #697476;
-  font-size: 0.75rem;
-}
-
 .assessment-applicant-card,
 .assessment-current-cohort,
 .assessment-cohort-empty,
-.assessment-cohort-create {
+.assessment-cohort-create,
+.assessment-outcome-nav-standalone {
   border: 1px solid var(--assessment-line);
   border-radius: 20px;
   background: var(--assessment-white);
@@ -334,6 +324,10 @@
   border-bottom: 1px solid var(--assessment-line);
 }
 
+.assessment-applicant-header > div {
+  min-width: 0;
+}
+
 .assessment-applicant-header h2:focus,
 .assessment-confirmation h3:focus {
   outline: none;
@@ -343,17 +337,6 @@
   outline: 2px solid var(--assessment-turquoise);
   outline-offset: 4px;
   border-radius: 2px;
-}
-
-.assessment-position {
-  display: none;
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: var(--assessment-soft-blue);
-  color: var(--assessment-navy);
-  font-size: 0.7rem;
-  font-weight: 650;
-  white-space: nowrap;
 }
 
 .assessment-applicant-details {
@@ -370,8 +353,7 @@
 }
 
 .assessment-applicant-details dt,
-.assessment-cohort-dates dt,
-.assessment-cohort-counts dt {
+.assessment-cohort-dates dt {
   margin-bottom: 5px;
   color: #7a8588;
   font-size: 0.7rem;
@@ -381,8 +363,7 @@
 }
 
 .assessment-applicant-details dd,
-.assessment-cohort-dates dd,
-.assessment-cohort-counts dd {
+.assessment-cohort-dates dd {
   min-width: 0;
   margin: 0;
   color: var(--assessment-black);
@@ -562,12 +543,6 @@
 .assessment-decision-actions {
   padding: 22px 20px max(22px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--assessment-line);
-}
-
-.assessment-decision-actions > p {
-  margin-bottom: 14px;
-  color: #707a7c;
-  font-size: 0.8rem;
 }
 
 .assessment-decision-actions > div,
@@ -814,26 +789,114 @@
   outline-offset: 2px;
 }
 
-.assessment-cohort-dates,
-.assessment-cohort-counts {
+.assessment-cohort-dates {
   display: grid;
   margin: 0;
-}
-
-.assessment-cohort-dates {
   gap: 12px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--assessment-line);
 }
 
-.assessment-cohort-counts {
+.assessment-outcome-nav {
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  padding-top: 16px;
+  min-width: 0;
 }
 
-.assessment-cohort-dates dt,
-.assessment-cohort-counts dt {
+.assessment-outcome-nav-standalone {
+  padding: 12px;
+}
+
+.assessment-page .assessment-outcome-link {
+  display: grid;
+  min-width: 0;
+  min-height: 64px;
+  align-content: center;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #4b5c60;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.assessment-outcome-link span {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.assessment-outcome-link strong {
+  font-size: 1.05rem;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.assessment-outcome-link:hover {
+  background: #f5f9fa;
+  color: var(--assessment-navy);
+}
+
+.assessment-outcome-link[aria-current="page"] {
+  border-color: #cee1e5;
+  background: var(--assessment-soft-blue);
+  color: var(--assessment-navy);
+}
+
+.assessment-outcome-list {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.assessment-outcome-heading {
+  margin-bottom: 20px;
+}
+
+.assessment-page .assessment-outcome-heading h2 {
+  font-size: 1.4rem;
+  font-weight: 550;
+}
+
+.assessment-outcome-empty {
+  padding: 32px 24px;
+  border: 1px solid var(--assessment-line);
+  border-radius: 20px;
+  background: var(--assessment-white);
+  text-align: center;
+}
+
+.assessment-outcome-empty p {
+  margin-bottom: 0;
+}
+
+.assessment-outcome-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.assessment-outcome-pass {
+  background: var(--assessment-success-soft);
+  color: var(--assessment-success);
+}
+
+.assessment-outcome-fail {
+  background: var(--assessment-danger-soft);
+  color: var(--assessment-danger);
+}
+
+.assessment-cohort-dates dt {
   color: #616d70;
   font-size: 0.72rem;
   font-weight: 600;
@@ -845,14 +908,6 @@
   font-size: 0.9rem;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
-}
-
-.assessment-cohort-counts dd {
-  color: #293436;
-  font-size: 1.03rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
 }
 
 .assessment-cohort-delete-backdrop {
@@ -1210,10 +1265,6 @@
     padding-left: max(24px, env(safe-area-inset-left));
   }
 
-  .assessment-position {
-    display: inline-flex;
-  }
-
   .assessment-applicant-header,
   .assessment-recording,
   .assessment-decision-actions,
@@ -1282,10 +1333,6 @@
     padding-bottom: 28px;
   }
 
-  .assessment-decision-actions > p {
-    text-align: center;
-  }
-
   .assessment-decision-actions > div,
   .assessment-confirmation-actions {
     max-width: 520px;
@@ -1300,7 +1347,8 @@
   }
 
   .assessment-review {
-    max-width: 850px;
+    width: 100%;
+    max-width: none;
   }
 
   .assessment-applicant-header,
@@ -1317,9 +1365,9 @@
 
   .assessment-current-cohort {
     grid-template-columns:
-      minmax(180px, 0.78fr)
-      minmax(250px, 1.1fr)
-      minmax(250px, 0.9fr)
+      minmax(150px, 0.75fr)
+      minmax(240px, 1fr)
+      minmax(260px, 1.1fr)
       44px;
     grid-template-areas: "window-title window-dates window-counts window-remove";
     align-items: center;
@@ -1339,15 +1387,14 @@
 
   .assessment-cohort-dates {
     grid-area: window-dates;
-    padding: 0 24px;
+    padding: 0 20px;
     border-right: 1px solid var(--assessment-line);
     border-bottom: 0;
     border-left: 1px solid var(--assessment-line);
   }
 
-  .assessment-cohort-counts {
+  .assessment-current-cohort > .assessment-outcome-nav {
     grid-area: window-counts;
-    padding-top: 0;
   }
 
 }

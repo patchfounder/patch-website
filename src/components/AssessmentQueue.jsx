@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import PatchAudioPlayer from './PatchAudioPlayer.jsx';
 import { formatApplicationDateTime } from '../recruitment-time.js';
 
@@ -34,9 +34,9 @@ function safeLinkedInUrl(value) {
 
 export default function AssessmentQueue({
   application,
-  waitingCount = 0,
   onDecision,
   isDeciding = false,
+  readOnly = false,
 }) {
   const [pendingDecision, setPendingDecision] = useState('');
   const [decisionError, setDecisionError] = useState('');
@@ -46,25 +46,34 @@ export default function AssessmentQueue({
   const failButtonRef = useRef(null);
   const passButtonRef = useRef(null);
   const id = getApplicationId(application);
+  const cardId = useId();
+  const applicantHeadingId = `${cardId}-applicant`;
+  const recordingHeadingId = `${cardId}-recording`;
+  const confirmationHeadingId = `${cardId}-confirmation`;
+  const confirmationCopyId = `${cardId}-confirmation-copy`;
+  const emptyHeadingId = `${cardId}-empty`;
+  const decision = applicationValue(application, 'decision');
+  const hasDecision = decision === 'pass' || decision === 'fail';
+  const canDecide = !readOnly && !hasDecision;
 
   useEffect(() => {
     setPendingDecision('');
     setDecisionError('');
-    if (application) applicantHeadingRef.current?.focus();
-  }, [id]);
+    if (application && canDecide) applicantHeadingRef.current?.focus({ preventScroll: true });
+  }, [id, canDecide]);
 
   useEffect(() => {
-    if (pendingDecision) confirmationHeadingRef.current?.focus();
-  }, [pendingDecision]);
+    if (pendingDecision && canDecide) confirmationHeadingRef.current?.focus();
+  }, [pendingDecision, canDecide]);
 
   if (!application) {
     return (
-      <section className="assessment-empty" aria-labelledby="assessment-empty-title">
+      <section className="assessment-empty" aria-labelledby={emptyHeadingId}>
         <span className="assessment-empty-check" aria-hidden="true">
           ✓
         </span>
         <p className="assessment-eyebrow">Queue complete</p>
-        <h2 id="assessment-empty-title">You’re all caught up.</h2>
+        <h2 id={emptyHeadingId}>You’re all caught up.</h2>
       </section>
     );
   }
@@ -110,7 +119,7 @@ export default function AssessmentQueue({
       : 0;
 
   const confirmDecision = async () => {
-    if (!pendingDecision || isDeciding) return;
+    if (!canDecide || !id || !pendingDecision || isDeciding || typeof onDecision !== 'function') return;
     setDecisionError('');
 
     try {
@@ -121,6 +130,7 @@ export default function AssessmentQueue({
   };
 
   const openConfirmation = (decision) => {
+    if (!canDecide || !id || isDeciding) return;
     decisionTriggerRef.current = decision;
     setDecisionError('');
     setPendingDecision(decision);
@@ -135,23 +145,22 @@ export default function AssessmentQueue({
   };
 
   return (
-    <section className="assessment-review" aria-labelledby="assessment-applicant-name">
-      <div className="assessment-review-progress">
-        <span>Applications</span>
-        <span>{waitingCount === 1 ? 'Last applicant' : `${waitingCount} applicants waiting`}</span>
-      </div>
-
+    <section className="assessment-review" aria-labelledby={applicantHeadingId}>
       <article className="assessment-applicant-card">
         <header className="assessment-applicant-header">
           <div>
             <p className="assessment-eyebrow">
               Received {formatApplicationDateTime(receivedAt, 'time unavailable')}
             </p>
-            <h2 id="assessment-applicant-name" ref={applicantHeadingRef} tabIndex="-1">
+            <h2 id={applicantHeadingId} ref={applicantHeadingRef} tabIndex="-1">
               {name}
             </h2>
           </div>
-          <span className="assessment-position">Oldest first</span>
+          {hasDecision && (
+            <span className={`assessment-outcome-badge assessment-outcome-${decision}`}>
+              {decision === 'pass' ? 'Passed' : 'Failed'}
+            </span>
+          )}
         </header>
 
         <dl className="assessment-applicant-details">
@@ -175,10 +184,10 @@ export default function AssessmentQueue({
           </div>
         </dl>
 
-        <section className="assessment-recording" aria-labelledby="assessment-recording-title">
+        <section className="assessment-recording" aria-labelledby={recordingHeadingId}>
           <div>
             <p className="assessment-eyebrow">Voice note</p>
-            <h3 id="assessment-recording-title">Stage One application</h3>
+            <h3 id={recordingHeadingId}>Stage One application</h3>
           </div>
           {audioSource ? (
             <div className="assessment-audio">
@@ -197,9 +206,8 @@ export default function AssessmentQueue({
           )}
         </section>
 
-        {!pendingDecision ? (
+        {canDecide && (!pendingDecision ? (
           <div className="assessment-decision-actions" aria-label={`Decision for ${name}`}>
-            <p>Choose once. A decision is final and cannot be reversed.</p>
             <div>
               <button
                 className="assessment-button assessment-button-fail"
@@ -225,14 +233,14 @@ export default function AssessmentQueue({
           <section
             className={`assessment-confirmation assessment-confirmation-${pendingDecision}`}
             role="alertdialog"
-            aria-labelledby="assessment-confirmation-title"
-            aria-describedby="assessment-confirmation-copy"
+            aria-labelledby={confirmationHeadingId}
+            aria-describedby={confirmationCopyId}
           >
             <p className="assessment-eyebrow">Final confirmation</p>
-            <h3 id="assessment-confirmation-title" ref={confirmationHeadingRef} tabIndex="-1">
+            <h3 id={confirmationHeadingId} ref={confirmationHeadingRef} tabIndex="-1">
               {pendingDecision === 'pass' ? `Pass ${name}?` : `Fail ${name}?`}
             </h3>
-            <p id="assessment-confirmation-copy">
+            <p id={confirmationCopyId}>
               {pendingDecision === 'pass'
                 ? 'This irreversible decision will be recorded immediately and the Stage Two invitation will be sent.'
                 : 'This irreversible decision will be recorded immediately and the application outcome will be sent.'}
@@ -263,7 +271,7 @@ export default function AssessmentQueue({
               </button>
             </div>
           </section>
-        )}
+        ))}
       </article>
     </section>
   );
