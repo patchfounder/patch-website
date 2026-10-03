@@ -45,10 +45,6 @@ export default function CoachApplicationSuccess({ firstName = '', email = '' }) 
           Thanks{firstName ? `, ${firstName}` : ''}. We have your application and will email the
           outcome{email ? ` to ${email}` : ''}.
         </p>
-        <p className="coach-success-final-note">
-          Your application is final and cannot be edited after submission.
-        </p>
-
         <button className="coach-control coach-primary-button coach-success-action" type="button" onClick={returnHome}>
           Return to Patch
           <span aria-hidden="true">→</span>
