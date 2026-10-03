@@ -400,43 +400,32 @@ export default function Assessment() {
 
   const handleRemoveWindow = async (id) => {
     try {
-      await reviewerRequest(`/cohorts/${encodeURIComponent(String(id))}`, {
+      const result = await reviewerRequest(`/cohorts/${encodeURIComponent(String(id))}`, {
         method: 'DELETE',
         body: { confirm: true },
       });
+      if (result?.deletionComplete !== true) {
+        throw new Error('Permanent deletion could not be confirmed. Please try Remove again.');
+      }
       setIsWindowFormOpen(false);
-      setReviewerState((state) => ({
-        ...state,
+      setReviewerState({
+        authenticated: true,
         currentCohort: null,
+        previousCohort: null,
         queue: [],
         current: null,
         pendingTotal: 0,
-        history: state.history.filter((application) => (
-          String(application.cohortId || application.cohort_id) !== String(id)
-        )),
-      }));
-      const refreshed = await loadReviewerState({ quiet: true });
+        history: [],
+      });
       selectView('inbox');
-      setNotice(
-        refreshed
-          ? 'The application window was removed. Applicant access is closed.'
-          : 'The application window was removed. Applicant access is closed. Reload to confirm the latest state.',
-      );
+      setNotice('The application window, all applications and recordings were permanently removed.');
     } catch (error) {
       if (error?.status === 401 || error?.status === 403) {
         invalidateReviewerSession();
         throw error;
       }
-      if (error?.status) throw error;
-      const refreshed = await loadReviewerState({ quiet: true });
-      if (
-        refreshed?.authenticated
-        && !refreshed.currentCohort
-      ) {
-        setIsWindowFormOpen(false);
-        setNotice('The application window was removed. Applicant access is closed.');
-        return;
-      }
+      // An empty state cannot prove that file cleanup finished. Keep Remove
+      // available after an uncertain response; the server safely accepts retries.
       throw error;
     }
   };

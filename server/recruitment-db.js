@@ -100,6 +100,7 @@ export function createRecruitmentDatabase(options = {}) {
   database.exec("PRAGMA journal_mode = WAL");
   database.exec("PRAGMA synchronous = FULL");
   database.exec("PRAGMA busy_timeout = 5000");
+  database.exec("PRAGMA secure_delete = ON");
   database.exec(`
     CREATE TABLE IF NOT EXISTS recruitment_cohorts (
       cohort_id TEXT PRIMARY KEY NOT NULL,
@@ -361,38 +362,93 @@ export function createRecruitmentDatabase(options = {}) {
     });
   }
 
+  function deletionStateSnapshot() {
+    return {
+      cohorts: database.prepare(`
+        SELECT cohort_id, month_key, COALESCE(slot, '') AS slot,
+          opens_at, closes_at, created_at, activated_at
+        FROM recruitment_cohorts
+        ORDER BY cohort_id
+      `).all(),
+      applications: database.prepare(`
+        SELECT application_id, cohort_id, audio_storage_key, decision, reviewed_at,
+          email_status, email_attempted_at, email_attempt_count, email_provider_id, email_error
+        FROM recruitment_applications
+        ORDER BY application_id
+      `).all(),
+    };
+  }
+
   function previewDeleteCurrentCohort(expectedCohortId) {
+    const targetId = String(expectedCohortId || "");
+    const expectedState = deletionStateSnapshot();
     const current = getCohortBySlot("current");
     if (!current) {
+      // An empty database permits a retry to finish post-commit file cleanup.
+      // A stale request must never clear a newly created or retained window.
+      if (targetId && expectedState.cohorts.length === 0 && expectedState.applications.length === 0) {
+        return Object.freeze({
+          expectedState,
+          expectedCurrentId: targetId,
+          monthKey: "",
+          monthKeys: [],
+          cohortIds: [],
+          audioStorageKeys: [],
+          applicationCount: 0,
+          alreadyRemoved: true,
+        });
+      }
       throw new RecruitmentDatabaseError(
         "There is no active application window to remove.",
         "current_cohort_missing",
         404,
       );
     }
-    if (current.cohortId !== String(expectedCohortId || "")) {
+    if (current.cohortId !== targetId) {
       throw new RecruitmentDatabaseError(
         "The active application window changed. Reload and try again.",
         "cohort_delete_target_mismatch",
         409,
       );
     }
-    const audioStorageKeys = database.prepare(`
-      SELECT audio_storage_key
-      FROM recruitment_applications
-      WHERE cohort_id = ?
-      ORDER BY audio_storage_key
-    `).all(current.cohortId).map((row) => String(row.audio_storage_key));
     return Object.freeze({
+      expectedState,
       expectedCurrentId: current.cohortId,
       monthKey: current.monthKey,
-      audioStorageKeys,
+      monthKeys: expectedState.cohorts.map((row) => String(row.month_key)).sort(),
+      cohortIds: expectedState.cohorts.map((row) => String(row.cohort_id)),
+      audioStorageKeys: expectedState.applications.map((row) => String(row.audio_storage_key)).sort(),
+      applicationCount: expectedState.applications.length,
+      alreadyRemoved: false,
     });
   }
 
   function deleteCurrentCohort(preview) {
     return transaction(database, () => {
+      if (JSON.stringify(deletionStateSnapshot()) !== JSON.stringify(preview.expectedState)) {
+        throw new RecruitmentDatabaseError(
+          "The application-window state changed. Reload and try again.",
+          "cohort_delete_conflict",
+          409,
+        );
+      }
       const current = getCohortBySlot("current");
+      if (
+        preview.alreadyRemoved
+        && preview.expectedCurrentId
+        && !current
+        && preview.expectedState.cohorts.length === 0
+        && preview.expectedState.applications.length === 0
+      ) {
+        return {
+          deletedCohortId: preview.expectedCurrentId,
+          deletedMonthKey: "",
+          deletedCohortIds: [],
+          deletedMonthKeys: [],
+          deletedApplicationCount: 0,
+          alreadyRemoved: true,
+        };
+      }
       if (!current || current.cohortId !== preview.expectedCurrentId) {
         throw new RecruitmentDatabaseError(
           "The active application window changed. Reload and try again.",
@@ -400,11 +456,8 @@ export function createRecruitmentDatabase(options = {}) {
           409,
         );
       }
-      const deleted = database.prepare(`
-        DELETE FROM recruitment_cohorts
-        WHERE cohort_id = ? AND slot = 'current'
-      `).run(current.cohortId);
-      if (Number(deleted.changes) !== 1) {
+      const deleted = database.prepare("DELETE FROM recruitment_cohorts").run();
+      if (Number(deleted.changes) !== preview.cohortIds.length) {
         throw new RecruitmentDatabaseError(
           "The active application window changed. Reload and try again.",
           "cohort_delete_conflict",
@@ -414,8 +467,54 @@ export function createRecruitmentDatabase(options = {}) {
       return {
         deletedCohortId: current.cohortId,
         deletedMonthKey: current.monthKey,
+        deletedCohortIds: preview.cohortIds,
+        deletedMonthKeys: preview.monthKeys,
+        deletedApplicationCount: preview.applicationCount,
+        alreadyRemoved: false,
       };
     });
+  }
+
+  function eraseDeletedContent() {
+    const hasRecruitmentRows = () => Boolean(database.prepare(`
+      SELECT EXISTS(SELECT 1 FROM recruitment_cohorts)
+        OR EXISTS(SELECT 1 FROM recruitment_applications) AS has_rows
+    `).get()?.has_rows);
+    if (hasRecruitmentRows()) {
+      throw new RecruitmentDatabaseError(
+        "Recruitment cleanup cannot run while application windows or applications exist.",
+        "recruitment_cleanup_conflict",
+        409,
+      );
+    }
+    try {
+      // Rebuild the empty database to discard free pages, then truncate the WAL.
+      // This cleans Website's database files, not provider snapshots or physical media.
+      database.exec("VACUUM");
+      if (hasRecruitmentRows()) {
+        throw new RecruitmentDatabaseError(
+          "The application-window state changed before recruitment cleanup completed.",
+          "recruitment_cleanup_conflict",
+          409,
+        );
+      }
+      const checkpoint = database.prepare("PRAGMA wal_checkpoint(TRUNCATE)").get();
+      if (Number(checkpoint?.busy) !== 0 || Number(checkpoint?.log) !== Number(checkpoint?.checkpointed)) {
+        throw new RecruitmentDatabaseError(
+          "Recruitment database cleanup is blocked by an open database reader. Please retry Remove.",
+          "recruitment_cleanup_busy",
+          503,
+        );
+      }
+      return { erased: true };
+    } catch (error) {
+      if (error instanceof RecruitmentDatabaseError) throw error;
+      throw new RecruitmentDatabaseError(
+        "Recruitment database cleanup could not finish. Please retry Remove.",
+        "recruitment_cleanup_failed",
+        503,
+      );
+    }
   }
 
   function previewActivateNext() {
@@ -634,6 +733,7 @@ export function createRecruitmentDatabase(options = {}) {
     createAndActivateCohort,
     previewDeleteCurrentCohort,
     deleteCurrentCohort,
+    eraseDeletedContent,
     previewActivateNext,
     activateNext,
     createApplication,

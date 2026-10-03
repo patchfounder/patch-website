@@ -401,8 +401,8 @@ test("application windows keep isolated hidden buckets across same-month and ear
     const secondAudioPath = path.join(storage.audioDirectory, secondStored.audioStorageKey);
     assert.equal(existsSync(secondAudioPath), true);
     service.deleteCurrentCohort(second.current.cohortId);
-    assert.equal(existsSync(secondAudioPath), false, "only the removed window bucket is deleted");
-    assert.equal(existsSync(firstAudioPath), true, "the retained window bucket is not deleted");
+    assert.equal(existsSync(secondAudioPath), false, "the active window recording is deleted");
+    assert.equal(existsSync(firstAudioPath), false, "removing a window also deletes retained recordings");
     const recreated = await service.createAndActivateCohort({
       slug: "2099-12",
       displayName: "Ignored",
@@ -411,7 +411,7 @@ test("application windows keep isolated hidden buckets across same-month and ear
       closesAt: "2026-09-20T23:59",
     });
     assert.notEqual(recreated.current.cohortId, second.current.cohortId);
-    assert.equal(recreated.current.slug, "2026-10");
+    assert.equal(recreated.current.slug, "2026-09", "removing all windows resets hidden bucket allocation");
     assert.equal(recreated.current.displayName, "September 2026");
     assert.throws(
       () => service.validateApplicantSession(secondSession.sessionPayload),
@@ -429,7 +429,7 @@ test("application windows keep isolated hidden buckets across same-month and ear
       opensAt: "2026-08-01T00:00",
       closesAt: "2026-08-31T23:59",
     });
-    assert.equal(earlier.current.slug, "2026-11", "an earlier opening still gets an isolated bucket");
+    assert.equal(earlier.current.slug, "2026-10", "an earlier opening still gets an isolated bucket");
     assert.equal(earlier.current.displayName, "August 2026");
     await service.unlockApplicant("earlier-window-password");
 
@@ -605,7 +605,8 @@ test("one-step activation blocks pending work and deleting the active cohort clo
     const deleted = service.deleteCurrentCohort(october.current.cohortId);
     assert.equal(deleted.deletedCohortId, october.current.cohortId);
     assert.equal(database.getCohortBySlot("current"), null);
-    assert.equal(database.getCohortBySlot("previous").cohortId, september.current.cohortId);
+    assert.equal(database.getCohortBySlot("previous"), null);
+    assert.equal(database.getApplication(septemberSubmission.application.applicationId), null);
     assert.equal(database.getApplication(octoberSubmission.application.applicationId), null);
     assert.equal(existsSync(path.join(storage.audioDirectory, "2026-10")), false);
     assert.throws(
@@ -622,7 +623,7 @@ test("one-step activation blocks pending work and deleting the active cohort clo
       closesAt: "2026-11-30T23:59",
     });
     assert.equal(november.current.slug, "2026-11");
-    assert.equal(november.previous.cohortId, september.current.cohortId);
+    assert.equal(november.previous, null);
 
     service.deleteCurrentCohort(november.current.cohortId);
     const decemberDraft = await service.createNextCohort({
@@ -635,9 +636,9 @@ test("one-step activation blocks pending work and deleting the active cohort clo
     const december = service.activateNextCohort(decemberDraft.cohortId);
     assert.equal(december.current.slug, "2026-12");
     assert.equal(
-      december.previous.cohortId,
-      september.current.cohortId,
-      "legacy activation must retain previous history when no current cohort exists",
+      december.previous,
+      null,
+      "legacy activation starts without history after a full removal",
     );
   } finally {
     database.close();
@@ -697,6 +698,7 @@ test("active-cohort deletion restores the full recording folder if the database 
       previewDeleteCurrentCohort: () => ({
         expectedCurrentId: "current",
         monthKey: "2026-10",
+        monthKeys: ["2026-10"],
         audioStorageKeys: ["2026-10/private-recording.webm"],
       }),
       deleteCurrentCohort() { throw new Error("simulated deletion failure"); },
@@ -715,7 +717,7 @@ test("active-cohort deletion restores the full recording folder if the database 
   }
 });
 
-test("a committed cohort transition is not reported as failed when trash cleanup is deferred", async () => {
+test("activation may defer cleanup but explicit removal must report cleanup failure", async () => {
   const current = {
     cohortId: "new-current",
     monthKey: "2026-10",
@@ -735,12 +737,14 @@ test("a committed cohort transition is not reported as failed when trash cleanup
       previewDeleteCurrentCohort: () => ({
         expectedCurrentId: current.cohortId,
         monthKey: current.monthKey,
+        monthKeys: [current.monthKey],
         audioStorageKeys: [],
       }),
       deleteCurrentCohort: () => ({
         deletedCohortId: current.cohortId,
         deletedMonthKey: current.monthKey,
       }),
+      eraseDeletedContent() {},
     },
     storage: {
       quarantineCohorts: () => ({ operationDirectory: "/private/quarantine" }),
@@ -748,6 +752,10 @@ test("a committed cohort transition is not reported as failed when trash cleanup
       commitQuarantine() {
         cleanupAttempts += 1;
         throw new Error("simulated post-commit cleanup failure");
+      },
+      recoverInterruptedOperations() {
+        cleanupAttempts += 1;
+        throw new Error("simulated full-removal cleanup failure");
       },
     },
     emailSender: { configured: true, async sendOutcome() { return { ok: true }; } },
@@ -762,7 +770,11 @@ test("a committed cohort transition is not reported as failed when trash cleanup
     closesAt: "2026-10-31T23:59",
   });
   assert.equal(activated.current.cohortId, current.cohortId);
-  assert.equal(service.deleteCurrentCohort(current.cohortId).deletedCohortId, current.cohortId);
+  assert.throws(
+    () => service.deleteCurrentCohort(current.cohortId),
+    (error) => error.code === "recruitment_deletion_cleanup_failed" && error.statusCode === 503,
+    "permanent removal cannot claim success while recordings remain",
+  );
   assert.equal(cleanupAttempts, 2);
 });
 

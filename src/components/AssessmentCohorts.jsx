@@ -251,7 +251,8 @@ export default function AssessmentCohorts({
           >
             <h2 id="assessment-remove-window-title">Remove application window?</h2>
             <p id="assessment-remove-window-message">
-              Are you sure you want to remove the {title} application window?
+              Remove the {title} window and permanently delete everything in Inbox, Pass and Fail,
+              including earlier windows and all recordings? This cannot be undone.
             </p>
             {removeError && (
               <p className="assessment-confirmation-error" role="alert">

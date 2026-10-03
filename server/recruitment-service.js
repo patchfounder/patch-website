@@ -389,7 +389,7 @@ export function createRecruitmentService(options = {}) {
 
   function deleteCurrentCohort(expectedCohortId) {
     const preview = database.previewDeleteCurrentCohort(expectedCohortId);
-    const quarantine = storage.quarantineCohorts([preview.monthKey]);
+    const quarantine = storage.quarantineCohorts(preview.monthKeys);
     let result;
     try {
       result = database.deleteCurrentCohort(preview);
@@ -397,10 +397,22 @@ export function createRecruitmentService(options = {}) {
       storage.rollbackQuarantine(quarantine);
       throw error;
     }
-    finishCommittedQuarantine(quarantine);
+    try {
+      // Removal is a complete recruitment reset, including older outcomes and
+      // orphan/staging files. Do not acknowledge it while any cleanup is pending.
+      storage.recoverInterruptedOperations([], []);
+      database.eraseDeletedContent();
+    } catch (_error) {
+      throw new RecruitmentServiceError(
+        'The application records were removed, but permanent cleanup is not complete. Please try Remove again.',
+        'recruitment_deletion_cleanup_failed',
+        503,
+      );
+    }
     return {
       ...result,
       deletedAudioCount: preview.audioStorageKeys.length,
+      deletionComplete: true,
     };
   }
 

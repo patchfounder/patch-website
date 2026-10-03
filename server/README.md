@@ -195,7 +195,11 @@ The full purged window audio folders are first moved into private quarantine, in
 
 ### `DELETE /api/recruitment/reviewer/cohorts/:cohortId`
 
-Requires `{ "confirm": true }` and removes only the exact active application window. Its applications and complete private recording folder are removed, applicant sessions for it immediately become invalid, and applicant access closes. A retained previous window stays internal history; it is never promoted automatically.
+Requires `{ "confirm": true }` targeting the exact active application window. This is a complete recruitment reset: it permanently removes all window records and all Inbox, Pass and Fail applications, including retained previous and legacy prepared windows. Applicant sessions immediately become invalid and applicant access closes. Creating a replacement window afterwards starts with no retained applications.
+
+All known window recording folders are quarantined before the database transaction and restored if that transaction fails. After commit, the Website removes all private recruitment audio, staging and quarantine contents, including orphan files. The database uses secure deletion, is compacted, and its write-ahead journal is truncated. Only completed cleanup returns `deletionComplete: true`; a cleanup failure returns `503 recruitment_deletion_cleanup_failed` rather than reporting success. Retrying the same confirmed removal can finish cleanup when the entire recruitment database is already empty, but an old window ID can never delete a newly created or retained window.
+
+This is deletion from the Website's managed recruitment database and file storage, not a guarantee of erasure from provider-managed snapshots, infrastructure backups, delivered emails, browser memory or independently downloaded copies. No backup configuration is changed by this endpoint. The interface clears its current application and outcome state after successful removal; audio/API responses remain `private, no-store`.
 
 ### Legacy prepared-cohort routes
 
