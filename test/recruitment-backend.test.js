@@ -337,6 +337,75 @@ test("the application window derives its title and access period from UK opening
   }
 });
 
+test("date-only window payloads include the full selected UK days across clock changes", async () => {
+  const cases = [
+    {
+      open: "2026-03-29T00:00", close: "2026-03-30T00:00",
+      opensAt: "2026-03-29T00:00:00.000Z", closesAt: "2026-03-29T23:00:00.000Z",
+      hours: 23, title: "March 2026",
+    },
+    {
+      open: "2026-10-25T00:00", close: "2026-10-26T00:00",
+      opensAt: "2026-10-24T23:00:00.000Z", closesAt: "2026-10-26T00:00:00.000Z",
+      hours: 25, title: "October 2026",
+    },
+    {
+      open: "2026-09-30T00:00", close: "2026-10-01T00:00",
+      opensAt: "2026-09-29T23:00:00.000Z", closesAt: "2026-09-30T23:00:00.000Z",
+      hours: 24, title: "September 2026",
+    },
+    {
+      open: "2026-12-31T00:00", close: "2027-01-01T00:00",
+      opensAt: "2026-12-31T00:00:00.000Z", closesAt: "2027-01-01T00:00:00.000Z",
+      hours: 24, title: "December 2026",
+    },
+  ];
+
+  for (const boundary of cases) {
+    const database = createRecruitmentDatabase({ databasePath: ":memory:" });
+    let now = new Date(Date.parse(boundary.opensAt) - 1);
+    const service = createRecruitmentService({
+      database,
+      storage: {
+        quarantineCohorts() { return { moved: [] }; },
+        commitQuarantine() {},
+        rollbackQuarantine() {},
+      },
+      emailSender: {
+        configured: true,
+        async sendOutcome() { assert.fail("Date-boundary checks must not send email"); },
+      },
+      now: () => now,
+    });
+    try {
+      const { current } = await service.createAndActivateCohort({
+        password: "synthetic-date-only-password",
+        opensAt: boundary.open,
+        // The date-only UI sends the next day's midnight as an exclusive deadline.
+        closesAt: boundary.close,
+      });
+      assert.equal(current.opensAt, boundary.opensAt);
+      assert.equal(current.closesAt, boundary.closesAt);
+      assert.equal(current.displayName, boundary.title);
+      assert.equal((Date.parse(current.closesAt) - Date.parse(current.opensAt)) / 3_600_000, boundary.hours);
+      await assert.rejects(service.unlockApplicant("synthetic-date-only-password"), (error) => error.code === "cohort_not_open");
+
+      now = new Date(current.opensAt);
+      const unlocked = await service.unlockApplicant("synthetic-date-only-password");
+      assert.equal(service.getApplicantStatus(unlocked.sessionPayload).unlocked, true);
+      now = new Date(Date.parse(current.closesAt) - 1);
+      assert.equal(service.validateApplicantSession(unlocked.sessionPayload).cohort.cohortId, current.cohortId);
+      await service.unlockApplicant("synthetic-date-only-password");
+
+      now = new Date(current.closesAt);
+      await assert.rejects(service.unlockApplicant("synthetic-date-only-password"), (error) => error.code === "cohort_not_open");
+      assert.throws(() => service.validateApplicantSession(unlocked.sessionPayload), (error) => error.code === "applicant_session_expired");
+    } finally {
+      database.close();
+    }
+  }
+});
+
 test("application windows keep isolated hidden buckets across same-month and earlier openings", async () => {
   const dataRoot = temporaryDataRoot("recruitment-window-buckets");
   const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });

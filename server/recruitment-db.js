@@ -247,7 +247,7 @@ export function createRecruitmentDatabase(options = {}) {
     const previous = getCohortBySlot("previous");
     if (current && Number(current.pendingCount) > 0) {
       throw new RecruitmentDatabaseError(
-        "Review every waiting application before creating a new application window.",
+        "Review every waiting application before opening a new application window.",
         "current_cohort_has_pending_applications",
         409,
       );
@@ -308,7 +308,7 @@ export function createRecruitmentDatabase(options = {}) {
       }
       if (current && Number(current.pendingCount) > 0) {
         throw new RecruitmentDatabaseError(
-          "Review every waiting application before creating a new application window.",
+          "Review every waiting application before opening a new application window.",
           "current_cohort_has_pending_applications",
           409,
         );

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AssessmentQueue from './AssessmentQueue.jsx';
 import AssessmentCohorts from './AssessmentCohorts.jsx';
-import { applicationInputValue, applicationWindowTitle } from '../recruitment-time.js';
+import { applicationInputValue } from '../recruitment-time.js';
 import '../assessment.css';
 
 const REVIEWER_API = '/api/recruitment/reviewer';
@@ -368,13 +368,10 @@ export default function Assessment() {
       }));
       const refreshed = await loadReviewerState({ quiet: true });
       selectView('inbox');
-      const title = applicationWindowTitle(
-        refreshed?.currentCohort?.opensAt || activatedWindow?.opensAt,
-      );
       setNotice(
         refreshed
-          ? `${title} application window created.`
-          : `${title} application window created. Reload the page to refresh its latest counts.`,
+          ? 'Application window open.'
+          : 'Application window open. Reload the page to refresh its latest counts.',
       );
       return activatedWindow;
     } catch (error) {
@@ -391,7 +388,7 @@ export default function Assessment() {
         && applicationInputValue(refreshedWindow?.closesAt) === applicationWindow.closesAt;
       if (refreshedWindowId && refreshedWindowId !== previousWindowId && matchesRequestedWindow) {
         selectView('inbox');
-        setNotice(`${applicationWindowTitle(refreshedWindow.opensAt)} application window created.`);
+        setNotice('Application window open.');
         return refreshedWindow;
       }
       throw error;

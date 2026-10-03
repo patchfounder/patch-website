@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   applicationWindowTitle,
+  applicationWindowSubmission,
   defaultApplicationWindow,
+  formatApplicationClosingDate,
   formatApplicationDate,
 } from '../recruitment-time.js';
 
@@ -110,22 +112,18 @@ export default function AssessmentCohorts({
 
     setFormError('');
     if (!form.password || !form.opensAt || !form.closesAt) {
-      setFormError('Complete every field before creating the application window.');
-      return;
-    }
-    if (form.closesAt <= form.opensAt) {
-      setFormError('The deadline must be after the opening time.');
+      setFormError('Complete every field before opening the application window.');
       return;
     }
 
     setIsCreating(true);
     try {
-      await onCreate(form);
+      await onCreate(applicationWindowSubmission(form));
       setForm(defaultApplicationWindow());
       setPasswordVisible(false);
       window.requestAnimationFrame(() => document.querySelector('.assessment-add-window')?.focus());
     } catch (requestError) {
-      setFormError(requestError?.message || 'The application window could not be created.');
+      setFormError(requestError?.message || 'The application window could not be opened.');
     } finally {
       setIsCreating(false);
     }
@@ -215,12 +213,12 @@ export default function AssessmentCohorts({
 
           <dl className="assessment-cohort-dates">
             <div>
-              <dt>Opens</dt>
+              <dt>Open</dt>
               <dd>{formatApplicationDate(opensAt)}</dd>
             </div>
             <div>
-              <dt>Closes</dt>
-              <dd>{formatApplicationDate(closesAt)}</dd>
+              <dt>Close</dt>
+              <dd>{formatApplicationClosingDate(closesAt)}</dd>
             </div>
           </dl>
 
@@ -290,7 +288,7 @@ export default function AssessmentCohorts({
           aria-labelledby="assessment-window-create-title"
         >
           <h2 id="assessment-window-create-title" ref={createHeadingRef} tabIndex="-1">
-            Create application window
+            Open Application Window
           </h2>
 
           <form onSubmit={submitWindow} noValidate>
@@ -326,26 +324,24 @@ export default function AssessmentCohorts({
 
             <div className="assessment-field-row">
               <label className="assessment-field">
-                <span>Application opens · UK time</span>
+                <span>Open</span>
                 <input
                   name="opensAt"
-                  type="datetime-local"
+                  type="date"
                   value={form.opensAt}
                   onChange={updateField}
-                  step="60"
                   aria-invalid={Boolean(formError)}
                   aria-describedby={formError ? 'assessment-window-form-error' : undefined}
                   required
                 />
               </label>
               <label className="assessment-field">
-                <span>Application deadline · UK time</span>
+                <span>Close</span>
                 <input
                   name="closesAt"
-                  type="datetime-local"
+                  type="date"
                   value={form.closesAt}
                   onChange={updateField}
-                  step="60"
                   aria-invalid={Boolean(formError)}
                   aria-describedby={formError ? 'assessment-window-form-error' : undefined}
                   required
@@ -369,7 +365,7 @@ export default function AssessmentCohorts({
               type="submit"
               disabled={isCreating}
             >
-              {isCreating ? 'Creating application window…' : 'Create application window'}
+              {isCreating ? 'Opening…' : 'Open'}
             </button>
           </form>
         </section>
@@ -381,7 +377,7 @@ export default function AssessmentCohorts({
             +
           </span>
           <h2 id="assessment-no-window-title">No application window</h2>
-          <p>Use the + button above to create one.</p>
+          <p>Use the + button above to open one.</p>
         </section>
       )}
     </div>

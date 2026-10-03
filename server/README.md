@@ -180,12 +180,14 @@ JSON:
 ```json
 {
   "password": "shared password",
-  "opensAt": "2026-09-06T09:00",
-  "closesAt": "2026-09-11T23:00"
+  "opensAt": "2026-09-06T00:00",
+  "closesAt": "2026-09-12T00:00"
 }
 ```
 
 Local timestamps without offsets are interpreted as UK time in `Europe/London`, including automatic GMT/BST handling. A missing or ambiguous clock-change time is rejected, and accepted values are stored as UTC ISO strings. An explicit RFC 3339 offset is also accepted. The server derives the visible month-and-year title solely from the opening instant in UK time; client-supplied `slug`, `monthKey`, or `displayName` values are ignored.
+
+The reviewer form displays only date pickers labelled **Open** and **Close**, under **Open Application Window**, with an **Open** button. No time or timezone control is shown. The UI submits midnight at the start of the selected Open date and midnight immediately after the selected Close date, so the whole Close day is included. Same-day windows are allowed. The summary displays the selected inclusive dates, and success messages say **Application window open.** Existing stored windows are not changed.
 
 Applicant access is available from `opensAt` inclusive until `closesAt` exclusive, and the shared password is invalid outside that exact window. This endpoint creates and activates the application window in one database transaction: the old active window becomes the retained previous window, older retained data and any legacy prepared window are removed, and no draft remains if the operation fails. Creation is rejected while the active window still has applications waiting for a decision.
 

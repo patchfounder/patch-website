@@ -1033,7 +1033,7 @@
     box-shadow 150ms ease;
 }
 
-.assessment-field input[type="datetime-local"] {
+.assessment-field input[type="date"] {
   display: block;
   inline-size: 100%;
   min-inline-size: 0 !important;
@@ -1043,12 +1043,12 @@
   text-align: left;
 }
 
-.assessment-field input[type="datetime-local"]::-webkit-date-and-time-value {
+.assessment-field input[type="date"]::-webkit-date-and-time-value {
   min-width: 0;
   text-align: left;
 }
 
-.assessment-field input[type="datetime-local"]::-webkit-datetime-edit {
+.assessment-field input[type="date"]::-webkit-datetime-edit {
   min-width: 0;
 }
 
