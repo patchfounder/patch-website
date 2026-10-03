@@ -117,18 +117,16 @@ function LoadingScreen() {
   );
 }
 
-function InvalidSession({ signedOut = false }) {
+function InvalidSession() {
   return (
     <main className="assessment-access">
       <section className="assessment-access-card" aria-labelledby="assessment-access-title">
         <p className="assessment-eyebrow">Private reviewer access</p>
         <h1 id="assessment-access-title">
-          {signedOut ? 'You have been signed out.' : 'Sign in to the application back office.'}
+          Sign in to the application back office.
         </h1>
         <p>
-          {signedOut
-            ? 'Enter your master password on the application login page when you are ready to return.'
-            : 'Your session is unavailable or has expired. Enter your master password on the application login page to continue.'}
+          Your session is unavailable or has expired. Enter your master password on the application login page to continue.
         </p>
         <a className="assessment-button assessment-button-primary" href="/application">
           Sign in
@@ -153,10 +151,8 @@ export default function Assessment() {
   const [notice, setNotice] = useState('');
   const [isDeciding, setIsDeciding] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [signedOut, setSignedOut] = useState(false);
 
-  const invalidateReviewerSession = useCallback(({ afterLogout = false } = {}) => {
-    setSignedOut(afterLogout);
+  const invalidateReviewerSession = useCallback(() => {
     setReviewerState(normalizeReviewerState({ authenticated: false }));
     setIsWindowFormOpen(false);
     setNotice('');
@@ -206,7 +202,6 @@ export default function Assessment() {
       const payload = await reviewerRequest('/state', { signal });
       const normalized = normalizeReviewerState(payload);
       setReviewerState(normalized);
-      setSignedOut(false);
       return normalized;
     } catch (error) {
       if (error?.name === 'AbortError') return null;
@@ -407,20 +402,19 @@ export default function Assessment() {
 
     try {
       await reviewerRequest('/logout', { method: 'POST' });
-      invalidateReviewerSession({ afterLogout: true });
     } catch (error) {
-      if (error?.status === 401 || error?.status === 403) {
-        invalidateReviewerSession({ afterLogout: true });
-      } else {
+      if (error?.status !== 401) {
         setPageError(error?.message || 'You could not be signed out. Please try again.');
+        setIsLoggingOut(false);
+        return;
       }
-    } finally {
-      setIsLoggingOut(false);
     }
+
+    window.location.replace('/application');
   };
 
   if (isLoading && reviewerState.authenticated === null) return <LoadingScreen />;
-  if (reviewerState.authenticated === false) return <InvalidSession signedOut={signedOut} />;
+  if (reviewerState.authenticated === false) return <InvalidSession />;
 
   if (pageError && reviewerState.authenticated === null) {
     return (
