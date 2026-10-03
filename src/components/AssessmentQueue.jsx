@@ -65,7 +65,6 @@ export default function AssessmentQueue({
         </span>
         <p className="assessment-eyebrow">Queue complete</p>
         <h2 id="assessment-empty-title">You’re all caught up.</h2>
-        <p>There are no applications waiting to be assessed.</p>
       </section>
     );
   }

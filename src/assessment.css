@@ -132,22 +132,22 @@
   object-fit: contain;
 }
 
-.assessment-logout {
-  min-width: 78px;
-  min-height: 44px;
-  padding: 0 14px;
-  border: 1px solid var(--assessment-line) !important;
-  border-radius: 999px;
-  background: var(--assessment-white);
-  color: var(--assessment-grey);
+.assessment-page .assessment-logout {
   cursor: pointer;
-  font-size: 0.82rem !important;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 400;
 }
 
-.assessment-logout:disabled {
+.assessment-page .assessment-logout:disabled {
   cursor: wait;
   opacity: 0.62;
+  transform: none;
+}
+
+@media (max-width: 560px) {
+  .assessment-page .assessment-logout {
+    font-size: 0.7rem;
+  }
 }
 
 .assessment-shell {

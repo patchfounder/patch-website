@@ -16,6 +16,13 @@ const titleFormatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: APPLICATION_TIME_ZONE,
 });
 
+const dateFormatter = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: APPLICATION_TIME_ZONE,
+});
+
 const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
   month: 'short',
@@ -72,6 +79,11 @@ export function applicationWindowTitle(value, fallback = 'Application Window') {
 export function formatApplicationDateTime(value, fallback = 'Not set') {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? fallback : dateTimeFormatter.format(date);
+}
+
+export function formatApplicationDate(value, fallback = 'Not set') {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? fallback : dateFormatter.format(date);
 }
 
 export function applicationInputValue(value) {

@@ -455,12 +455,13 @@ export default function Assessment() {
             <img src="/patch-logo-2.png" alt="Patch" />
           </a>
           <button
-            className="assessment-logout"
+            className="nav-cta assessment-logout"
             type="button"
             onClick={handleLogout}
             disabled={isLoggingOut}
           >
-            {isLoggingOut ? 'Signing out…' : 'Sign out'}
+            <span>{isLoggingOut ? 'Signing out…' : 'Sign Out'}</span>
+            <span className="nav-cta-arrow" aria-hidden="true">→</span>
           </button>
         </div>
       </header>
@@ -495,18 +496,6 @@ export default function Assessment() {
               <path d="M12 5v14M5 12h14" />
             </svg>
           </button>
-          <a
-            className="assessment-icon-action assessment-view-application"
-            href="/application/"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="View the applicant-facing application page in a new tab"
-            title="View applicant page"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M7 17 17 7M9 7h8v8" />
-            </svg>
-          </a>
         </div>
 
         <div className="assessment-live-region" role="status" aria-live="polite">

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   applicationWindowTitle,
   defaultApplicationWindow,
-  formatApplicationDateTime,
+  formatApplicationDate,
 } from '../recruitment-time.js';
 
 function windowValue(applicationWindow, ...keys) {
@@ -220,11 +220,11 @@ export default function AssessmentCohorts({
           <dl className="assessment-cohort-dates">
             <div>
               <dt>Opens</dt>
-              <dd>{formatApplicationDateTime(opensAt)}</dd>
+              <dd>{formatApplicationDate(opensAt)}</dd>
             </div>
             <div>
               <dt>Closes</dt>
-              <dd>{formatApplicationDateTime(closesAt)}</dd>
+              <dd>{formatApplicationDate(closesAt)}</dd>
             </div>
           </dl>
 

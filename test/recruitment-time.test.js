@@ -5,7 +5,15 @@ import {
   applicationInputValue,
   applicationWindowTitle,
   defaultApplicationWindow,
+  formatApplicationDate,
 } from '../src/recruitment-time.js';
+
+test('window summaries show UK calendar dates without a time or timezone label', () => {
+  assert.equal(formatApplicationDate('2026-09-30T23:00:00.000Z'), '1 Oct 2026');
+  assert.equal(formatApplicationDate('2026-10-08T22:59:00.000Z'), '8 Oct 2026');
+  assert.equal(formatApplicationDate('2026-12-08T23:59:00.000Z'), '8 Dec 2026');
+  assert.equal(formatApplicationDate('invalid'), 'Not set');
+});
 
 test('reviewer application-window helpers use UK calendar dates at month boundaries', () => {
   const boundary = '2026-09-30T23:00:00.000Z';
