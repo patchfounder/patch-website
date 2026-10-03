@@ -35,6 +35,7 @@ This gate overrides convenience, inferred permission, implementation approval, a
 ## IMPLEMENTATION GUARDRAILS
 
 - On 2026-10-03, Patrick separately approved implementing, committing, pushing, and deploying a Website-only `/administration` master-password login to the existing recruitment back office, including setting its server-only password hash on the Website service. This does not authorize changes to applicant passwords, application windows, recordings, email configuration, or Patch OS. Never commit the real master password or its hash; retain the existing secret-link access unless separately instructed otherwise.
+- Patrick subsequently corrected the master-password entry point to the existing password field at `/application` and explicitly approved committing, pushing, and deploying that correction. The master password opens the back office independently of the application window; applicant passwords remain subject to the existing window rules. Keep the existing `/administration` and private-link access functional unless separately instructed otherwise.
 
 - Applicant and reviewer surfaces are mobile-first. Begin visual implementation and verification at 375x812, 390x844, and 430x932 before tablet or desktop.
 - Reuse Website design tokens and proven Website patterns. Scope all new recruitment CSS to recruitment routes; do not change existing `.application-*` or broad global selectors.

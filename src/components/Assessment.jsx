@@ -127,10 +127,10 @@ function InvalidSession({ signedOut = false }) {
         </h1>
         <p>
           {signedOut
-            ? 'Use your master password when you are ready to return.'
-            : 'Your session is unavailable or has expired. Enter your master password to continue.'}
+            ? 'Enter your master password on the application login page when you are ready to return.'
+            : 'Your session is unavailable or has expired. Enter your master password on the application login page to continue.'}
         </p>
-        <a className="assessment-button assessment-button-primary" href="/administration">
+        <a className="assessment-button assessment-button-primary" href="/application">
           Sign in
         </a>
       </section>

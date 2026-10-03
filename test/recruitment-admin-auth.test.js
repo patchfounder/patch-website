@@ -57,19 +57,21 @@ test("the global rolling attempt cap survives successes and concurrent attempts"
 });
 
 async function withApp(options, run) {
+  const { service: serviceOverrides, ...appOptions } = options;
   const codec = createSignedCookieCodec("test-only-admin-cookie-key-with-more-than-32-bytes");
   const service = {
     listPendingApplications: () => [],
     listProcessedApplications: () => [],
     listCohortControls: () => ({ current: null, previous: null, next: null }),
     validateApplicantSession: () => { throw Object.assign(new Error("Applicant login required."), { statusCode: 401 }); },
+    ...serviceOverrides,
   };
   const app = await createRecruitmentApp({
     service,
     cookieCodec: codec,
     reviewerSecret: "abc123DEF456",
     secureCookies: true,
-    ...options,
+    ...appOptions,
   });
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve, reject) => {
@@ -168,5 +170,147 @@ test("missing admin configuration leaves the existing secret-link login availabl
     assert.equal(legacy.status, 303);
     assert.equal(legacy.headers.get("location"), "/assessment");
     assert.match(legacy.headers.get("set-cookie"), /patch_recruitment_reviewer=/);
+  });
+});
+
+const APPLICANT_PASSWORD = "test-only window password";
+const unlockPaths = ["/api/recruitment/unlock", "/api/recruitment/applicant/unlock"];
+const unlock = (baseUrl, password, route = unlockPaths[0]) => fetch(`${baseUrl}${route}`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ password }),
+});
+
+function windowService(state = "open") {
+  return {
+    async unlockApplicant(password) {
+      if (state !== "open") {
+        throw Object.assign(new Error(`Application window is ${state}.`), { statusCode: 403, code: `window_${state}` });
+      }
+      if (password !== APPLICANT_PASSWORD) {
+        throw Object.assign(new Error("Incorrect application password."), { statusCode: 401, code: "invalid_application_password" });
+      }
+      const expiresAt = new Date(Date.now() + 60_000);
+      return { expiresAt, sessionPayload: { v: 1, kind: "applicant", exp: Math.floor(expiresAt.getTime() / 1000) }, cohort: { id: "fixture-window" } };
+    },
+  };
+}
+
+test("the existing applicant password routes accept master login without any application window", async () => {
+  let applicantCalls = 0;
+  let state = "missing";
+  const service = {
+    async unlockApplicant(password) {
+      applicantCalls += 1;
+      return windowService(state).unlockApplicant(password);
+    },
+  };
+  await withApp({ adminPasswordHash: await fixtureHash, service }, async (baseUrl) => {
+    for (state of ["missing", "future", "closed"]) {
+      for (const route of unlockPaths) {
+        const response = await unlock(baseUrl, FIXTURE_PASSWORD, route);
+        assert.equal(response.status, 200);
+        assert.deepEqual(await response.json(), { ok: true, role: "reviewer", redirectTo: "/assessment" });
+        const setCookie = response.headers.get("set-cookie");
+        assert.match(setCookie, /patch_recruitment_reviewer=/);
+        assert.equal(setCookie.includes("patch_recruitment_applicant="), false);
+        const cookie = setCookie.split(";")[0];
+        const reviewer = await fetch(`${baseUrl}/api/recruitment/reviewer/state`, { headers: { cookie } });
+        assert.equal(reviewer.status, 200);
+        const applicant = await fetch(`${baseUrl}/api/recruitment/applications`, { method: "POST", headers: { cookie } });
+        assert.equal(applicant.status, 401);
+      }
+    }
+    assert.equal(applicantCalls, 0);
+    for (state of ["missing", "future", "closed"]) {
+      const applicant = await unlock(baseUrl, APPLICANT_PASSWORD);
+      assert.equal(applicant.status, 403);
+      assert.equal((await applicant.json()).code, `window_${state}`);
+      assert.equal(applicant.headers.get("set-cookie"), null);
+    }
+  });
+});
+
+test("successful applicants neither consume the master-password budget nor gain reviewer access", async () => {
+  await withApp({ adminPasswordHash: await fixtureHash, service: windowService() }, async (baseUrl) => {
+    for (let index = 0; index < 12; index += 1) {
+      const response = await unlock(baseUrl, APPLICANT_PASSWORD, unlockPaths[index % 2]);
+      assert.equal(response.status, 200);
+      const body = await response.json();
+      assert.equal(body.unlocked, true);
+      assert.equal(body.role, undefined);
+      assert.equal(body.redirectTo, undefined);
+      const setCookie = response.headers.get("set-cookie");
+      assert.match(setCookie, /patch_recruitment_applicant=/);
+      assert.equal(setCookie.includes("patch_recruitment_reviewer="), false);
+      const reviewer = await fetch(`${baseUrl}/api/recruitment/reviewer/state`, {
+        headers: { cookie: setCookie.split(";")[0] },
+      });
+      assert.equal(reviewer.status, 401);
+    }
+    assert.equal((await login(baseUrl, FIXTURE_PASSWORD)).status, 200);
+  });
+});
+
+test("all master-password entry points share one limit without blocking real applicants", async () => {
+  let now = 10_000;
+  await withApp({ adminPasswordHash: await fixtureHash, reviewerNow: () => now, service: windowService() }, async (baseUrl) => {
+    for (let index = 0; index < 10; index += 1) {
+      const response = index % 3 === 0
+        ? await login(baseUrl, "wrong")
+        : await unlock(baseUrl, "wrong", unlockPaths[index % 2]);
+      assert.equal(response.status, 401);
+      assert.equal(response.headers.get("set-cookie"), null);
+    }
+    for (const route of ["/api/recruitment/reviewer/login", ...unlockPaths]) {
+      const limited = await unlock(baseUrl, FIXTURE_PASSWORD, route);
+      assert.equal(limited.status, 429);
+      assert.equal(limited.headers.get("retry-after"), "900");
+      assert.equal(limited.headers.get("set-cookie"), null);
+    }
+    for (const route of unlockPaths) {
+      assert.equal((await unlock(baseUrl, APPLICANT_PASSWORD, route)).status, 200);
+    }
+    assert.equal((await login(baseUrl, FIXTURE_PASSWORD)).status, 429);
+    now += 900_000;
+    assert.equal((await unlock(baseUrl, FIXTURE_PASSWORD)).status, 200);
+  });
+});
+
+test("an applicant refund removes only its own failed reservation, even at the same timestamp", async () => {
+  const auth = createAdminPasswordAuth({ passwordHash: await fixtureHash, now: () => 10_000 });
+  const failures = await Promise.all(Array.from({ length: 10 }, () => auth.authenticate(null)));
+  failures[0].releaseApplicantAttempt();
+  failures[0].releaseApplicantAttempt();
+  assert.deepEqual(await auth.authenticate(FIXTURE_PASSWORD), { ok: true });
+  assert.equal((await auth.authenticate(FIXTURE_PASSWORD)).statusCode, 429);
+});
+
+test("combined unlock requires safe JSON and preserves legacy applicant login when admin is unconfigured", async () => {
+  await withApp({ adminPasswordHash: await fixtureHash, service: windowService() }, async (baseUrl) => {
+    for (const route of unlockPaths) {
+      const form = await fetch(`${baseUrl}${route}`, { method: "POST", body: new URLSearchParams({ password: FIXTURE_PASSWORD }) });
+      assert.equal(form.status, 415);
+      for (const [body, status] of [["{", 400], ["x".repeat(2048), 413]]) {
+        const response = await fetch(`${baseUrl}${route}`, { method: "POST", headers: { "Content-Type": "application/json" }, body });
+        assert.equal(response.status, status);
+        assert.equal(response.headers.get("set-cookie"), null);
+      }
+      for (const password of [null, {}, 123456, "a".repeat(257)]) {
+        const response = await unlock(baseUrl, password, route);
+        assert.equal(response.status, 401);
+        assert.equal(response.headers.get("set-cookie"), null);
+      }
+    }
+  });
+  await withApp({ service: windowService() }, async (baseUrl) => {
+    for (const route of unlockPaths) {
+      const response = await unlock(baseUrl, APPLICANT_PASSWORD, route);
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).unlocked, true);
+    }
+    const wrong = await unlock(baseUrl, "wrong");
+    assert.equal(wrong.status, 401);
+    assert.equal((await wrong.json()).code, "invalid_application_password");
   });
 });

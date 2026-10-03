@@ -41,24 +41,35 @@ export function createAdminPasswordAuth({ passwordHash, now = Date.now } = {}) {
         return { ok: false, statusCode: 503, code: "admin_login_unavailable", message: "Administration login is unavailable." };
       }
       const nowMs = Number(now());
-      attempts = attempts.filter((timestamp) => timestamp > nowMs - ATTEMPT_WINDOW_MS);
+      attempts = attempts.filter((attempt) => attempt.timestamp > nowMs - ATTEMPT_WINDOW_MS);
       if (attempts.length >= MAX_ATTEMPTS) {
         return {
           ok: false,
           statusCode: 429,
           code: "admin_login_rate_limited",
           message: "Too many attempts. Please try again later.",
-          retryAfterSeconds: Math.max(1, Math.ceil((attempts[0] + ATTEMPT_WINDOW_MS - nowMs) / 1000)),
+          retryAfterSeconds: Math.max(1, Math.ceil((attempts[0].timestamp + ATTEMPT_WINDOW_MS - nowMs) / 1000)),
         };
       }
       // Reserve synchronously before scrypt. The global cap cannot be evaded by
       // concurrent requests, spoofed forwarding headers, or a successful login.
-      attempts.push(nowMs);
+      const reservation = { timestamp: nowMs };
+      attempts.push(reservation);
       if (validPasswordInput(password)) {
         const actual = Buffer.from(await scrypt(password, salt, expected.length, SCRYPT_OPTIONS));
         if (timingSafeEqual(actual, expected)) return { ok: true };
       }
-      return { ok: false, statusCode: 401, code: "invalid_admin_password", message: "Incorrect password." };
+      return {
+        ok: false,
+        statusCode: 401,
+        code: "invalid_admin_password",
+        message: "Incorrect password.",
+        // Internal only: refund this exact reservation after independently
+        // verifying an ordinary applicant password, never a failed login.
+        releaseApplicantAttempt() {
+          attempts = attempts.filter((attempt) => attempt !== reservation);
+        },
+      };
     },
   });
 }

@@ -208,6 +208,51 @@ export function mountRecruitmentRoutes(app, options) {
     }
     return next(error);
   });
+
+  app.post(["/api/recruitment/unlock", "/api/recruitment/applicant/unlock"], (req, res, next) => {
+    noStore(res);
+    if (adminPasswordHash && !req.is("application/json")) {
+      return res.status(415).json({ ok: false, code: "login_json_required", message: "Use a JSON login request." });
+    }
+    return next();
+  }, express.json({ limit: "1kb", strict: true }), asyncRoute(async (req, res) => {
+    const adminResult = await adminPasswordAuth.authenticate(req.body?.password);
+    if (adminResult.ok) {
+      establishReviewerSession(res);
+      return res.json({ ok: true, role: "reviewer", redirectTo: "/assessment" });
+    }
+
+    let result;
+    try {
+      // An exhausted admin budget must never prevent a genuine applicant from
+      // using their window password. All window checks remain in the service.
+      result = await service.unlockApplicant(req.body?.password);
+    } catch (error) {
+      if (adminResult.statusCode === 429) {
+        res.set("Retry-After", String(adminResult.retryAfterSeconds));
+        return res.status(429).json({ ok: false, code: "login_rate_limited", message: "Too many attempts. Please try again later." });
+      }
+      throw error;
+    }
+    adminResult.releaseApplicantAttempt?.();
+    const nowMs = Date.now();
+    res.set("Set-Cookie", serializeCookie(
+      APPLICANT_COOKIE_NAME,
+      cookieCodec.seal(result.sessionPayload),
+      {
+        secure: secureCookies,
+        expires: result.expiresAt,
+        maxAgeSeconds: Math.max(0, Math.floor((result.expiresAt.getTime() - nowMs) / 1000)),
+      },
+    ));
+    return res.json({ ok: true, unlocked: true, state: "open", cohort: result.cohort });
+  }), (error, _req, res, next) => {
+    if (error?.type === "entity.parse.failed" || error?.type === "entity.too.large") {
+      return res.status(error.type === "entity.too.large" ? 413 : 400)
+        .json({ ok: false, code: "invalid_login_request", message: "Invalid login request." });
+    }
+    return next(error);
+  });
   app.use("/api/recruitment", express.json({ limit: "32kb", strict: true }));
 
   const requireReviewer = (req, res, next) => {
@@ -262,22 +307,6 @@ export function mountRecruitmentRoutes(app, options) {
     }
     return res.json({ ok: true, ...result });
   });
-
-  app.post(["/api/recruitment/unlock", "/api/recruitment/applicant/unlock"], asyncRoute(async (req, res) => {
-    noStore(res);
-    const result = await service.unlockApplicant(req.body?.password);
-    const nowMs = Date.now();
-    res.set("Set-Cookie", serializeCookie(
-      APPLICANT_COOKIE_NAME,
-      cookieCodec.seal(result.sessionPayload),
-      {
-        secure: secureCookies,
-        expires: result.expiresAt,
-        maxAgeSeconds: Math.max(0, Math.floor((result.expiresAt.getTime() - nowMs) / 1000)),
-      },
-    ));
-    return res.json({ ok: true, unlocked: true, state: "open", cohort: result.cohort });
-  }));
 
   app.post(
     ["/api/recruitment/applications", "/api/recruitment/applicant/applications"],

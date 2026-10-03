@@ -96,9 +96,9 @@ export default function CoachPasswordGate({ onUnlocked }) {
 
   const unlock = async (event) => {
     event.preventDefault();
+    if (isUnlocking) return;
 
-    const cleanPassword = password.trim();
-    if (!cleanPassword) {
+    if (!password.trim()) {
       setPasswordError('Enter your application password.');
       return;
     }
@@ -113,14 +113,37 @@ export default function CoachPasswordGate({ onUnlocked }) {
       const response = await fetch('/api/recruitment/unlock', {
         method: 'POST',
         credentials: 'include',
+        cache: 'no-store',
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password: cleanPassword }),
+        body: JSON.stringify({ password }),
         signal: controller.signal,
       });
       const payload = await readJson(response);
+
+      if (payload.role === 'reviewer') {
+        if (response.ok && payload.ok === true && payload.redirectTo === '/assessment') {
+          setPassword('');
+          window.location.replace('/assessment');
+        } else {
+          setPasswordError('Application access could not be unlocked. Please try again.');
+        }
+        return;
+      }
+
+      if (response.status === 429) {
+        const retryAfter = Number(response.headers.get('Retry-After'));
+        const minutes = Math.ceil(retryAfter / 60);
+        setPasswordError(
+          Number.isFinite(retryAfter) && retryAfter > 0
+            ? `Too many attempts. Try again in ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}.`
+            : 'Too many attempts. Please try again later.',
+        );
+        return;
+      }
+
       const nextState = payloadState(payload);
 
       if (payload.code === 'cohort_not_open') {
@@ -172,25 +195,29 @@ export default function CoachPasswordGate({ onUnlocked }) {
     }
   };
 
-  const showsLogin = ['locked', 'not_open', 'closed', 'unavailable'].includes(gateState);
-  const canUnlock = gateState === 'locked';
+  const showsLogin = ['locked', 'not_open', 'closed', 'unavailable', 'error'].includes(gateState);
   const accessMessage =
-    gateState === 'unavailable'
+    gateState === 'error'
       ? {
-          title: 'Applications are not currently open',
-          copy: 'No application password is active. Use the timing and password in your LinkedIn invitation, then check again.',
+          title: 'We could not check application access',
+          copy: 'You can still try your password, or check again shortly.',
         }
-      : gateState === 'not_open'
+      : gateState === 'unavailable'
         ? {
-            title: 'This application window has not opened yet',
-            copy: 'Your application password will work when the application window opens.',
+            title: 'Applications are not currently open',
+            copy: 'No application password is active. Use the timing and password in your LinkedIn invitation, then check again.',
           }
-        : gateState === 'closed'
+        : gateState === 'not_open'
           ? {
-              title: 'This application window has closed',
-              copy: 'This application password is no longer active. Follow the timing in your LinkedIn invitation.',
+              title: 'This application window has not opened yet',
+              copy: 'Your application password will work when the application window opens.',
             }
-          : null;
+          : gateState === 'closed'
+            ? {
+                title: 'This application window has closed',
+                copy: 'This application password is no longer active. Follow the timing in your LinkedIn invitation.',
+              }
+            : null;
 
   return (
     <main className="coach-recruitment-ui coach-gate-shell">
@@ -218,7 +245,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
         )}
 
         {showsLogin && (
-          <form className="coach-gate-form" onSubmit={unlock} noValidate>
+          <form className="coach-gate-form" onSubmit={unlock} noValidate aria-busy={isUnlocking}>
             <span className="coach-gate-kicker">Legal Speaking Coach</span>
             <h1 id="coach-gate-title">Application login</h1>
             <p>
@@ -246,7 +273,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
                 }}
                 autoComplete="current-password"
                 maxLength="200"
-                disabled={!canUnlock || isUnlocking}
+                disabled={isUnlocking}
                 required
                 aria-invalid={Boolean(passwordError)}
                 aria-describedby={passwordError ? 'coach-password-error' : undefined}
@@ -261,44 +288,24 @@ export default function CoachPasswordGate({ onUnlocked }) {
             <button
               className="coach-control coach-primary-button coach-gate-submit"
               type="submit"
-              disabled={!canUnlock || isUnlocking}
+              disabled={isUnlocking}
             >
-              {isUnlocking
-                ? 'Unlocking…'
-                : gateState === 'unavailable'
-                  ? 'No active password'
-                  : gateState === 'not_open'
-                    ? 'Applications not open'
-                    : gateState === 'closed'
-                      ? 'Applications closed'
-                      : 'Continue'}
-              {canUnlock && !isUnlocking && <span aria-hidden="true">→</span>}
+              {isUnlocking ? 'Unlocking…' : 'Continue'}
+              {!isUnlocking && <span aria-hidden="true">→</span>}
             </button>
 
-            {!canUnlock && (
+            {gateState !== 'locked' && (
               <button
                 className="coach-control coach-secondary-button coach-gate-refresh"
                 type="button"
                 onClick={checkStatus}
+                disabled={isUnlocking}
               >
                 Check again
               </button>
             )}
 
           </form>
-        )}
-
-        {gateState === 'error' && (
-          <div className="coach-gate-state" role="status">
-            <span className="coach-gate-state-mark" aria-hidden="true">!</span>
-            <span className="coach-gate-kicker">Legal Speaking Coach</span>
-            <h1 id="coach-gate-title">We could not check application access</h1>
-            <p>No application details have been submitted. Check your connection and try again shortly.</p>
-            <button className="coach-control coach-secondary-button" type="button" onClick={checkStatus}>
-              Try again
-            </button>
-            <a className="coach-gate-home-link" href="/">Return to Patch</a>
-          </div>
         )}
       </section>
     </main>
