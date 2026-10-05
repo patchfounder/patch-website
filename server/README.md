@@ -48,8 +48,8 @@ Required for a real runtime:
 - `RECRUITMENT_PERSISTENCE_ACK`: production-only deployment gate. Set it to `website-volume-mounted` only after `/data` is verified as a persistent volume attached to the Website service. Never point it at or reuse a Patch OS volume.
 - `RECRUITMENT_COOKIE_SECRET`: at least 32 UTF-8 bytes, used to sign applicant and reviewer cookies.
 - `RECRUITMENT_REVIEWER_SECRET`: exactly 12 characters.
-- `RECRUITMENT_EMAIL_FROM`: verified Resend sender.
-- `RESEND_API_KEY`: Resend API key.
+- `RECRUITMENT_EMAIL_FROM`: verified Resend sender used for failed-application outcomes.
+- `RESEND_API_KEY`: Resend API key, retained for failed-application outcomes.
 
 Optional:
 
@@ -57,6 +57,8 @@ Optional:
 - `RECRUITMENT_BOOKING_URL` (defaults to `https://www.patch.app/coaching`)
 - `RECRUITMENT_REVIEWER_SESSION_MINUTES` (bounded to 5–60; default 20)
 - `RECRUITMENT_MAX_AUDIO_BYTES` (default 12 MiB)
+
+Pass invitations open as a prefilled draft in the reviewer’s default email application. The reviewer sends it there and then confirms **Confirm Sent** in the assessment page. The Website server does not send pass invitations; failed-application emails continue through Resend.
 
 The data root contains:
 
@@ -164,8 +166,7 @@ or:
 { "decision": "fail" }
 ```
 
-The first decision is immediate and irreversible. The same SQLite transaction sets `email_status=attempting`, records the attempt timestamp, and permanently raises `email_attempt_count` from 0 to 1. Exactly one `resend.emails.send()` call follows. Success or failure is recorded; there is no queue, cron, automatic retry, manual retry endpoint, or decision-change endpoint. A process interruption may leave `attempting`, which is intentionally never replayed.
-If the sender or API key is not configured at all, the decision is rejected before SQLite changes; a configured provider call that later fails is still the single final attempt.
+For a pass, clicking **Pass** opens a prefilled invitation draft in the reviewer’s default mail application. No decision is recorded until the reviewer sends the message and clicks **Confirm Sent**. That confirmation records the pass and the reviewer’s attestation; the server does not send an email. For a fail, the first decision is immediate and irreversible: the same SQLite transaction sets `email_status=attempting`, records the attempt timestamp, and permanently raises `email_attempt_count` from 0 to 1, then exactly one Resend send call follows. Its success or failure is recorded; there is no queue, cron, automatic retry, manual retry endpoint, or decision-change endpoint. A process interruption may leave `attempting`, which is intentionally never replayed. If Resend is not configured, a fail decision is rejected before SQLite changes.
 
 ## Application-window controls
 

@@ -272,7 +272,13 @@ export function createRecruitmentService(options = {}) {
   }
 
   function listPendingApplications(limit) {
-    return database.listPendingApplications(limit).map(reviewerApplication);
+    return database.listPendingApplications(limit).map((application) => {
+      const draft = emailSender.createPassEmailDraft?.(application);
+      return Object.freeze({
+        ...reviewerApplication(application),
+        ...(draft ? { passEmailDraft: draft } : {}),
+      });
+    });
   }
 
   function listProcessedApplications(limit) {
@@ -298,7 +304,7 @@ export function createRecruitmentService(options = {}) {
     if (!new Set(["pass", "fail"]).has(decision)) {
       throw new RecruitmentServiceError("Decision must be pass or fail.", "invalid_decision");
     }
-    if (emailSender.configured !== true) {
+    if (decision === "fail" && emailSender.configured !== true) {
       throw new RecruitmentServiceError(
         "Outcome email is not configured. No decision was recorded.",
         "outcome_email_not_configured",
@@ -311,16 +317,22 @@ export function createRecruitmentService(options = {}) {
       currentTime().toISOString(),
     );
 
-    // The database transition above irreversibly reserves the one allowed attempt.
-    // This provider call is intentionally never retried, including after failure.
     let delivery;
-    try {
-      delivery = await emailSender.sendOutcome(decided);
-    } catch (error) {
-      delivery = {
-        ok: false,
-        error: String(error?.message || error || "Outcome email failed.").slice(0, 1000),
-      };
+    if (decision === "pass") {
+      // Confirm Sent is a reviewer attestation; the prefilled mailto draft was not sent
+      // by this server, and Pass must never trigger a second message.
+      delivery = { ok: true, providerId: "manual-mailto" };
+    } else {
+      // The database transition above irreversibly reserves the one allowed attempt.
+      // This provider call is intentionally never retried, including after failure.
+      try {
+        delivery = await emailSender.sendOutcome(decided);
+      } catch (error) {
+        delivery = {
+          ok: false,
+          error: String(error?.message || error || "Outcome email failed.").slice(0, 1000),
+        };
+      }
     }
     const recorded = database.recordEmailResult(decided.applicationId, delivery);
     return {

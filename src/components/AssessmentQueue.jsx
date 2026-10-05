@@ -19,6 +19,17 @@ function getApplicationId(application) {
   return applicationValue(application, 'id', 'applicationId', 'application_id');
 }
 
+function passEmailDraftHref(draft) {
+  if (!draft || typeof draft !== 'object') return '';
+  const recipient = String(draft.to || '').trim();
+  const [localPart, domain, ...extra] = recipient.split('@');
+  if (!localPart || !domain || extra.length || /[\r\n\s]/.test(recipient)) return '';
+  const subject = String(draft.subject || '').trim();
+  const body = String(draft.body || '').trim();
+  if (!subject || !body) return '';
+  return `mailto:${encodeURIComponent(localPart)}@${encodeURIComponent(domain)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 function safeLinkedInUrl(value) {
   if (!value || typeof value !== 'string') return '';
   const trimmed = value.trim();
@@ -139,6 +150,24 @@ export default function AssessmentQueue({
     setPendingDecision(decision);
   };
 
+  const openPassEmailDraft = () => {
+    if (!canDecide || !id || isDeciding) return;
+    const mailto = passEmailDraftHref(application.passEmailDraft);
+    if (!mailto) {
+      setDecisionError('The Stage Two invitation draft could not be prepared. Nothing was changed.');
+      return;
+    }
+    decisionTriggerRef.current = 'pass';
+    setDecisionError('');
+    setPendingDecision('pass');
+    const link = document.createElement('a');
+    link.href = mailto;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+  };
+
   const closeConfirmation = () => {
     setPendingDecision('');
     setDecisionError('');
@@ -211,6 +240,11 @@ export default function AssessmentQueue({
 
         {canDecide && (!pendingDecision ? (
           <div className="assessment-decision-actions" aria-label={`Decision for ${name}`}>
+            {decisionError && (
+              <p className="assessment-confirmation-error" role="alert">
+                {decisionError}
+              </p>
+            )}
             <div>
               <button
                 className="assessment-button assessment-button-fail"
@@ -225,7 +259,7 @@ export default function AssessmentQueue({
                 className="assessment-button assessment-button-pass"
                 ref={passButtonRef}
                 type="button"
-                onClick={() => openConfirmation('pass')}
+                onClick={openPassEmailDraft}
                 disabled={isDeciding || !id}
               >
                 Pass
@@ -245,7 +279,7 @@ export default function AssessmentQueue({
             </h3>
             <p id={confirmationCopyId}>
               {pendingDecision === 'pass'
-                ? 'This irreversible decision will be recorded immediately and the Stage Two invitation will be sent.'
+                ? 'A pre-filled Stage Two invitation is ready in your email app. Send it, then return here and select Confirm Sent to record the pass.'
                 : 'This irreversible decision will be recorded immediately and the application outcome will be sent.'}
             </p>
             {decisionError && (
@@ -270,7 +304,7 @@ export default function AssessmentQueue({
               >
                 {isDeciding
                   ? 'Saving decision…'
-                  : `Confirm ${pendingDecision === 'pass' ? 'Pass' : 'Fail'}`}
+                  : pendingDecision === 'pass' ? 'Confirm Sent' : 'Confirm Fail'}
               </button>
             </div>
           </section>

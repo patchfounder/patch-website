@@ -14,7 +14,7 @@ function temporaryDataRoot(label) {
   return mkdtempSync(path.join(tmpdir(), `patch-website-${label}-`));
 }
 
-test("service preserves only current/previous cohorts and attempts each outcome email once", async () => {
+test("service preserves current/previous cohorts, records sent Pass confirmations, and sends Fail once", async () => {
   const dataRoot = temporaryDataRoot("recruitment-core");
   const storage = createRecruitmentStorage({ dataRoot, projectRoot: process.cwd() });
   storage.initialize();
@@ -24,11 +24,14 @@ test("service preserves only current/previous cohorts and attempts each outcome 
   let now = new Date("2026-08-31T12:00:00.000Z");
   const deliveries = [];
   const emailSender = {
-    configured: true,
+    configured: false,
+    createPassEmailDraft(application) {
+      return { to: application.email, subject: "Stage Two invitation", body: "Invitation body" };
+    },
     async sendOutcome(application) {
+      assert.equal(application.decision, "fail", "Pass must never invoke the server email sender");
       deliveries.push({ id: application.applicationId, decision: application.decision });
-      if (application.decision === "fail") throw new Error("provider rejected message");
-      return { ok: true, providerId: "resend-one" };
+      throw new Error("provider rejected message");
     },
   };
   const service = createRecruitmentService({ database, storage, emailSender, now: () => now });
@@ -106,17 +109,24 @@ test("service preserves only current/previous cohorts and attempts each outcome 
       service.listPendingApplications().map((application) => application.applicationId),
       [firstRecord.applicationId, secondRecord.applicationId],
     );
+    assert.deepEqual(service.listPendingApplications()[0].passEmailDraft, {
+      to: firstRecord.email,
+      subject: "Stage Two invitation",
+      body: "Invitation body",
+    });
     writeFileSync(path.join(storage.audioDirectory, "2026-09", "orphan.private"), "orphan");
 
     now = new Date("2026-09-15T10:02:00.000Z");
     const passed = await service.decideApplication(firstRecord.applicationId, "pass");
     assert.equal(passed.email.status, "sent");
+    assert.equal(passed.email.providerId, "manual-mailto");
     assert.equal(database.getApplication(firstRecord.applicationId).emailAttemptCount, 1);
+    emailSender.configured = true;
     await assert.rejects(
       service.decideApplication(firstRecord.applicationId, "fail"),
       (error) => error.code === "application_already_decided",
     );
-    assert.equal(deliveries.length, 1);
+    assert.equal(deliveries.length, 0, "Confirm Sent records the pass without sending from the server");
 
     now = new Date("2026-09-15T10:03:00.000Z");
     const failed = await service.decideApplication(secondRecord.applicationId, "fail");
@@ -126,7 +136,7 @@ test("service preserves only current/previous cohorts and attempts each outcome 
       service.decideApplication(secondRecord.applicationId, "fail"),
       (error) => error.code === "application_already_decided",
     );
-    assert.equal(deliveries.length, 2, "provider failures are never retried");
+    assert.equal(deliveries.length, 1, "provider failures are never retried");
     assert.deepEqual(
       service.listProcessedApplications().map((application) => application.applicationId),
       [secondRecord.applicationId, firstRecord.applicationId],
@@ -880,7 +890,7 @@ test("applicant unlock rechecks the active cohort after password verification", 
   }
 });
 
-test("a missing outcome-email configuration cannot consume a decision", async () => {
+test("a missing fail-email configuration cannot consume a decision", async () => {
   let decisionCalled = false;
   const service = createRecruitmentService({
     database: {
@@ -893,7 +903,7 @@ test("a missing outcome-email configuration cannot consume a decision", async ()
   });
 
   await assert.rejects(
-    service.decideApplication("application", "pass"),
+    service.decideApplication("application", "fail"),
     (error) => error.code === "outcome_email_not_configured" && error.statusCode === 503,
   );
   assert.equal(decisionCalled, false);
