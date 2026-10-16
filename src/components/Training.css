@@ -1,0 +1,362 @@
+.coach-training-page {
+  --training-accent: #007f93;
+  --training-muted: #657175;
+  --training-line: #dfe3e5;
+  --training-soft: #f4f6f6;
+  --training-soft-blue: #eef5f7;
+  min-height: 100vh;
+  background: var(--training-soft);
+  color: #000;
+  font: 400 16px/1.5 "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.coach-training-page *,
+.coach-training-page *::before,
+.coach-training-page *::after {
+  box-sizing: border-box;
+}
+
+.coach-training-page a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.coach-training-page h1,
+.coach-training-page h2,
+.coach-training-page h3,
+.coach-training-page p {
+  margin: 0;
+}
+
+.coach-training-page .coach-training-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.coach-training-page a:focus-visible {
+  outline: 3px solid rgba(0, 127, 147, .45);
+  outline-offset: 4px;
+}
+
+.coach-training-page .coach-training-header {
+  background: #fff;
+  border-bottom: 1px solid var(--training-line);
+}
+
+.coach-training-page .coach-training-header-inner {
+  width: min(1240px, 100%);
+  min-height: 82px;
+  margin: auto;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.coach-training-page .coach-training-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.coach-training-page .coach-training-brand img {
+  display: block;
+  width: 110px;
+  height: auto;
+}
+
+.coach-training-page .coach-training-header-caption {
+  color: var(--training-muted);
+  font-size: 13px;
+}
+
+.coach-training-page .coach-training-shell {
+  width: min(1128px, 100%);
+  margin: auto;
+  padding: 34px 16px 24px;
+}
+
+.coach-training-page .coach-training-intro {
+  margin-bottom: 26px;
+}
+
+.coach-training-page .coach-training-eyebrow {
+  color: var(--training-accent);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.coach-training-page h1 {
+  margin: 10px 0 13px;
+  font-size: clamp(32px, 8.8vw, 46px);
+  line-height: 1.12;
+  font-weight: 500;
+  letter-spacing: -.025em;
+}
+
+.coach-training-page .coach-training-intro-copy {
+  max-width: 630px;
+  color: var(--training-muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.coach-training-page .coach-training-card {
+  min-width: 0;
+  padding: 24px 20px;
+  background: #fff;
+  border: 1px solid var(--training-line);
+  border-radius: 22px;
+  box-shadow: 0 9px 34px rgba(8, 55, 93, .025);
+}
+
+.coach-training-page .coach-training-card + .coach-training-card {
+  margin-top: 22px;
+}
+
+.coach-training-page .coach-training-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.coach-training-page .coach-training-section-number {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  background: var(--training-soft-blue);
+  color: var(--training-accent);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.coach-training-page .coach-training-section-heading h2 {
+  font-size: 21px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -.015em;
+}
+
+.coach-training-page .coach-training-video-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid #d9e3e5;
+  border-radius: 12px;
+  background: #0b202b;
+}
+
+.coach-training-page .coach-training-video-frame iframe {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.coach-training-page .coach-training-video-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 14px;
+}
+
+.coach-training-page .coach-training-video-caption > p {
+  font-size: 13px;
+  color: var(--training-muted);
+}
+
+.coach-training-page .coach-training-text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--training-accent);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.coach-training-page .coach-training-text-link:hover {
+  color: #006b7c;
+}
+
+.coach-training-page .coach-training-text-link .coach-training-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.coach-training-page .coach-training-script-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.coach-training-page .coach-training-manual-preview {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 210px;
+  align-self: center;
+  padding: 15px 18px 11px;
+  background: #f1f5f5;
+  border: 1px solid #e1e7e8;
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+.coach-training-page .coach-training-manual-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 248 / 351;
+  object-fit: contain;
+  box-shadow: 0 3px 10px #12343b18;
+  background: #fff;
+}
+
+.coach-training-page .coach-training-manual-preview > span {
+  color: #6c7c80;
+  font-size: 10px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.coach-training-page .coach-training-script-details {
+  min-width: 0;
+  width: 100%;
+}
+
+.coach-training-page .coach-training-script-details h3 {
+  margin: 7px 0 5px;
+  font-size: 25px;
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -.02em;
+}
+
+.coach-training-page .coach-training-file-meta {
+  color: #7b888c;
+  font-size: 12px;
+}
+
+.coach-training-page .coach-training-script-description {
+  max-width: 470px;
+  margin-top: 18px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--training-muted);
+}
+
+.coach-training-page .coach-training-script-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-top: 25px;
+}
+
+.coach-training-page .coach-training-download {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  min-height: 54px;
+  width: 100%;
+  gap: 11px;
+  padding: 12px 22px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  color: #fff;
+  background: var(--training-accent);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.coach-training-page .coach-training-download:hover {
+  background: #006e80;
+}
+
+.coach-training-page .coach-training-download .coach-training-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.coach-training-page .coach-training-keep-handy {
+  max-width: 620px;
+  padding: 30px 12px 0;
+  margin: auto;
+  color: var(--training-muted);
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.65;
+}
+
+.coach-training-page .coach-training-footer {
+  margin-top: 34px;
+  padding-top: 22px;
+  border-top: 1px solid #e1e7e8;
+  color: #7a888c;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .1em;
+}
+
+@media (min-width: 600px) {
+  .coach-training-page .coach-training-header-inner { padding-inline: 30px; }
+  .coach-training-page .coach-training-shell { padding: 44px 28px 28px; }
+  .coach-training-page .coach-training-card { padding: 30px; border-radius: 24px; }
+  .coach-training-page .coach-training-section-heading { gap: 16px; margin-bottom: 25px; }
+  .coach-training-page .coach-training-section-number { width: 42px; height: 42px; flex-basis: 42px; }
+  .coach-training-page .coach-training-section-heading h2 { font-size: 24px; }
+  .coach-training-page .coach-training-video-caption { flex-direction: row; justify-content: space-between; align-items: center; gap: 20px; padding-top: 18px; }
+  .coach-training-page .coach-training-script-content { display: grid; grid-template-columns: 190px minmax(0, 1fr); align-items: center; gap: 30px; }
+  .coach-training-page .coach-training-manual-preview { max-width: none; }
+  .coach-training-page .coach-training-script-actions { align-items: flex-start; }
+  .coach-training-page .coach-training-script-actions .coach-training-download { width: auto; }
+}
+
+@media (min-width: 960px) {
+  .coach-training-page .coach-training-header-inner { min-height: 86px; padding-inline: 40px; }
+  .coach-training-page .coach-training-brand img { width: 118px; }
+  .coach-training-page .coach-training-header-caption { margin-right: auto; padding-left: 22px; border-left: 1px solid var(--training-line); font-size: 14px; }
+  .coach-training-page .coach-training-shell { padding-top: 48px; }
+  .coach-training-page .coach-training-intro { margin-bottom: 34px; }
+  .coach-training-page .coach-training-intro-copy { max-width: 650px; }
+  .coach-training-page .coach-training-card { padding: 32px; }
+  .coach-training-page .coach-training-card + .coach-training-card { margin-top: 28px; }
+  .coach-training-page .coach-training-script-content { grid-template-columns: 190px minmax(0, 1fr); gap: 38px; }
+  .coach-training-page .coach-training-script-details h3 { font-size: 30px; }
+  .coach-training-page .coach-training-script-description { max-width: 530px; }
+  .coach-training-page .coach-training-script-actions { flex-direction: row; align-items: center; gap: 25px; }
+  .coach-training-page .coach-training-keep-handy { padding-top: 34px; }
+  .coach-training-page .coach-training-footer { margin-top: 43px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-training-page *,
+  .coach-training-page *::before,
+  .coach-training-page *::after {
+    scroll-behavior: auto !important;
+  }
+}

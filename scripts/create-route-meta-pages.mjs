@@ -17,6 +17,12 @@ const routes = [
     description: 'Your Patch coaching link.',
   },
   {
+    path: 'training',
+    title: 'Patch Coach Training | Patch',
+    description: 'Watch the Patch Coach training video and download the Patch Call Process script.',
+    robots: 'noindex, nofollow',
+  },
+  {
     path: 'pre',
     title: 'Patch Pre-Masterclass',
     description: 'Prepare for your Patch pre-masterclass session.',

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="A design preview of the Patch Coach training page." />
+    <title>Your coach training · Patch — Design preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./training.css" />
+    <script src="./training.js" defer></script>
+  </head>
+  <body class="training-preview">
+    <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7" /></symbol>
+      <symbol id="download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" /></symbol>
+      <symbol id="external" viewBox="0 0 24 24"><path d="M14 4h6v6m0-6L9 15M10 4H4v16h16v-6" /></symbol>
+      <symbol id="close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6" /></symbol>
+      <symbol id="mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></symbol>
+      <symbol id="arrow-right" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6" /></symbol>
+    </svg>
+
+    <aside class="preview-toolbar" aria-label="Design preview controls">
+      <div class="preview-toolbar-inner">
+        <p><span class="preview-badge"><span></span> Design preview</span><span class="preview-explanation">No account created or email sent.</span></p>
+        <button type="button" class="preview-email-button" id="preview-email"><svg class="icon" aria-hidden="true"><use href="#mail" /></svg> Preview confirmation email</button>
+      </div>
+    </aside>
+
+    <header class="training-header">
+      <div class="header-inner">
+        <a href="#top" class="brand" aria-label="Patch, top of training page"><img src="../../public/patch-logo-2.png" alt="Patch" width="116" height="50" /></a>
+        <span class="header-caption">Coach training</span>
+      </div>
+    </header>
+
+    <main class="training-shell" id="top">
+      <div class="intro">
+        <div>
+          <p class="eyebrow">Patch coaching</p>
+          <h1>Your coach training.</h1>
+          <p class="intro-copy">Welcome to Patch. Before your first call, watch the training video and download your call script.</p>
+        </div>
+        <span class="account-ready"><svg class="icon" aria-hidden="true"><use href="#check" /></svg> Your account is ready</span>
+      </div>
+
+      <section class="training-card video-card" aria-labelledby="video-title">
+        <div class="section-heading"><span class="section-number" aria-hidden="true">01</span><h2 id="video-title">Watch the training video</h2></div>
+        <div class="video-frame">
+          <iframe src="https://www.youtube-nocookie.com/embed/KLXFHB4zVMI?rel=0" title="How to Deliver a Patch Call in 7 Steps" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+        <div class="video-caption"><p>How to Deliver a Patch Call in 7 Steps</p><a class="text-link" href="https://www.youtube.com/watch?v=KLXFHB4zVMI" target="_blank" rel="noopener noreferrer">Watch on YouTube <svg class="icon" aria-hidden="true"><use href="#external" /></svg></a></div>
+      </section>
+
+      <section class="training-card script-card" aria-labelledby="script-title">
+        <div class="section-heading"><span class="section-number" aria-hidden="true">02</span><h2 id="script-title">Download your call script</h2></div>
+        <div class="script-content">
+          <a href="./patch-call-process.pdf" class="manual-preview" target="_blank" rel="noopener" aria-label="Open the Patch Call Process PDF in a new tab"><img src="./manual-first-page.png" alt="Preview of the Patch Call Process script" width="248" height="351" loading="lazy" /><span>Patch Call Process</span></a>
+          <div class="script-details">
+            <p class="eyebrow">Your call manual</p>
+            <h3>Patch Call Process</h3>
+            <p class="file-meta">PDF · 1 page · 303 KB</p>
+            <p class="script-description">The step-by-step script for delivering a Patch Call, including the Patch audio recording.</p>
+            <div class="script-actions">
+              <a class="button button-primary" href="./patch-call-process.pdf" download="Patch Call Process.pdf"><svg class="icon" aria-hidden="true"><use href="#download" /></svg> Download call script</a>
+              <a class="text-link" href="./patch-call-process.pdf" target="_blank" rel="noopener">Open PDF <svg class="icon" aria-hidden="true"><use href="#external" /></svg></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p class="keep-handy">Keep this page handy. You can return to the video and script whenever you need them.</p>
+      <footer class="training-footer"><span>PATCH · COACH TRAINING</span><span>Training page design preview</span></footer>
+    </main>
+
+    <dialog class="email-dialog" id="email-dialog" aria-labelledby="email-preview-title">
+      <div class="email-dialog-header"><div><p class="eyebrow">Confirmation email preview</p><h2 id="email-preview-title">A welcome in their inbox.</h2></div><button type="button" class="close-button" id="close-email" aria-label="Close confirmation email preview"><svg class="icon" aria-hidden="true"><use href="#close" /></svg></button></div>
+      <dl class="email-metadata"><div><dt>To</dt><dd>[Coach email]</dd></div><div><dt>Subject</dt><dd>Your Patch Coach account has been created</dd></div></dl>
+      <div class="email-body">
+        <p>Hi [First name],</p>
+        <p>Your Patch Coach account has now been created.</p>
+        <p>Please review the training materials before your first Patch Call. Watch the training video and download the call script here:</p>
+        <p><a class="text-link email-training-link" href="#top">Open your training page <svg class="icon" aria-hidden="true"><use href="#arrow-right" /></svg></a></p>
+        <p>You can return to these materials whenever you need them.</p>
+        <p>Kind regards,</p>
+        <div class="email-signature">
+          <table role="presentation" data-patch-signature width="274" cellpadding="0" cellspacing="0" border="0" style="width:274px;max-width:100%;border-collapse:collapse;border-spacing:0;color:#666666;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:400;line-height:20px;">
+            <tr><td style="padding:0;color:#222222;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:400;line-height:20px;mso-line-height-rule:exactly;">Patrick Beattie</td></tr>
+            <tr><td style="padding:0;color:#666666;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:400;line-height:20px;mso-line-height-rule:exactly;">Founder | CEO</td></tr>
+            <tr><td height="8" style="height:8px;padding:0;font-size:0;line-height:8px;mso-line-height-rule:exactly;">&nbsp;</td></tr>
+            <tr><td style="padding:0;font-size:0;line-height:0;"><table role="presentation" width="240" cellpadding="0" cellspacing="0" border="0" style="width:240px;max-width:100%;border-collapse:collapse;"><tr><td style="height:0;padding:0;border-top:1px solid #00a5c0;font-size:0;line-height:0;mso-line-height-rule:exactly;"></td></tr></table></td></tr>
+            <tr><td height="8" style="height:8px;padding:0;font-size:0;line-height:8px;mso-line-height-rule:exactly;">&nbsp;</td></tr>
+            <tr><td style="padding:0;color:#666666;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:400;line-height:20px;mso-line-height-rule:exactly;">Patch App LLC<br />447 Broadway, 2nd Floor<br />New York, NY 10013, United States<br /><a href="tel:+19049837147" style="color:#666666;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:400;line-height:20px;text-decoration:none;">Mobile: +1 904 983 7147</a><br /><a href="https://www.patch.app" target="_blank" rel="noopener" style="color:#4053fc;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:400;line-height:20px;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;">www.patch.app</a></td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="email-preview-note"><p>Proposed training link:<br /><span>https://www.patch.app/coach-training/</span></p><p>This is an email preview. It has not been sent.</p></div>
+    </dialog>
+  </body>
+</html>
