@@ -340,3 +340,37 @@ test("vCard escapes structured text, folds UTF-8 by bytes, and has safe filename
   assert.match(card.filename, /^[a-zA-Z0-9-]+\.vcf$/);
   assert.equal(content.endsWith("END:VCARD\r\n"), true);
 });
+
+test("registration asks for WhatsApp with a country-neutral placeholder and consistent review wording", () => {
+  const html = readFileSync(new URL("../public/coach-registration/index.html", import.meta.url), "utf8");
+  const script = readFileSync(new URL("../public/coach-registration/registration.js", import.meta.url), "utf8");
+  assert.match(html, /WhatsApp number<input name="phone" id="phone"[^>]*type="tel"[^>]*placeholder="Please include the country code\."[^>]*required/);
+  const phoneInput = html.match(/<input\b[^>]*id="phone"[^>]*>/)?.[0];
+  assert.ok(phoneInput);
+  assert.doesNotMatch(phoneInput, /\bvalue=|\bpattern=|\+44/);
+  assert.match(html, /<span>WhatsApp<\/span><p id="contact-phone">Your WhatsApp number<\/p>/);
+  assert.match(script, /data\.phone \|\| 'Your WhatsApp number'/);
+  assert.match(script, /\['WhatsApp number', data\.phone\]/);
+  assert.doesNotMatch(html + script, /Mobile number|Your mobile number|<span>Mobile<\/span>/);
+});
+
+test("international WhatsApp numbers pass through unchanged to the profile, confirmation and VCF", async () => {
+  const f = await fixture();
+  try {
+    for (const phone of ["+1 202 555 0101", "+33 0 00 00 00 00", "+61 400 000 000"]) {
+      const before = f.backend.length;
+      const result = await f.submit(details({ phone }));
+      assert.equal(result.status, 200);
+      assert.equal(JSON.parse(f.backend[before][1].body).phone, phone);
+      const payload = f.email[before][0];
+      assert.ok(payload.text.includes(`WhatsApp number: ${phone}`));
+      assert.doesNotMatch(payload.text, /Mobile:/);
+      const card = Buffer.from(payload.attachments[0].content, "base64").toString("utf8").replace(/\r\n /g, "");
+      assert.ok(card.includes(`TEL;TYPE=CELL:${phone}\r\n`), "the existing VCF contract retains the supplied number");
+    }
+    const invalid = await f.submit(details({ phone: "" }));
+    assert.equal(invalid.status, 400);
+    assert.match(invalid.body.message, /WhatsApp number/);
+    assert.equal(f.backend.length, 3, "an invalid number never reaches the account endpoint");
+  } finally { await f.close(); }
+});

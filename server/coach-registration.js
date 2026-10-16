@@ -75,7 +75,7 @@ function normalizeRegistration(body, file) {
   const surname = textField(body.surname, "Surname", 120);
   const email = textField(body.email, "Email address", 254).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) invalid("Enter a valid email address.");
-  const phone = textField(body.phone, "Mobile number", 60);
+  const phone = textField(body.phone, "WhatsApp number", 60);
   let linkedin = textField(body.linkedin, "Profile URL", 2048);
   if (/^www\./i.test(linkedin)) linkedin = `https://${linkedin}`;
   try {
@@ -254,7 +254,7 @@ export function createCoachRegistrationRuntime(options = {}) {
       from, to: [RECIPIENT], subject: "New Patch Coach registration",
       text: [
         `${profile.firstName} ${profile.surname} has created a Patch Coach account.`,
-        "", `Coach ID: ${receipt.coach_id}`, `Email: ${profile.email}`, `Mobile: ${profile.phone}`, `Profile: ${profile.linkedin}`,
+        "", `Coach ID: ${receipt.coach_id}`, `Email: ${profile.email}`, `WhatsApp number: ${profile.phone}`, `Profile: ${profile.linkedin}`,
         "", "Weekly availability (Europe/London):", availabilityText,
         "", "The Apple-compatible contact card is attached. Any supplied photo is included only in that contact card, not the Patch profile.",
       ].join("\n"),

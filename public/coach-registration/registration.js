@@ -189,7 +189,7 @@
     const fullName = [data.firstName, data.surname].filter(Boolean).join(' ');
     document.querySelector('#contact-name').textContent = fullName || 'Your name';
     document.querySelector('#contact-email').textContent = data.email || 'Your email address';
-    document.querySelector('#contact-phone').textContent = data.phone || 'Your mobile number';
+    document.querySelector('#contact-phone').textContent = data.phone || 'Your WhatsApp number';
     document.querySelector('#contact-linkedin').textContent = data.linkedin || 'Your profile URL';
     const avatar = document.querySelector('#contact-avatar');
     const initials = [data.firstName, data.surname].filter(Boolean).map((part) => Array.from(part)[0]).join('').toUpperCase();
@@ -352,7 +352,7 @@
     [
       ['Full name', `${data.firstName} ${data.surname}`],
       ['Email address', data.email],
-      ['Mobile number', data.phone],
+      ['WhatsApp number', data.phone],
       ['LinkedIn profile URL', data.linkedin],
       ['Contact card photo', portraitUrl ? photoName : 'No photo selected'],
     ].forEach(([label, value]) => {
