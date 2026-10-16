@@ -19,7 +19,7 @@ function getApplicationId(application) {
   return applicationValue(application, 'id', 'applicationId', 'application_id');
 }
 
-function passEmailDraftHref(draft) {
+function emailDraftHref(draft) {
   if (!draft || typeof draft !== 'object') return '';
   const recipient = String(draft.to || '').trim();
   const [localPart, domain, ...extra] = recipient.split('@');
@@ -46,17 +46,22 @@ function safeLinkedInUrl(value) {
 export default function AssessmentQueue({
   application,
   onDecision,
+  onTeamDecision,
+  allowTeamDecision = false,
   isDeciding = false,
   readOnly = false,
   focusOnLoad = true,
 }) {
   const [pendingDecision, setPendingDecision] = useState('');
+  const [pendingTeamDecision, setPendingTeamDecision] = useState('');
   const [decisionError, setDecisionError] = useState('');
   const applicantHeadingRef = useRef(null);
   const confirmationHeadingRef = useRef(null);
   const decisionTriggerRef = useRef('');
   const failButtonRef = useRef(null);
   const passButtonRef = useRef(null);
+  const rejectButtonRef = useRef(null);
+  const inviteButtonRef = useRef(null);
   const id = getApplicationId(application);
   const cardId = useId();
   const applicantHeadingId = `${cardId}-applicant`;
@@ -67,18 +72,22 @@ export default function AssessmentQueue({
   const decision = applicationValue(application, 'decision');
   const hasDecision = decision === 'pass' || decision === 'fail';
   const canDecide = !readOnly && !hasDecision;
+  const teamDecision = applicationValue(application, 'teamDecision');
+  const canTeamDecide = !readOnly && allowTeamDecision && decision === 'pass' && !teamDecision;
+  const pendingAction = pendingTeamDecision || pendingDecision;
 
   useEffect(() => {
     setPendingDecision('');
+    setPendingTeamDecision('');
     setDecisionError('');
     if (application && canDecide && focusOnLoad) {
       applicantHeadingRef.current?.focus({ preventScroll: true });
     }
-  }, [id, canDecide, focusOnLoad]);
+  }, [id, canDecide, canTeamDecide, focusOnLoad]);
 
   useEffect(() => {
-    if (pendingDecision && canDecide) confirmationHeadingRef.current?.focus();
-  }, [pendingDecision, canDecide]);
+    if (pendingAction && (canDecide || canTeamDecide)) confirmationHeadingRef.current?.focus();
+  }, [pendingAction, canDecide, canTeamDecide]);
 
   if (!application) {
     return (
@@ -152,7 +161,7 @@ export default function AssessmentQueue({
 
   const openPassEmailDraft = () => {
     if (!canDecide || !id || isDeciding) return;
-    const mailto = passEmailDraftHref(application.passEmailDraft);
+    const mailto = emailDraftHref(application.passEmailDraft);
     if (!mailto) {
       setDecisionError('The Stage Two invitation draft could not be prepared. Nothing was changed.');
       return;
@@ -168,11 +177,46 @@ export default function AssessmentQueue({
     link.remove();
   };
 
+  const openTeamEmailDraft = (outcome) => {
+    if (!canTeamDecide || !id || isDeciding) return;
+    const mailto = emailDraftHref(application.teamEmailDrafts?.[outcome]);
+    if (!mailto) {
+      setDecisionError(`The ${outcome === 'invited' ? 'invitation' : 'rejection'} email draft could not be prepared. Nothing was changed.`);
+      return;
+    }
+    decisionTriggerRef.current = outcome;
+    setDecisionError('');
+    setPendingTeamDecision(outcome);
+    const link = document.createElement('a');
+    link.href = mailto;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+  };
+
+  const confirmTeamDecision = async () => {
+    if (!canTeamDecide || !id || !pendingTeamDecision || isDeciding || typeof onTeamDecision !== 'function') return;
+    setDecisionError('');
+    try {
+      await onTeamDecision(application, pendingTeamDecision);
+    } catch (error) {
+      setDecisionError(error?.message || 'The team decision could not be saved. Reload the page before trying again.');
+    }
+  };
+
   const closeConfirmation = () => {
     setPendingDecision('');
+    setPendingTeamDecision('');
     setDecisionError('');
     window.requestAnimationFrame(() => {
-      (decisionTriggerRef.current === 'pass' ? passButtonRef.current : failButtonRef.current)?.focus();
+      const trigger = {
+        pass: passButtonRef,
+        fail: failButtonRef,
+        rejected: rejectButtonRef,
+        invited: inviteButtonRef,
+      }[decisionTriggerRef.current];
+      trigger?.current?.focus();
     });
   };
 
@@ -189,8 +233,8 @@ export default function AssessmentQueue({
             </h2>
           </div>
           {hasDecision && (
-            <span className={`assessment-outcome-badge assessment-outcome-${decision}`}>
-              {decision === 'pass' ? 'Passed' : 'Failed'}
+            <span className={`assessment-outcome-badge assessment-outcome-${teamDecision || decision}`}>
+              {{ rejected: 'Rejected', invited: 'Invited' }[teamDecision] || (decision === 'pass' ? 'Passed' : 'Failed')}
             </span>
           )}
         </header>
@@ -207,7 +251,7 @@ export default function AssessmentQueue({
             <dd>
               {linkedInUrl ? (
                 <a href={linkedInUrl} target="_blank" rel="noreferrer">
-                  View profile <span aria-hidden="true">↗</span>
+                  {linkedInUrl}
                 </a>
               ) : (
                 'Profile unavailable'
@@ -305,6 +349,76 @@ export default function AssessmentQueue({
                 {isDeciding
                   ? 'Saving decision…'
                   : pendingDecision === 'pass' ? 'Confirm Sent' : 'Confirm Fail'}
+              </button>
+            </div>
+          </section>
+        ))}
+
+        {canTeamDecide && (!pendingTeamDecision ? (
+          <div className="assessment-decision-actions" aria-label={`Team decision for ${name}`}>
+            {decisionError && <p className="assessment-confirmation-error" role="alert">{decisionError}</p>}
+            <div>
+              <button
+                className="assessment-button assessment-button-fail"
+                ref={rejectButtonRef}
+                type="button"
+                onClick={() => openTeamEmailDraft('rejected')}
+                disabled={isDeciding || !id}
+              >
+                Reject
+              </button>
+              <button
+                className="assessment-button assessment-button-pass"
+                ref={inviteButtonRef}
+                type="button"
+                onClick={() => openTeamEmailDraft('invited')}
+                disabled={isDeciding || !id}
+              >
+                Invite
+              </button>
+            </div>
+          </div>
+        ) : (
+          <section
+            className={`assessment-confirmation assessment-confirmation-${pendingTeamDecision === 'invited' ? 'pass' : 'fail'}`}
+            role="alertdialog"
+            aria-labelledby={confirmationHeadingId}
+            aria-describedby={confirmationCopyId}
+          >
+            <p className="assessment-eyebrow">Email confirmation</p>
+            <h3 id={confirmationHeadingId} ref={confirmationHeadingRef} tabIndex="-1">
+              {pendingTeamDecision === 'invited' ? `Invite ${name}?` : `Reject ${name}?`}
+            </h3>
+            <p id={confirmationCopyId}>
+              A pre-filled {pendingTeamDecision === 'invited' ? 'invitation' : 'rejection'} is ready in your email app.
+              Send it, then return here and select Confirm Sent to move this card to {pendingTeamDecision === 'invited' ? 'Invited' : 'Rejected'}.
+              Opening the draft does not change the applicant’s status.
+            </p>
+            <button
+              className="assessment-email-reopen"
+              type="button"
+              onClick={() => openTeamEmailDraft(pendingTeamDecision)}
+              disabled={isDeciding}
+            >
+              Open email again
+            </button>
+            {decisionError && <p className="assessment-confirmation-error" role="alert">{decisionError}</p>}
+            <div className="assessment-confirmation-actions">
+              <button
+                className="assessment-button assessment-button-secondary"
+                type="button"
+                onClick={closeConfirmation}
+                disabled={isDeciding}
+              >
+                Cancel
+              </button>
+              <button
+                className={`assessment-button assessment-button-${pendingTeamDecision === 'invited' ? 'pass' : 'fail'}`}
+                type="button"
+                onClick={confirmTeamDecision}
+                disabled={isDeciding}
+              >
+                {isDeciding ? 'Saving decision…' : 'Confirm Sent'}
               </button>
             </div>
           </section>

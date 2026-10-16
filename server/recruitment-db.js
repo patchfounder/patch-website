@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 
-export const RECRUITMENT_SCHEMA_VERSION = 1;
+export const RECRUITMENT_SCHEMA_VERSION = 2;
 
 export class RecruitmentDatabaseError extends Error {
   constructor(message, code = "database_error", statusCode = 500) {
@@ -49,6 +49,8 @@ function applicationFromRow(row) {
     submittedAt: row.submitted_at,
     decision: row.decision || "pending",
     reviewedAt: row.reviewed_at || "",
+    teamDecision: row.team_decision || "",
+    teamDecidedAt: row.team_decided_at || "",
     emailStatus: row.email_status,
     emailAttemptedAt: row.email_attempted_at || "",
     emailAttemptCount: Number(row.email_attempt_count || 0),
@@ -101,7 +103,16 @@ export function createRecruitmentDatabase(options = {}) {
   database.exec("PRAGMA synchronous = FULL");
   database.exec("PRAGMA busy_timeout = 5000");
   database.exec("PRAGMA secure_delete = ON");
-  database.exec(`
+  const storedSchemaVersion = Number(database.prepare("PRAGMA user_version").get()?.user_version || 0);
+  if (storedSchemaVersion > RECRUITMENT_SCHEMA_VERSION) {
+    throw new RecruitmentDatabaseError(
+      "The recruitment database requires a newer Website release.",
+      "unsupported_recruitment_schema",
+      503,
+    );
+  }
+  transaction(database, () => {
+    database.exec(`
     CREATE TABLE IF NOT EXISTS recruitment_cohorts (
       cohort_id TEXT PRIMARY KEY NOT NULL,
       month_key TEXT NOT NULL UNIQUE,
@@ -134,6 +145,8 @@ export function createRecruitmentDatabase(options = {}) {
       submitted_at TEXT NOT NULL,
       decision TEXT CHECK (decision IN ('pass', 'fail') OR decision IS NULL),
       reviewed_at TEXT,
+      team_decision TEXT NOT NULL DEFAULT '' CHECK (team_decision IN ('', 'rejected', 'invited')),
+      team_decided_at TEXT,
       email_status TEXT NOT NULL DEFAULT 'not_attempted'
         CHECK (email_status IN ('not_attempted', 'attempting', 'sent', 'failed')),
       email_attempted_at TEXT,
@@ -146,8 +159,19 @@ export function createRecruitmentDatabase(options = {}) {
       ON recruitment_applications(submitted_at, application_id)
       WHERE decision IS NULL;
 
-    PRAGMA user_version = ${RECRUITMENT_SCHEMA_VERSION};
   `);
+    // Upgrade existing Website data in place: keep all original decisions, email
+    // metadata and audio references, and leave every old Pass awaiting a team decision.
+    const applicationColumns = new Set(database.prepare("PRAGMA table_info(recruitment_applications)")
+      .all().map((column) => column.name));
+    if (!applicationColumns.has("team_decision")) {
+      database.exec("ALTER TABLE recruitment_applications ADD COLUMN team_decision TEXT NOT NULL DEFAULT '' CHECK (team_decision IN ('', 'rejected', 'invited'))");
+    }
+    if (!applicationColumns.has("team_decided_at")) {
+      database.exec("ALTER TABLE recruitment_applications ADD COLUMN team_decided_at TEXT");
+    }
+    database.exec(`PRAGMA user_version = ${RECRUITMENT_SCHEMA_VERSION}`);
+  });
   for (const privatePath of [databasePath, `${databasePath}-wal`, `${databasePath}-shm`]) {
     if (!options.database && privatePath !== ":memory:" && existsSync(privatePath)) {
       chmodSync(privatePath, 0o600);
@@ -372,6 +396,7 @@ export function createRecruitmentDatabase(options = {}) {
       `).all(),
       applications: database.prepare(`
         SELECT application_id, cohort_id, audio_storage_key, decision, reviewed_at,
+          team_decision, team_decided_at,
           email_status, email_attempted_at, email_attempt_count, email_provider_id, email_error
         FROM recruitment_applications
         ORDER BY application_id
@@ -704,6 +729,48 @@ export function createRecruitmentDatabase(options = {}) {
     return getApplication(applicationId);
   }
 
+  function decideTeamApplication(applicationId, decision, decidedAt) {
+    if (decision !== "rejected" && decision !== "invited") {
+      throw new RecruitmentDatabaseError("Team decision must be rejected or invited.", "invalid_team_decision", 400);
+    }
+    return transaction(database, () => {
+      const existing = getApplication(applicationId);
+      if (!existing) {
+        throw new RecruitmentDatabaseError("Application not found.", "application_missing", 404);
+      }
+      if (existing.decision !== "pass") {
+        throw new RecruitmentDatabaseError(
+          "Only an application that passed Stage One can receive a team decision.",
+          "team_decision_requires_pass",
+          409,
+        );
+      }
+      // A repeated Confirm Sent request is safe, but cannot change the outcome.
+      if (existing.teamDecision === decision) return existing;
+      if (existing.teamDecision) {
+        throw new RecruitmentDatabaseError(
+          "This application already has a final team decision.",
+          "application_team_decision_conflict",
+          409,
+        );
+      }
+      const result = database.prepare(`
+        UPDATE recruitment_applications
+        SET team_decision = ?, team_decided_at = ?
+        WHERE application_id = ? AND decision = 'pass'
+          AND team_decision = '' AND team_decided_at IS NULL
+      `).run(decision, decidedAt, applicationId);
+      if (Number(result.changes) !== 1) {
+        throw new RecruitmentDatabaseError(
+          "The team decision changed. Reload and try again.",
+          "application_team_decision_conflict",
+          409,
+        );
+      }
+      return getApplication(applicationId);
+    });
+  }
+
   function healthCheck() {
     try {
       const result = database.prepare("PRAGMA quick_check").get();
@@ -741,6 +808,7 @@ export function createRecruitmentDatabase(options = {}) {
     listPendingApplications,
     listProcessedApplications,
     decideApplication,
+    decideTeamApplication,
     recordEmailResult,
     healthCheck,
     close,

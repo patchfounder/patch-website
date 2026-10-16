@@ -64,6 +64,8 @@ Optional:
 
 Pass invitations open as a prefilled draft in the reviewer’s default email application. The reviewer sends it there and then confirms **Confirm Sent** in the assessment page. The Website server does not send pass invitations; failed-application emails continue through Resend.
 
+Passed applicants have a separate final team decision. **Reject** and **Invite** open personalised drafts in the same mail application, without recording an outcome or sending through Resend. The drafts leave Patrick's configured mail-app signature in place and show the registration URL in full. Only **Confirm Sent** records the outcome and moves the card to **Rejected** or **Invited**. The summary navigation is Inbox / Pass / Fail / Rejected / Invited; hiding its Open/Close dates does not change applicant access timing.
+
 The data root contains:
 
 ```text
@@ -173,6 +175,18 @@ or:
 
 For a pass, clicking **Pass** opens a prefilled invitation draft in the reviewer’s default mail application. No decision is recorded until the reviewer sends the message and clicks **Confirm Sent**. That confirmation records the pass and the reviewer’s attestation; the server does not send an email. For a fail, the first decision is immediate and irreversible: the same SQLite transaction sets `email_status=attempting`, records the attempt timestamp, and permanently raises `email_attempt_count` from 0 to 1, then exactly one Resend send call follows. Its success or failure is recorded; there is no queue, cron, automatic retry, manual retry endpoint, or decision-change endpoint. A process interruption may leave `attempting`, which is intentionally never replayed. If Resend is not configured, a fail decision is rejected before SQLite changes.
 
+### `POST /api/recruitment/reviewer/applications/:applicationId/team-decision`
+
+Requires the reviewer cookie, same-origin `Origin`/fetch metadata and JSON:
+
+```json
+{ "decision": "invited", "confirmSent": true }
+```
+
+`decision` must be exactly `invited` or `rejected`. Only passed applicants can receive this final outcome. This is a manual-send attestation, not a delivery receipt: the Website cannot observe whether the mail application actually sent the draft. No email provider is invoked. Repeating the same confirmation is idempotent; attempting the opposite outcome returns a conflict. The original Stage One decision, email metadata and audio remain unchanged.
+
+Schema version 2 adds `team_decision` and `team_decided_at` transactionally without rebuilding existing tables. Existing Pass records remain undecided until explicitly confirmed. Reviewer history exposes `teamDecision`/`teamDecidedAt` and, only for passed applicants awaiting a team decision, `teamEmailDrafts.invited` and `.rejected`.
+
 ## Application-window controls
 
 ### `GET /api/recruitment/reviewer/cohorts`
@@ -203,7 +217,7 @@ The full purged window audio folders are first moved into private quarantine, in
 
 ### `DELETE /api/recruitment/reviewer/cohorts/:cohortId`
 
-Requires `{ "confirm": true }` targeting the exact active application window. This is a complete recruitment reset: it permanently removes all window records and all Inbox, Pass and Fail applications, including retained previous and legacy prepared windows. Applicant sessions immediately become invalid and applicant access closes. Creating a replacement window afterwards starts with no retained applications.
+Requires `{ "confirm": true }` targeting the exact active application window. This is a complete recruitment reset: it permanently removes all window records and all Inbox, Pass, Fail, Rejected and Invited applications, including retained previous and legacy prepared windows. Applicant sessions immediately become invalid and applicant access closes. Creating a replacement window afterwards starts with no retained applications.
 
 All known window recording folders are quarantined before the database transaction and restored if that transaction fails. After commit, the Website removes all private recruitment audio, staging and quarantine contents, including orphan files. The database uses secure deletion, is compacted, and its write-ahead journal is truncated. Only completed cleanup returns `deletionComplete: true`; a cleanup failure returns `503 recruitment_deletion_cleanup_failed` rather than reporting success. Retrying the same confirmed removal can finish cleanup when the entire recruitment database is already empty, but an old window ID can never delete a newly created or retained window.
 

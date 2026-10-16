@@ -408,6 +408,26 @@ export function mountRecruitmentRoutes(app, options) {
     return res.json({ ok: true, ...result });
   }));
 
+  app.post("/api/recruitment/reviewer/applications/:applicationId/team-decision", requireReviewer, asyncRoute(async (req, res) => {
+    noStore(res);
+    if (!req.is("application/json")) {
+      return res.status(415).json({ ok: false, code: "team_decision_json_required", message: "Use a JSON decision request." });
+    }
+    const expectedOrigin = `${secureCookies ? "https" : req.protocol}://${req.get("Host")}`;
+    if (
+      req.get("Origin") !== expectedOrigin
+      || (req.get("Sec-Fetch-Site") && req.get("Sec-Fetch-Site") !== "same-origin")
+    ) {
+      return res.status(403).json({
+        ok: false,
+        code: "team_decision_origin",
+        message: "Open the assessment page on the Patch website and try again.",
+      });
+    }
+    const result = await service.decideTeamApplication(req.params.applicationId, req.body?.decision, req.body?.confirmSent);
+    return res.json({ ok: true, ...result });
+  }));
+
   app.get("/api/recruitment/reviewer/cohorts", requireReviewer, (req, res) => {
     noStore(res);
     const controls = service.listCohortControls();

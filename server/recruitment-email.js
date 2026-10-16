@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 const DEFAULT_BOOKING_URL = "https://www.patch.app/coaching";
+const COACH_REGISTRATION_URL = "https://www.patch.app/coach-registration/";
 const EMAIL_TEXT_STYLE = "font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:400;line-height:20px;";
 const PATRICK_SIGNATURE_HTML = readFileSync(
   new URL("./patrick-email-signature.html", import.meta.url),
@@ -122,6 +123,47 @@ export function createRecruitmentEmailSender(options = {}) {
     });
   }
 
+  function createTeamEmailDraft(application, decision) {
+    const recipient = String(application?.email || "").trim();
+    if (!application || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) return null;
+    if (!["rejected", "invited"].includes(decision)) return null;
+    const name = firstName(application.fullName);
+    const paragraphs = decision === "invited"
+      ? [
+          `Dear ${name},`,
+          "I am pleased to invite you to join the team at Patch as a Legal Speaking Coach. We help lawyers who carry out global transactions develop a confident, professional speaking voice so that they can demonstrate excellence to their clients.",
+          "The six-month internship involves supporting lawyers in the role of Legal Speaking Coach. You will be trained to deliver specialist coaching using our exclusive system and work with legal professionals from firms including Ashurst, Pinsent Masons, Clifford Chance and Dentons.",
+          "You may use the following details when adding your new position to LinkedIn:",
+          [
+            "Title: Legal Speaking Coach",
+            "Employment type: Internship",
+            "Company name: Patch App",
+            "Location: London",
+            "Industry: E-learning",
+            "Description: Legal Speaking Coach at Patch App. We are an exclusive platform for lawyers, working with global law firms to deliver one-to-one speaking sessions.",
+          ].join("\n"),
+          `Important: Please complete your registration now:\n${COACH_REGISTRATION_URL}`,
+          "Once you have registered, please review the training video and download the Patch Call script before your first call.",
+          "I look forward to welcoming you to the team.",
+          "Kind regards,",
+        ]
+      : [
+          `Dear ${name},`,
+          "Thank you for your interest in the Legal Speaking Coach internship at Patch and for the time you have taken throughout the application process.",
+          "After careful consideration, I regret to inform you that you have not been selected to join the team on this occasion.",
+          "I appreciate your interest in Patch and wish you every success with your future endeavours.",
+          "Kind regards,",
+        ];
+    // Match the existing manual Pass workflow: the reviewer's mail application
+    // supplies Patrick's configured signature, avoiding a duplicated signature.
+    // All URLs in the plain-text draft remain fully visible, never masked labels.
+    return Object.freeze({
+      to: recipient,
+      subject: decision === "invited" ? "Your invitation to join Patch" : "Your Patch application",
+      body: paragraphs.join("\n\n"),
+    });
+  }
+
   async function sendOutcome(application) {
     if (!application || !["pass", "fail"].includes(application.decision)) {
       return { ok: false, error: "Application outcome is invalid." };
@@ -166,6 +208,7 @@ export function createRecruitmentEmailSender(options = {}) {
   return Object.freeze({
     configured: Boolean(from && (client || apiKey)),
     createPassEmailDraft,
+    createTeamEmailDraft,
     sendOutcome,
   });
 }

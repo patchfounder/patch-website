@@ -107,6 +107,8 @@ function reviewerApplication(application) {
     receivedAt: application.submittedAt,
     decision: application.decision,
     reviewedAt: application.reviewedAt,
+    teamDecision: application.teamDecision || "",
+    teamDecidedAt: application.teamDecidedAt || "",
     emailStatus: application.emailStatus,
     emailAttemptedAt: application.emailAttemptedAt,
     emailAttemptCount: application.emailAttemptCount,
@@ -282,7 +284,19 @@ export function createRecruitmentService(options = {}) {
   }
 
   function listProcessedApplications(limit) {
-    return database.listProcessedApplications(limit).map(reviewerApplication);
+    return database.listProcessedApplications(limit).map((application) => {
+      const createDraft = emailSender.createTeamEmailDraft;
+      const teamEmailDrafts = application.decision === "pass" && !application.teamDecision && typeof createDraft === "function"
+        ? {
+          rejected: createDraft(application, "rejected"),
+          invited: createDraft(application, "invited"),
+        }
+        : null;
+      return Object.freeze({
+        ...reviewerApplication(application),
+        ...(teamEmailDrafts ? { teamEmailDrafts } : {}),
+      });
+    });
   }
 
   function getReviewerAudio(applicationId) {
@@ -343,6 +357,25 @@ export function createRecruitmentService(options = {}) {
         error: recorded.emailError,
       },
     };
+  }
+
+  function decideTeamApplication(applicationId, decision, confirmSent) {
+    if (confirmSent !== true) {
+      throw new RecruitmentServiceError(
+        "Confirm that you have sent the email before recording this decision.",
+        "team_decision_confirmation_required",
+      );
+    }
+    if (decision !== "rejected" && decision !== "invited") {
+      throw new RecruitmentServiceError("Team decision must be rejected or invited.", "invalid_team_decision");
+    }
+    if (typeof applicationId !== "string" || !applicationId.trim()) {
+      throw new RecruitmentServiceError("Application not found.", "application_missing", 404);
+    }
+    // This records the reviewer's manual-send confirmation only. It must never
+    // call an email provider or mutate the original Stage One/email decision.
+    const recorded = database.decideTeamApplication(applicationId, decision, currentTime().toISOString());
+    return { application: reviewerApplication(recorded) };
   }
 
   async function prepareCohort(input) {
@@ -492,6 +525,7 @@ export function createRecruitmentService(options = {}) {
     listProcessedApplications,
     getReviewerAudio,
     decideApplication,
+    decideTeamApplication,
     createNextCohort,
     createAndActivateCohort,
     deleteCurrentCohort,

@@ -206,3 +206,40 @@ test("missing sender configuration reports failure without making a provider cal
   assert.equal(result.ok, false);
   assert.equal(calls, 0);
 });
+
+test("Invite and Reject create personalised manual drafts without sending or hiding the registration URL", () => {
+  let sends = 0;
+  const sender = createRecruitmentEmailSender({
+    apiKey: "", from: "",
+    client: { emails: { async send() { sends += 1; } } },
+  });
+  const application = { fullName: "Isabella Example", email: "isabella@example.com", decision: "pass" };
+  const invited = sender.createTeamEmailDraft(application, "invited");
+  assert.equal(invited.to, application.email);
+  assert.equal(invited.subject, "Your invitation to join Patch");
+  assert.match(invited.body, /^Dear Isabella,/);
+  assert.match(invited.body, /six-month internship/);
+  assert.match(invited.body, /Title: Legal Speaking Coach\nEmployment type: Internship/);
+  assert.match(invited.body, /Important: Please complete your registration now:\nhttps:\/\/www\.patch\.app\/coach-registration\//);
+  assert.equal(invited.body.match(/https:\/\/www\.patch\.app\/coach-registration\//g)?.length, 1);
+  assert.doesNotMatch(invited.body, /\[[^\]]+\]\(|<a\b|37%|ranked #1|top 8|Patrick Beattie|Founder \| CEO/);
+  assert.ok(invited.body.endsWith("Kind regards,"), "the mail application's configured signature is not duplicated");
+  const rejected = sender.createTeamEmailDraft(application, "rejected");
+  assert.equal(rejected.to, application.email);
+  assert.equal(rejected.subject, "Your Patch application");
+  assert.match(rejected.body, /^Dear Isabella,/);
+  assert.match(rejected.body, /not been selected to join the team/);
+  assert.doesNotMatch(rejected.body, /Stage One|Stage 1|interview|coach-registration/);
+  assert.ok(rejected.body.endsWith("Kind regards,"));
+  assert.equal(sends, 0);
+});
+
+test("team drafts reject invalid recipients and unsupported actions", () => {
+  const sender = createRecruitmentEmailSender({ apiKey: "", from: "" });
+  for (const email of ["", "not-an-email", "a@example.com\nBcc:other@example.com", "a@example.com other@example.com"]) {
+    assert.equal(sender.createTeamEmailDraft({ fullName: "Synthetic", email }, "invited"), null);
+  }
+  for (const decision of ["pass", "fail", "", null, {}, ["invited"]]) {
+    assert.equal(sender.createTeamEmailDraft({ email: "synthetic@example.com" }, decision), null);
+  }
+});

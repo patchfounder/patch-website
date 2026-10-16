@@ -5,7 +5,7 @@ import { applicationInputValue } from '../recruitment-time.js';
 import '../assessment.css';
 
 const REVIEWER_API = '/api/recruitment/reviewer';
-const ASSESSMENT_VIEWS = new Set(['inbox', 'pass', 'fail']);
+const ASSESSMENT_VIEWS = new Set(['inbox', 'pass', 'fail', 'rejected', 'invited']);
 
 function currentAssessmentView() {
   const view = window.location.hash.slice(1);
@@ -258,8 +258,10 @@ export default function Assessment() {
   );
 
   const outcomeLists = useMemo(() => ({
-    pass: reviewerState.history.filter((application) => application.decision === 'pass'),
+    pass: reviewerState.history.filter((application) => application.decision === 'pass' && !application.teamDecision),
     fail: reviewerState.history.filter((application) => application.decision === 'fail'),
+    rejected: reviewerState.history.filter((application) => application.teamDecision === 'rejected'),
+    invited: reviewerState.history.filter((application) => application.teamDecision === 'invited'),
   }), [reviewerState.history]);
 
   const handleDecision = async (application, decision) => {
@@ -335,6 +337,55 @@ export default function Assessment() {
       );
       if (refreshed?.authenticated && !stillWaiting) {
         setNotice('Decision recorded. The queue was refreshed before continuing.');
+        return;
+      }
+      throw error;
+    } finally {
+      setIsDeciding(false);
+    }
+  };
+
+  const handleTeamDecision = async (application, decision) => {
+    const id = applicationId(application);
+    if (!id || isDeciding || activeView !== 'pass' || application.decision !== 'pass'
+      || application.teamDecision || !['rejected', 'invited'].includes(decision)) return;
+
+    setIsDeciding(true);
+    setNotice('');
+    setPageError('');
+
+    try {
+      const result = await reviewerRequest(
+        `/applications/${encodeURIComponent(String(id))}/team-decision`,
+        { method: 'POST', body: { decision, confirmSent: true } },
+      );
+      if (String(applicationId(result?.application)) !== String(id)
+        || result.application.teamDecision !== decision) {
+        throw new Error('The saved outcome could not be confirmed. Reload the page before trying again.');
+      }
+      setReviewerState((state) => ({
+        ...state,
+        history: state.history.map((candidate) => (
+          String(applicationId(candidate)) === String(id)
+            ? { ...candidate, ...result.application }
+            : candidate
+        )),
+      }));
+      const refreshed = await loadReviewerState({ quiet: true });
+      setNotice(`${decision === 'invited' ? 'Invitation' : 'Rejection'} recorded. The card is now in ${decision === 'invited' ? 'Invited' : 'Rejected'}.${refreshed ? '' : ' Reload the page to refresh its latest counts.'}`);
+      window.requestAnimationFrame(() => document.querySelector('.assessment-outcome-link[aria-current="page"]')?.focus());
+    } catch (error) {
+      if (error?.status === 401 || error?.status === 403) {
+        invalidateReviewerSession();
+        return;
+      }
+      // Opening a draft never writes. After Confirm Sent, reconcile uncertain
+      // responses only against this exact applicant's persisted team outcome.
+      const refreshed = await loadReviewerState({ quiet: true });
+      const saved = refreshed?.history.find((candidate) => String(applicationId(candidate)) === String(id));
+      if (refreshed?.authenticated && saved?.teamDecision === decision) {
+        setNotice(`${decision === 'invited' ? 'Invitation' : 'Rejection'} recorded. The assessment was refreshed before continuing.`);
+        window.requestAnimationFrame(() => document.querySelector('.assessment-outcome-link[aria-current="page"]')?.focus());
         return;
       }
       throw error;
@@ -533,7 +584,13 @@ export default function Assessment() {
           showCreateForm={isWindowFormOpen}
           activeView={activeView}
           onViewChange={selectView}
-          viewCounts={{ inbox: waitingTotal, pass: outcomeLists.pass.length, fail: outcomeLists.fail.length }}
+          viewCounts={{
+            inbox: waitingTotal,
+            pass: outcomeLists.pass.length,
+            fail: outcomeLists.fail.length,
+            rejected: outcomeLists.rejected.length,
+            invited: outcomeLists.invited.length,
+          }}
           onCreate={handleCreateWindow}
           onRemove={handleRemoveWindow}
         />
@@ -557,17 +614,20 @@ export default function Assessment() {
         {!isWindowFormOpen && activeView !== 'inbox' && (
           <section
             className="assessment-outcome-list"
-            aria-label={activeView === 'pass' ? 'Passed voice notes' : 'Failed voice notes'}
+            aria-label={{ pass: 'Passed voice notes', fail: 'Failed voice notes', rejected: 'Rejected voice notes', invited: 'Invited voice notes' }[activeView]}
           >
             {outcomeLists[activeView].length ? outcomeLists[activeView].map((application) => (
               <AssessmentQueue
                 key={`${activeView}-${applicationId(application)}`}
                 application={application}
-                readOnly
+                readOnly={activeView !== 'pass'}
+                allowTeamDecision={activeView === 'pass'}
+                onTeamDecision={activeView === 'pass' ? handleTeamDecision : undefined}
+                isDeciding={isDeciding}
               />
             )) : (
               <div className="assessment-outcome-empty" role="status">
-                <p>{activeView === 'pass' ? 'No passed recordings yet.' : 'No failed recordings yet.'}</p>
+                <p>{{ pass: 'No passed recordings awaiting a team decision.', fail: 'No failed recordings yet.', rejected: 'No rejected applicants yet.', invited: 'No invited applicants yet.' }[activeView]}</p>
               </div>
             )}
           </section>

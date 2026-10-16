@@ -16,8 +16,8 @@ async function componentCode(filename) {
   })).code;
 }
 
-const [assessmentCode, queueCode] = await Promise.all([
-  componentCode('Assessment.jsx'), componentCode('AssessmentQueue.jsx'),
+const [assessmentCode, queueCode, cohortsCode] = await Promise.all([
+  componentCode('Assessment.jsx'), componentCode('AssessmentQueue.jsx'), componentCode('AssessmentCohorts.jsx'),
 ]);
 function QueuePlaceholder() {}
 function CohortsPlaceholder() {}
@@ -45,6 +45,7 @@ function harness(code, { state, view = 'inbox', fetch = async () => assert.fail(
   const id = ++nextHarnessId;
   const slots = [];
   const focusCalls = [];
+  const draftClicks = [];
   let cursor = 0;
   let effects = [];
   const hooks = {
@@ -95,11 +96,20 @@ function harness(code, { state, view = 'inbox', fetch = async () => assert.fail(
       return imports[name];
     },
     window: { location: { hash: `#${view}` }, requestAnimationFrame: (callback) => callback() },
+    document: {
+      createElement(type) {
+        assert.equal(type, 'a');
+        return { click() { draftClicks.push(this.href); }, remove() {} };
+      },
+      body: { append() {} },
+      querySelector() { return { focus() { focusCalls.push({ text: 'active navigation' }); } }; },
+    },
     fetch,
   };
   vm.runInNewContext(code, context);
   return {
     focusCalls,
+    draftClicks,
     render(props = {}, { runEffects = false } = {}) {
       cursor = 0;
       effects = [];
@@ -115,11 +125,15 @@ function harness(code, { state, view = 'inbox', fetch = async () => assert.fail(
   };
 }
 
-function applicant(id, minute, decision = 'pending') {
+function applicant(id, minute, decision = 'pending', teamDecision = '') {
   return {
     applicationId: id, fullName: `Synthetic ${id}`, email: `${minute}@example.com`,
     linkedinUrl: 'https://example.com/profile', audioDurationSeconds: 1,
-    submittedAt: `2026-10-03T12:0${minute}:00.000Z`, decision,
+    submittedAt: `2026-10-03T12:0${minute}:00.000Z`, decision, teamDecision,
+    teamEmailDrafts: {
+      rejected: { to: `${minute}@example.com`, subject: 'Your Patch application', body: `Dear Synthetic ${id},\n\nYou have not been selected to join Patch.\n\nPatrick` },
+      invited: { to: `${minute}@example.com`, subject: 'Welcome to Patch', body: `Dear Synthetic ${id},\n\nPlease register:\nhttps://www.patch.app/coach-registration/\n\nPatrick` },
+    },
   };
 }
 
@@ -134,7 +148,10 @@ function reviewerState() {
     current: oldest,
     queue: [newest, oldest, middle],
     pendingTotal: 3,
-    history: [applicant('passed-one', 4, 'pass'), applicant('failed-one', 5, 'fail'), applicant('passed-two', 6, 'pass')],
+    history: [
+      applicant('passed-one', 4, 'pass'), applicant('failed-one', 5, 'fail'), applicant('passed-two', 6, 'pass'),
+      applicant('rejected-one', 7, 'pass', 'rejected'), applicant('invited-one', 8, 'pass', 'invited'),
+    ],
   };
 }
 
@@ -174,8 +191,10 @@ test('an empty Inbox keeps the caught-up state and no-window view has no applica
   assert.equal(queueCards(harness(assessmentCode, { state: { ...state, currentCohort: null } }).render()).length, 0);
 });
 
-test('Pass and Fail keep all outcome cards read-only, without decision controls or autofocus', () => {
-  for (const [view, expectedIds] of [['pass', ['passed-one', 'passed-two']], ['fail', ['failed-one']]]) {
+test('Fail, Rejected and Invited are read-only playable archives without autofocus', () => {
+  for (const [view, expectedIds, badge] of [
+    ['fail', ['failed-one'], 'Failed'], ['rejected', ['rejected-one'], 'Rejected'], ['invited', ['invited-one'], 'Invited'],
+  ]) {
     const cards = queueCards(harness(assessmentCode, { state: reviewerState(), view }).render());
     assert.deepEqual(cards.map((card) => card.props.application.applicationId), expectedIds);
     for (const card of cards) {
@@ -184,12 +203,180 @@ test('Pass and Fail keep all outcome cards read-only, without decision controls 
       const cardHarness = harness(queueCode);
       const tree = cardHarness.render(card.props, { runEffects: true });
       assert.equal(decisionButtons(tree).length, 0);
+      assert.equal(nodes(tree, (node) => node.type === 'button' && ['Reject', 'Invite', 'Confirm Sent'].includes(textContent(node))).length, 0);
       assert.equal(nodes(tree, (node) => node.props.role === 'alertdialog').length, 0);
       assert.equal(nodes(tree, (node) => node.type === AudioPlaceholder).length, 1);
       assert.equal(cardHarness.focusCalls.length, 0);
-      assert.match(textContent(tree), view === 'pass' ? /Passed/ : /Failed/);
+      assert.ok(textContent(tree).includes(badge));
     }
   }
+});
+
+test('summary has five distinct counts and categories while retaining the window title without dates', () => {
+  const tree = harness(assessmentCode, { state: reviewerState() }).render();
+  const summary = nodes(tree, (node) => node.type === CohortsPlaceholder)[0];
+  assert.deepEqual({ ...summary.props.viewCounts }, { inbox: 3, pass: 2, fail: 1, rejected: 1, invited: 1 });
+  const cohort = harness(cohortsCode).render({
+    ...summary.props,
+    currentWindow: { id: 'window-one', opensAt: '2026-10-03T00:00:00+01:00', closesAt: '2026-11-01T00:00:00Z' },
+  });
+  assert.match(textContent(cohort), /Application WindowOctober 2026/);
+  assert.doesNotMatch(textContent(cohort), /Open|Close|3 Oct|31 Oct/);
+  const buttons = nodes(cohort, (node) => node.props.className === 'assessment-outcome-link');
+  assert.deepEqual(buttons.map(textContent), ['Inbox3', 'Pass2', 'Fail1', 'Rejected1', 'Invited1']);
+  assert.equal(buttons[0].props['aria-current'], 'page');
+  buttons[4].props.onClick();
+  const selected = nodes(harness(assessmentCode, { state: reviewerState(), view: 'invited' }).render(), (node) => node.type === CohortsPlaceholder)[0];
+  assert.equal(selected.props.activeView, 'invited');
+});
+
+test('Pass offers only Reject/Invite and shows the actual external profile URL', () => {
+  const cards = queueCards(harness(assessmentCode, { state: reviewerState(), view: 'pass' }).render());
+  assert.deepEqual(cards.map((card) => card.props.application.applicationId), ['passed-one', 'passed-two']);
+  for (const card of cards) {
+    assert.equal(card.props.allowTeamDecision, true);
+    assert.equal(typeof card.props.onTeamDecision, 'function');
+    const page = harness(queueCode);
+    const tree = page.render(card.props, { runEffects: true });
+    assert.equal(decisionButtons(tree).length, 0);
+    assert.equal(page.focusCalls.length, 0);
+    assert.deepEqual(nodes(tree, (node) => node.type === 'button').map(textContent), ['Reject', 'Invite']);
+    const profile = nodes(tree, (node) => node.type === 'a' && node.props.href === 'https://example.com/profile')[0];
+    assert.equal(textContent(profile), profile.props.href);
+  }
+});
+
+for (const [label, outcome] of [['Reject', 'rejected'], ['Invite', 'invited']]) {
+  test(`${label} opens the correct personalised draft with no write; Cancel restores that card button`, () => {
+    const page = harness(assessmentCode, { state: reviewerState(), view: 'pass' });
+    const target = queueCards(page.render())[1];
+    const card = harness(queueCode);
+    let tree = card.render(target.props, { runEffects: true });
+    nodes(tree, (node) => node.type === 'button' && textContent(node) === label)[0].props.onClick();
+    tree = card.render(target.props, { runEffects: true });
+    assert.equal(card.draftClicks.length, 1);
+    const draft = new URL(card.draftClicks[0]);
+    assert.equal(draft.protocol, 'mailto:');
+    assert.equal(decodeURIComponent(draft.pathname), target.props.application.email);
+    assert.equal(draft.searchParams.get('body'), target.props.application.teamEmailDrafts[outcome].body);
+    assert.match(textContent(tree), /Opening the draft does not change/);
+    assert.equal(nodes(tree, (node) => node.type === 'button' && textContent(node) === 'Confirm Sent').length, 1);
+    nodes(tree, (node) => node.type === 'button' && textContent(node) === 'Open email again')[0].props.onClick();
+    assert.equal(card.draftClicks.length, 2);
+    nodes(tree, (node) => node.type === 'button' && textContent(node) === 'Cancel')[0].props.onClick();
+    tree = card.render(target.props, { runEffects: true });
+    assert.equal(nodes(tree, (node) => node.props.role === 'alertdialog').length, 0);
+    assert.equal(card.focusCalls.at(-1).text, label);
+    assert.equal(queueCards(page.render()).length, 2);
+  });
+}
+
+test('a missing or unsafe draft never offers Confirm Sent or writes an outcome', () => {
+  for (const draft of [undefined, { to: 'test@example.com\r\nBcc:another@example.com', subject: 'Welcome', body: 'Hello' }]) {
+    const card = harness(queueCode);
+    const props = { application: { ...applicant('missing', 1, 'pass'), teamEmailDrafts: { invited: draft } }, allowTeamDecision: true };
+    let tree = card.render(props);
+    nodes(tree, (node) => node.type === 'button' && textContent(node) === 'Invite')[0].props.onClick();
+    tree = card.render(props);
+    assert.match(textContent(tree), /draft could not be prepared/);
+    assert.equal(card.draftClicks.length, 0);
+    assert.equal(nodes(tree, (node) => node.type === 'button' && textContent(node) === 'Confirm Sent').length, 0);
+  }
+});
+
+function jsonResponse(payload, status = 200) {
+  return { ok: status >= 200 && status < 300, status, headers: { get: () => 'application/json' }, json: async () => payload };
+}
+
+for (const [label, outcome] of [['Reject', 'rejected'], ['Invite', 'invited']]) {
+  test(`Confirm Sent for ${label} targets only that passed applicant and leaves Inbox/processed counts unchanged`, async () => {
+    const state = reviewerState();
+    const requests = [];
+    const page = harness(assessmentCode, {
+      state, view: 'pass',
+      async fetch(url, options) {
+        requests.push({ url, method: options.method || 'GET', body: options.body ? JSON.parse(options.body) : undefined });
+        if (options.method === 'POST') {
+          const target = state.history.find((entry) => entry.applicationId === 'passed-two');
+          target.teamDecision = outcome;
+          target.teamDecidedAt = '2026-10-16T06:00:00Z';
+          return jsonResponse({ application: target });
+        }
+        return jsonResponse(structuredClone(state));
+      },
+    });
+    const target = queueCards(page.render())[1];
+    const card = harness(queueCode);
+    let tree = card.render(target.props);
+    nodes(tree, (node) => node.type === 'button' && textContent(node) === label)[0].props.onClick();
+    assert.equal(requests.length, 0);
+    tree = card.render(target.props);
+    await nodes(tree, (node) => node.type === 'button' && textContent(node) === 'Confirm Sent')[0].props.onClick();
+    assert.deepEqual(requests[0], {
+      url: '/api/recruitment/reviewer/applications/passed-two/team-decision', method: 'POST', body: { decision: outcome, confirmSent: true },
+    });
+    assert.equal(requests.length, 2);
+    const updatedTree = page.render();
+    assert.deepEqual(queueCards(updatedTree).map((entry) => entry.props.application.applicationId), ['passed-one']);
+    const summary = nodes(updatedTree, (node) => node.type === CohortsPlaceholder)[0];
+    assert.equal(summary.props.viewCounts.inbox, 3);
+    assert.equal(summary.props.viewCounts.pass, 1);
+    assert.equal(summary.props.viewCounts[outcome], 2);
+    assert.equal(state.currentCohort.processedCount, 3);
+    assert.equal(state.currentCohort.pendingCount, 3);
+  });
+}
+
+test('uncertain team save moves the card only when reconciliation confirms the exact persisted outcome', async () => {
+  for (const savedOutcome of ['invited', '', 'rejected']) {
+    const state = reviewerState();
+    const page = harness(assessmentCode, {
+      state, view: 'pass',
+      async fetch(url, options) {
+        if (options.method === 'POST') {
+          state.history.find((entry) => entry.applicationId === 'passed-two').teamDecision = savedOutcome;
+          throw new Error('Connection interrupted');
+        }
+        return jsonResponse(structuredClone(state));
+      },
+    });
+    const target = queueCards(page.render())[1];
+    if (savedOutcome === 'invited') {
+      await target.props.onTeamDecision(target.props.application, 'invited');
+    } else {
+      await assert.rejects(target.props.onTeamDecision(target.props.application, 'invited'), /Connection interrupted/);
+    }
+    const ids = queueCards(page.render()).map((entry) => entry.props.application.applicationId);
+    assert.equal(ids.includes('passed-two'), !savedOutcome);
+  }
+});
+
+test('failed team save and failed reconciliation keep the card in Pass with a visible error', async () => {
+  const page = harness(assessmentCode, {
+    state: reviewerState(), view: 'pass',
+    fetch: async () => { throw new Error('Service unavailable'); },
+  });
+  const target = queueCards(page.render())[1];
+  const card = harness(queueCode);
+  let tree = card.render(target.props);
+  nodes(tree, (node) => node.type === 'button' && textContent(node) === 'Invite')[0].props.onClick();
+  tree = card.render(target.props);
+  await nodes(tree, (node) => node.type === 'button' && textContent(node) === 'Confirm Sent')[0].props.onClick();
+  tree = card.render(target.props);
+  assert.match(textContent(tree), /Service unavailable/);
+  assert.equal(queueCards(page.render()).length, 2);
+});
+
+test('an expired team-decision session returns to sign-in without moving a card locally', async () => {
+  let requestCount = 0;
+  const page = harness(assessmentCode, {
+    state: reviewerState(), view: 'pass',
+    fetch: async () => { requestCount += 1; return jsonResponse({ error: 'Session expired' }, 401); },
+  });
+  const target = queueCards(page.render())[0];
+  await target.props.onTeamDecision(target.props.application, 'invited');
+  assert.equal(requestCount, 1);
+  assert.equal(queueCards(page.render()).length, 0);
 });
 
 test('confirming a decision on a later Inbox card targets that applicant, not the first', async () => {

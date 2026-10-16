@@ -639,6 +639,24 @@
   margin-bottom: 14px;
 }
 
+.assessment-page .assessment-email-reopen {
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--assessment-turquoise);
+  font: inherit;
+  font-size: 0.88rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.assessment-email-reopen:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .assessment-empty {
   display: grid;
   min-height: 420px;
@@ -799,8 +817,8 @@
 
 .assessment-outcome-nav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
   min-width: 0;
 }
 
@@ -814,7 +832,7 @@
   min-height: 64px;
   align-content: center;
   gap: 5px;
-  padding: 10px 12px;
+  padding: 10px 4px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
@@ -825,7 +843,7 @@
 }
 
 .assessment-outcome-link span {
-  font-size: 0.82rem;
+  font-size: 0.7rem;
   font-weight: 500;
 }
 
@@ -886,12 +904,14 @@
   line-height: 1.2;
 }
 
-.assessment-outcome-pass {
+.assessment-outcome-pass,
+.assessment-outcome-invited {
   background: var(--assessment-success-soft);
   color: var(--assessment-success);
 }
 
-.assessment-outcome-fail {
+.assessment-outcome-fail,
+.assessment-outcome-rejected {
   background: var(--assessment-danger-soft);
   color: var(--assessment-danger);
 }
@@ -1255,6 +1275,19 @@
 }
 
 @media (min-width: 560px) {
+  .assessment-outcome-nav {
+    gap: 8px;
+  }
+
+  .assessment-page .assessment-outcome-link {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .assessment-outcome-link span {
+    font-size: 0.82rem;
+  }
+
   .assessment-shell {
     padding-right: max(24px, env(safe-area-inset-right));
     padding-left: max(24px, env(safe-area-inset-left));
@@ -1365,11 +1398,10 @@
 
   .assessment-current-cohort {
     grid-template-columns:
-      minmax(150px, 0.75fr)
-      minmax(240px, 1fr)
-      minmax(260px, 1.1fr)
+      minmax(180px, 0.7fr)
+      minmax(0, 1.8fr)
       44px;
-    grid-template-areas: "window-title window-dates window-counts window-remove";
+    grid-template-areas: "window-title window-counts window-remove";
     align-items: center;
     padding: 22px 24px;
   }

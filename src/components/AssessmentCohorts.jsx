@@ -3,8 +3,6 @@ import {
   applicationWindowTitle,
   applicationWindowSubmission,
   defaultApplicationWindow,
-  formatApplicationClosingDate,
-  formatApplicationDate,
 } from '../recruitment-time.js';
 
 function windowValue(applicationWindow, ...keys) {
@@ -25,7 +23,7 @@ export default function AssessmentCohorts({
   showCreateForm = false,
   activeView = 'inbox',
   onViewChange,
-  viewCounts = { inbox: 0, pass: 0, fail: 0 },
+  viewCounts = { inbox: 0, pass: 0, fail: 0, rejected: 0, invited: 0 },
   onCreate,
   onRemove,
 }) {
@@ -43,7 +41,6 @@ export default function AssessmentCohorts({
   const removeConfirmRef = useRef(null);
   const currentId = windowId(currentWindow);
   const opensAt = windowValue(currentWindow, 'opensAt', 'opens_at');
-  const closesAt = windowValue(currentWindow, 'closesAt', 'closes_at');
   const title = applicationWindowTitle(opensAt);
   const outcomeNavigation = (
     <nav
@@ -54,6 +51,8 @@ export default function AssessmentCohorts({
         ['inbox', 'Inbox'],
         ['pass', 'Pass'],
         ['fail', 'Fail'],
+        ['rejected', 'Rejected'],
+        ['invited', 'Invited'],
       ].map(([view, label]) => (
         <button
           className="assessment-outcome-link"
@@ -211,17 +210,6 @@ export default function AssessmentCohorts({
             </button>
           )}
 
-          <dl className="assessment-cohort-dates">
-            <div>
-              <dt>Open</dt>
-              <dd>{formatApplicationDate(opensAt)}</dd>
-            </div>
-            <div>
-              <dt>Close</dt>
-              <dd>{formatApplicationClosingDate(closesAt)}</dd>
-            </div>
-          </dl>
-
           {outcomeNavigation}
         </section>
       )}
@@ -249,7 +237,7 @@ export default function AssessmentCohorts({
           >
             <h2 id="assessment-remove-window-title">Remove application window?</h2>
             <p id="assessment-remove-window-message">
-              Remove the {title} window and permanently delete everything in Inbox, Pass and Fail,
+              Remove the {title} window and permanently delete everything in Inbox, Pass, Fail, Rejected and Invited,
               including earlier windows and all recordings? This cannot be undone.
             </p>
             {removeError && (
