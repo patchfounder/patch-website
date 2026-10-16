@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 
-export const RECRUITMENT_SCHEMA_VERSION = 2;
+export const RECRUITMENT_SCHEMA_VERSION = 3;
 
 export class RecruitmentDatabaseError extends Error {
   constructor(message, code = "database_error", statusCode = 500) {
@@ -22,6 +22,8 @@ function cohortFromRow(row) {
     slot: row.slot || "",
     opensAt: row.opens_at,
     closesAt: row.closes_at,
+    alwaysOpen: Number(row.always_open || 0) === 1,
+    passwordRevision: Number(row.password_revision || 0),
     passwordSalt: row.password_salt,
     passwordHash: row.password_hash,
     passwordParameters: row.password_parameters,
@@ -125,6 +127,8 @@ export function createRecruitmentDatabase(options = {}) {
       password_parameters TEXT NOT NULL,
       created_at TEXT NOT NULL,
       activated_at TEXT,
+      always_open INTEGER NOT NULL DEFAULT 0 CHECK (always_open IN (0, 1)),
+      password_revision INTEGER NOT NULL DEFAULT 0 CHECK (password_revision >= 0),
       CHECK (opens_at < closes_at)
     ) STRICT;
 
@@ -170,6 +174,19 @@ export function createRecruitmentDatabase(options = {}) {
     if (!applicationColumns.has("team_decided_at")) {
       database.exec("ALTER TABLE recruitment_applications ADD COLUMN team_decided_at TEXT");
     }
+    const cohortColumns = new Set(database.prepare("PRAGMA table_info(recruitment_cohorts)")
+      .all().map((column) => column.name));
+    if (!cohortColumns.has("always_open")) {
+      database.exec("ALTER TABLE recruitment_cohorts ADD COLUMN always_open INTEGER NOT NULL DEFAULT 0 CHECK (always_open IN (0, 1))");
+    }
+    if (!cohortColumns.has("password_revision")) {
+      database.exec("ALTER TABLE recruitment_cohorts ADD COLUMN password_revision INTEGER NOT NULL DEFAULT 0 CHECK (password_revision >= 0)");
+    }
+    if (storedSchemaVersion < 3) {
+      // Upgrade the existing intake in place. Keep its identity, password, original
+      // opening date, every application and private audio storage reference.
+      database.prepare("UPDATE recruitment_cohorts SET always_open = 1 WHERE slot = 'current'").run();
+    }
     database.exec(`PRAGMA user_version = ${RECRUITMENT_SCHEMA_VERSION}`);
   });
   for (const privatePath of [databasePath, `${databasePath}-wal`, `${databasePath}-shm`]) {
@@ -197,6 +214,37 @@ export function createRecruitmentDatabase(options = {}) {
 
   function getCohortBySlot(slot) {
     return cohortFromRow(database.prepare(`${cohortSelect} WHERE c.slot = ?`).get(slot));
+  }
+
+  function assertWindowControlsEnabled() {
+    if (getCohortBySlot("current")?.alwaysOpen) {
+      throw new RecruitmentDatabaseError(
+        "Applications are permanently open. Application-window controls are disabled.",
+        "ongoing_recruitment_window_disabled",
+        409,
+      );
+    }
+  }
+
+  function changeApplicantPassword(input) {
+    return transaction(database, () => {
+      const result = database.prepare(`
+        UPDATE recruitment_cohorts
+        SET password_salt = ?, password_hash = ?, password_parameters = ?,
+          password_revision = password_revision + 1
+        WHERE cohort_id = ? AND slot = 'current' AND always_open = 1
+          AND password_revision = ?
+      `).run(input.passwordSalt, input.passwordHash, input.passwordParameters,
+        input.cohortId, input.expectedRevision);
+      if (Number(result.changes) !== 1) {
+        throw new RecruitmentDatabaseError(
+          "The application password changed. Reload and try again.",
+          "applicant_password_conflict",
+          409,
+        );
+      }
+      return getCohortById(input.cohortId);
+    });
   }
 
   function listCohorts() {
@@ -229,6 +277,7 @@ export function createRecruitmentDatabase(options = {}) {
 
   function createNextCohort(input) {
     return transaction(database, () => {
+      assertWindowControlsEnabled();
       if (getCohortBySlot("next")) {
         throw new RecruitmentDatabaseError(
           "A prepared application window already exists.",
@@ -267,6 +316,7 @@ export function createRecruitmentDatabase(options = {}) {
   }
 
   function previewCreateAndActivate(preferredMonthKey) {
+    assertWindowControlsEnabled();
     const current = getCohortBySlot("current");
     const previous = getCohortBySlot("previous");
     if (current && Number(current.pendingCount) > 0) {
@@ -309,6 +359,7 @@ export function createRecruitmentDatabase(options = {}) {
 
   function createAndActivateCohort(preview, input) {
     return transaction(database, () => {
+      assertWindowControlsEnabled();
       if (JSON.stringify(cohortStateSnapshot()) !== JSON.stringify(preview.expectedState)) {
         throw new RecruitmentDatabaseError(
           "The application-window state changed. Reload and try again.",
@@ -405,6 +456,7 @@ export function createRecruitmentDatabase(options = {}) {
   }
 
   function previewDeleteCurrentCohort(expectedCohortId) {
+    assertWindowControlsEnabled();
     const targetId = String(expectedCohortId || "");
     const expectedState = deletionStateSnapshot();
     const current = getCohortBySlot("current");
@@ -450,6 +502,7 @@ export function createRecruitmentDatabase(options = {}) {
 
   function deleteCurrentCohort(preview) {
     return transaction(database, () => {
+      assertWindowControlsEnabled();
       if (JSON.stringify(deletionStateSnapshot()) !== JSON.stringify(preview.expectedState)) {
         throw new RecruitmentDatabaseError(
           "The application-window state changed. Reload and try again.",
@@ -543,6 +596,7 @@ export function createRecruitmentDatabase(options = {}) {
   }
 
   function previewActivateNext() {
+    assertWindowControlsEnabled();
     const next = getCohortBySlot("next");
     if (!next) {
       throw new RecruitmentDatabaseError(
@@ -577,6 +631,7 @@ export function createRecruitmentDatabase(options = {}) {
 
   function activateNext(preview, activatedAt) {
     return transaction(database, () => {
+      assertWindowControlsEnabled();
       const next = getCohortBySlot("next");
       const current = getCohortBySlot("current");
       const previous = getCohortBySlot("previous");
@@ -617,26 +672,35 @@ export function createRecruitmentDatabase(options = {}) {
   }
 
   function createApplication(input) {
-    const applicationId = randomUUID();
-    database.prepare(`
-      INSERT INTO recruitment_applications (
-        application_id, cohort_id, full_name, email, linkedin_url,
-        audio_storage_key, audio_mime_type, audio_file_size,
-        audio_duration_seconds, submitted_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      applicationId,
-      input.cohortId,
-      input.fullName,
-      input.email,
-      input.linkedinUrl,
-      input.audioStorageKey,
-      input.audioMimeType,
-      input.audioFileSize,
-      input.audioDurationSeconds,
-      input.submittedAt,
-    );
-    return getApplication(applicationId);
+    return transaction(database, () => {
+      if (input.expectedPasswordRevision !== undefined) {
+        const current = getCohortBySlot("current");
+        if (!current || current.cohortId !== input.cohortId
+          || current.passwordRevision !== input.expectedPasswordRevision) {
+          throw new RecruitmentDatabaseError("Application access has expired.", "applicant_session_expired", 401);
+        }
+      }
+      const applicationId = randomUUID();
+      database.prepare(`
+        INSERT INTO recruitment_applications (
+          application_id, cohort_id, full_name, email, linkedin_url,
+          audio_storage_key, audio_mime_type, audio_file_size,
+          audio_duration_seconds, submitted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        applicationId,
+        input.cohortId,
+        input.fullName,
+        input.email,
+        input.linkedinUrl,
+        input.audioStorageKey,
+        input.audioMimeType,
+        input.audioFileSize,
+        input.audioDurationSeconds,
+        input.submittedAt,
+      );
+      return getApplication(applicationId);
+    });
   }
 
   function getApplication(applicationId) {
@@ -795,6 +859,7 @@ export function createRecruitmentDatabase(options = {}) {
     listCohorts,
     listCohortMonthKeys,
     listAudioStorageKeys,
+    changeApplicantPassword,
     createNextCohort,
     previewCreateAndActivate,
     createAndActivateCohort,

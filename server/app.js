@@ -440,6 +440,23 @@ export function mountRecruitmentRoutes(app, options) {
     });
   });
 
+  app.put("/api/recruitment/reviewer/password", requireReviewer, asyncRoute(async (req, res) => {
+    noStore(res);
+    if (!req.is("application/json")) {
+      return res.status(415).json({ ok: false, code: "password_change_json_required", message: "Use a JSON password request." });
+    }
+    const expectedOrigin = `${secureCookies ? "https" : req.protocol}://${req.get("Host")}`;
+    if (req.get("Origin") !== expectedOrigin
+      || (req.get("Sec-Fetch-Site") && req.get("Sec-Fetch-Site") !== "same-origin")) {
+      return res.status(403).json({
+        ok: false,
+        code: "password_change_origin",
+        message: "Open the assessment page on the Patch website and try again.",
+      });
+    }
+    return res.json({ ok: true, ...await service.changeApplicantPassword(req.body || {}) });
+  }));
+
   app.post("/api/recruitment/reviewer/cohorts/next", requireReviewer, asyncRoute(async (req, res) => {
     noStore(res);
     const cohort = await service.createNextCohort(req.body || {});

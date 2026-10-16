@@ -81,6 +81,8 @@ function publicCohort(cohort, now) {
     active: cohort.slot === "current",
     opensAt: cohort.opensAt,
     closesAt: cohort.closesAt,
+    alwaysOpen: cohort.alwaysOpen === true,
+    passwordRevision: Number(cohort.passwordRevision || 0),
     state: cohortWindowState(cohort, now),
     applicationCount: cohort.applicationCount,
     pendingCount: cohort.pendingCount,
@@ -183,6 +185,7 @@ export function createRecruitmentService(options = {}) {
     if (
       !confirmedCohort
       || confirmedCohort.cohortId !== cohort.cohortId
+      || Number(confirmedCohort.passwordRevision || 0) !== Number(cohort.passwordRevision || 0)
       || cohortWindowState(confirmedCohort, currentTime()) !== "open"
     ) {
       throw new RecruitmentServiceError(
@@ -191,7 +194,9 @@ export function createRecruitmentService(options = {}) {
         403,
       );
     }
-    const expiresAt = new Date(confirmedCohort.closesAt);
+    const expiresAt = confirmedCohort.alwaysOpen
+      ? new Date(currentTime().getTime() + 24 * 60 * 60 * 1000)
+      : new Date(confirmedCohort.closesAt);
     return {
       cohort: publicCohort(confirmedCohort, instant),
       expiresAt,
@@ -199,6 +204,7 @@ export function createRecruitmentService(options = {}) {
         v: 1,
         kind: "applicant",
         cohortId: confirmedCohort.cohortId,
+        passwordRevision: Number(confirmedCohort.passwordRevision || 0),
         exp: Math.floor(expiresAt.getTime() / 1000),
       }),
     };
@@ -206,6 +212,7 @@ export function createRecruitmentService(options = {}) {
 
   function validateApplicantSession(payload, validationOptions = {}) {
     const instant = validationOptions.now || currentTime();
+    const passwordRevision = payload?.passwordRevision === undefined ? 0 : payload.passwordRevision;
     const fail = (message, code) => {
       if (validationOptions.throwOnFailure === false) return null;
       throw new RecruitmentServiceError(message, code, 401);
@@ -225,6 +232,8 @@ export function createRecruitmentService(options = {}) {
       !cohort
       || cohort.slot !== "current"
       || cohortWindowState(cohort, instant) !== "open"
+      || !Number.isSafeInteger(passwordRevision)
+      || passwordRevision !== Number(cohort.passwordRevision || 0)
     ) {
       return fail("Application access has expired.", "applicant_session_expired");
     }
@@ -246,6 +255,7 @@ export function createRecruitmentService(options = {}) {
     try {
       const application = database.createApplication({
         cohortId: session.cohort.cohortId,
+        expectedPasswordRevision: Number(session.cohort.passwordRevision || 0),
         fullName,
         email,
         linkedinUrl,
@@ -379,6 +389,7 @@ export function createRecruitmentService(options = {}) {
   }
 
   async function prepareCohort(input) {
+    assertWindowControlsEnabled();
     const opensAt = normalizeLondonTimestamp(input.opensAt);
     const closesAt = normalizeLondonTimestamp(input.closesAt);
     if (Date.parse(opensAt) >= Date.parse(closesAt)) {
@@ -403,12 +414,14 @@ export function createRecruitmentService(options = {}) {
 
   async function createNextCohort(input) {
     const prepared = await prepareCohort(input);
+    assertWindowControlsEnabled();
     const cohort = database.createNextCohort(prepared);
     return publicCohort(cohort, currentTime());
   }
 
   async function createAndActivateCohort(input) {
     const prepared = await prepareCohort(input);
+    assertWindowControlsEnabled();
     const preview = database.previewCreateAndActivate(prepared.monthKey);
     const quarantine = storage.quarantineCohorts(preview.purgeCohortMonths);
     let result;
@@ -433,6 +446,7 @@ export function createRecruitmentService(options = {}) {
   }
 
   function deleteCurrentCohort(expectedCohortId) {
+    assertWindowControlsEnabled();
     const preview = database.previewDeleteCurrentCohort(expectedCohortId);
     const quarantine = storage.quarantineCohorts(preview.monthKeys);
     let result;
@@ -462,6 +476,7 @@ export function createRecruitmentService(options = {}) {
   }
 
   function activateNextCohort(expectedCohortId = "") {
+    assertWindowControlsEnabled();
     const preview = database.previewActivateNext();
     if (expectedCohortId && preview.expectedNextId !== String(expectedCohortId)) {
       throw new RecruitmentServiceError(
@@ -505,6 +520,40 @@ export function createRecruitmentService(options = {}) {
     };
   }
 
+  function assertWindowControlsEnabled() {
+    if (database.getCohortBySlot("current")?.alwaysOpen) {
+      throw new RecruitmentServiceError(
+        "Applications are permanently open. Application-window controls are disabled.",
+        "ongoing_recruitment_window_disabled",
+        409,
+      );
+    }
+  }
+
+  async function changeApplicantPassword(input = {}) {
+    const cohortId = typeof input.cohortId === "string" ? input.cohortId.trim() : "";
+    const expectedRevision = input.expectedRevision;
+    if (!cohortId || !Number.isSafeInteger(expectedRevision) || expectedRevision < 0
+      || typeof input.password !== "string") {
+      throw new RecruitmentServiceError("Enter a new application password.", "invalid_applicant_password_change");
+    }
+    const current = database.getCohortBySlot("current");
+    if (!current?.alwaysOpen || current.cohortId !== cohortId || current.passwordRevision !== expectedRevision) {
+      throw new RecruitmentServiceError(
+        "The application password changed. Reload and try again.", "applicant_password_conflict", 409,
+      );
+    }
+    const password = await hashCohortPassword(input.password);
+    const updated = database.changeApplicantPassword({
+      cohortId,
+      expectedRevision,
+      passwordSalt: password.salt,
+      passwordHash: password.hash,
+      passwordParameters: password.parameters,
+    });
+    return { currentCohort: publicCohort(updated, currentTime()) };
+  }
+
   function healthCheck() {
     const databaseHealth = database.healthCheck();
     const storageHealth = storage.healthCheck();
@@ -531,6 +580,7 @@ export function createRecruitmentService(options = {}) {
     deleteCurrentCohort,
     activateNextCohort,
     listCohortControls,
+    changeApplicantPassword,
     healthCheck,
   });
 }

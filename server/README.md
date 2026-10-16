@@ -64,7 +64,9 @@ Optional:
 
 Pass invitations open as a prefilled draft in the reviewer’s default email application. The reviewer sends it there and then confirms **Confirm Sent** in the assessment page. The Website server does not send pass invitations; failed-application emails continue through Resend.
 
-Passed applicants have a separate final team decision. **Reject** and **Invite** open personalised drafts in the same mail application, without recording an outcome or sending through Resend. The drafts leave Patrick's configured mail-app signature in place and show the registration URL in full. Only **Confirm Sent** records the outcome and moves the card to **Rejected** or **Invited**. The summary navigation is Inbox / Pass / Fail / Rejected / Invited; hiding its Open/Close dates does not change applicant access timing.
+Passed applicants have a separate final team decision. **Reject** and **Invite** open personalised drafts in the same mail application, without recording an outcome or sending through Resend. The drafts leave Patrick's configured mail-app signature in place and show the registration URL in full. Only **Confirm Sent** records the outcome and moves the card to **Rejected** or **Invited**. The summary navigation is Inbox / Pass / Fail / Rejected / Invited.
+
+Recruitment is permanently open. Schema version 3 converts the existing current intake in place to `alwaysOpen`, preserving its ID, opening timestamp, password, every application/outcome and all audio references. The stored legacy closing date is retained for compatibility but no longer gates access. The assessment summary displays **Application Opened** and the original opening month. It has **Change Password**, with no plus, date, create, activate or remove controls. No monthly reset or scheduled password change occurs.
 
 The data root contains:
 
@@ -85,7 +87,7 @@ All responses are `private, no-store`.
 
 ### `GET /api/recruitment/status`
 
-Returns whether the browser holds a valid applicant cookie and the public application-window state: `unavailable`, `not_open`, `open`, or `closed`.
+Returns whether the browser holds a valid applicant cookie and the public intake state. An ongoing current intake always reports `open` regardless of its legacy dates. A missing intake reports `unavailable`; legacy dated fixtures retain `not_open`/`closed` for compatibility.
 
 `GET /api/recruitment/applicant/status` is an equivalent explicit alias.
 
@@ -97,7 +99,7 @@ JSON:
 { "password": "shared application password" }
 ```
 
-The application window must be open. Passwords are stored only as scrypt hashes with per-window random salts. Success sets a signed, `HttpOnly`, `SameSite=Strict` applicant cookie whose expiry is the window's `closesAt` instant. The password and cookie are reusable; duplicate applicant details and multiple submissions are deliberately permitted.
+Passwords are stored only as scrypt hashes with per-change random salts. Success sets a signed, `HttpOnly`, `SameSite=Strict` applicant cookie. For ongoing recruitment its lifetime is 24 hours from login, independent of the old closing date; a normal session expiry does not close applications and the applicant can log in again. Each session carries the password revision, so a manual password change invalidates older applicant sessions without affecting reviewer sessions. Old revision-zero cookies remain valid until their own expiry unless the password is changed. Duplicate applicant details and multiple submissions remain deliberately permitted.
 
 `POST /api/recruitment/applicant/unlock` is an equivalent alias.
 
@@ -111,7 +113,7 @@ The application window must be open. Passwords are stored only as scrypt hashes 
 - `audioDurationMs` (sent by the Website client for contract compatibility; never trusted for enforcement)
 - `audio` (one non-empty supported audio file)
 
-Accepted base MIME types: WebM, MP4/M4A, AAC, MPEG/MP3, OGG, and WAV. The server parses the uploaded audio container, stores its measured duration, rejects unreadable media, and enforces the 60-second maximum independently of client metadata. The applicant cookie must still be valid and its application window must still be open. Audio is kept in a private, server-assigned window folder and promoted from a private staging path before the SQLite application record is inserted; a database failure removes the promoted file.
+Accepted base MIME types: WebM, MP4/M4A, AAC, MPEG/MP3, OGG, and WAV. The server parses the uploaded audio container, stores its measured duration, rejects unreadable media, and enforces the 60-second maximum independently of client metadata. The applicant cookie must still be valid for the current intake and its current password revision. Audio is kept in the existing private, server-assigned storage folder and promoted from a private staging path before the SQLite application record is inserted; a database failure removes the promoted file.
 
 `POST /api/recruitment/applicant/applications` is an equivalent alias.
 
@@ -187,11 +189,25 @@ Requires the reviewer cookie, same-origin `Origin`/fetch metadata and JSON:
 
 Schema version 2 adds `team_decision` and `team_decided_at` transactionally without rebuilding existing tables. Existing Pass records remain undecided until explicitly confirmed. Reviewer history exposes `teamDecision`/`teamDecidedAt` and, only for passed applicants awaiting a team decision, `teamEmailDrafts.invited` and `.rejected`.
 
-## Application-window controls
+## Ongoing recruitment and manual password changes
+
+### `PUT /api/recruitment/reviewer/password`
+
+Requires the reviewer cookie, same-origin request metadata and JSON:
+
+```json
+{ "cohortId": "current-intake-id", "expectedRevision": 0, "password": "new shared password" }
+```
+
+The service hashes the new password, then atomically replaces only the current ongoing intake's credential when its ID and revision still match. Success increments the revision and returns `{ "ok": true, "currentCohort": ... }`, never the password or its hash. A stale or concurrent change returns a conflict. This operation does not create or rotate an intake, change its opening date, delete recordings, reset counts, change outcomes or affect reviewer authentication. The password field is blank each time the form opens and is cleared on success or cancellation.
+
+## Legacy application-window controls
+
+The routes below are retained for dated fixtures and compatibility only. When the current intake is ongoing, create/prepare/activate/remove operations return `409 ongoing_recruitment_window_disabled` before any database transition or audio quarantine. A stale browser tab therefore cannot replace or erase the ongoing intake.
 
 ### `GET /api/recruitment/reviewer/cohorts`
 
-Returns the active and retained internal window summaries and application/pending counts. The route and response property names retain their original `cohort` terminology for API and stored-data compatibility; the reviewer interface presents one application window and does not expose those internal labels.
+Returns the active and retained internal intake summaries and application/pending counts, including `alwaysOpen` and `passwordRevision`. The route and response property names retain their original `cohort` terminology for API and stored-data compatibility; the reviewer interface does not expose those internal labels.
 
 ### `POST /api/recruitment/reviewer/cohorts`
 
@@ -207,7 +223,7 @@ JSON:
 
 Local timestamps without offsets are interpreted as UK time in `Europe/London`, including automatic GMT/BST handling. A missing or ambiguous clock-change time is rejected, and accepted values are stored as UTC ISO strings. An explicit RFC 3339 offset is also accepted. The server derives the visible month-and-year title solely from the opening instant in UK time; client-supplied `slug`, `monthKey`, or `displayName` values are ignored.
 
-The reviewer form displays only date pickers labelled **Open** and **Close**, under **Open Application Window**, with an **Open** button. No time or timezone control is shown. The UI submits midnight at the start of the selected Open date and midnight immediately after the selected Close date, so the whole Close day is included. Same-day windows are allowed. The summary displays the selected inclusive dates, and success messages say **Application window open.** Existing stored windows are not changed.
+The former date-based creation form has been removed from the reviewer interface. Legacy date-only payloads still include the whole selected Close day, and same-day dated fixtures are allowed. The ongoing intake is not replaced through this endpoint.
 
 Applicant access is available from `opensAt` inclusive until `closesAt` exclusive, and the shared password is invalid outside that exact window. This endpoint creates and activates the application window in one database transaction: the old active window becomes the retained previous window, older retained data and any legacy prepared window are removed, and no draft remains if the operation fails. Creation is rejected while the active window still has applications waiting for a decision.
 
@@ -235,7 +251,7 @@ Requires `{ "confirm": true }` and only activates the prepared `next` cohort.
 `POST /api/recruitment/reviewer/cohorts/activate-next` remains as an internal alias and
 requires the same confirmation.
 
-These legacy activation routes move `next` to `current`, move the old `current` to `previous`, and explicitly delete every older cohort. They remain available for compatibility but are not used by the reviewer UI.
+For dated fixtures, these legacy activation routes move `next` to `current`, move the old `current` to `previous`, and explicitly delete every older cohort. They are not used by the reviewer UI and are blocked while ongoing recruitment is active.
 
 ## Health and static hooks
 

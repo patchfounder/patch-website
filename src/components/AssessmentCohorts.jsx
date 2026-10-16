@@ -1,298 +1,153 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  applicationWindowTitle,
-  applicationWindowSubmission,
-  defaultApplicationWindow,
-} from '../recruitment-time.js';
+import { applicationWindowTitle } from '../recruitment-time.js';
 
-function windowValue(applicationWindow, ...keys) {
+function cohortValue(cohort, ...keys) {
   for (const key of keys) {
-    if (applicationWindow?.[key] !== undefined && applicationWindow?.[key] !== null) {
-      return applicationWindow[key];
-    }
+    if (cohort?.[key] !== undefined && cohort?.[key] !== null) return cohort[key];
   }
   return '';
 }
 
-function windowId(applicationWindow) {
-  return windowValue(applicationWindow, 'id', 'cohortId', 'cohort_id');
-}
-
 export default function AssessmentCohorts({
   currentWindow,
-  showCreateForm = false,
   activeView = 'inbox',
   onViewChange,
   viewCounts = { inbox: 0, pass: 0, fail: 0, rejected: 0, invited: 0 },
-  onCreate,
-  onRemove,
+  onChangePassword,
 }) {
-  const [form, setForm] = useState(() => defaultApplicationWindow());
-  const [formError, setFormError] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [removeOpen, setRemoveOpen] = useState(false);
-  const [removeError, setRemoveError] = useState('');
-  const [isRemoving, setIsRemoving] = useState(false);
-  const createHeadingRef = useRef(null);
-  const removeTriggerRef = useRef(null);
-  const removeDialogRef = useRef(null);
-  const removeCancelRef = useRef(null);
-  const removeConfirmRef = useRef(null);
-  const currentId = windowId(currentWindow);
-  const opensAt = windowValue(currentWindow, 'opensAt', 'opens_at');
-  const title = applicationWindowTitle(opensAt);
-  const outcomeNavigation = (
-    <nav
-      className={`assessment-outcome-nav${currentWindow ? '' : ' assessment-outcome-nav-standalone'}`}
-      aria-label="Assessment views"
-    >
-      {[
-        ['inbox', 'Inbox'],
-        ['pass', 'Pass'],
-        ['fail', 'Fail'],
-        ['rejected', 'Rejected'],
-        ['invited', 'Invited'],
-      ].map(([view, label]) => (
-        <button
-          className="assessment-outcome-link"
-          type="button"
-          key={view}
-          aria-current={activeView === view ? 'page' : undefined}
-          onClick={() => onViewChange?.(view)}
-        >
-          <span>{label}</span>
-          <strong>{viewCounts[view] ?? 0}</strong>
-        </button>
-      ))}
-    </nav>
-  );
+  const [formError, setFormError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const passwordTriggerRef = useRef(null);
+  const passwordInputRef = useRef(null);
+  const currentId = cohortValue(currentWindow, 'id', 'cohortId', 'cohort_id');
+  const openedMonth = applicationWindowTitle(cohortValue(currentWindow, 'opensAt', 'opens_at'), 'Not set');
 
-  useEffect(() => {
-    if (!showCreateForm) return;
-    setForm(defaultApplicationWindow());
-    setFormError('');
+  const clearForm = () => {
+    setFormOpen(false);
+    setPassword('');
     setPasswordVisible(false);
-    createHeadingRef.current?.focus({ preventScroll: true });
-  }, [showCreateForm]);
-
-  useEffect(() => {
-    if (!removeOpen) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    removeCancelRef.current?.focus();
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.requestAnimationFrame(() => removeTriggerRef.current?.focus());
-    };
-  }, [removeOpen]);
-
-  useEffect(() => {
-    if (!removeOpen) return;
-    (isRemoving ? removeDialogRef : removeCancelRef).current?.focus();
-  }, [removeOpen, isRemoving]);
-
-  useEffect(() => {
-    setRemoveOpen(false);
-    setRemoveError('');
-  }, [currentId]);
-
-  const updateField = (event) => {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
     setFormError('');
   };
 
-  const submitWindow = async (event) => {
+  useEffect(() => {
+    clearForm();
+  }, [currentId, activeView]);
+
+  useEffect(() => {
+    if (formOpen) passwordInputRef.current?.focus({ preventScroll: true });
+  }, [formOpen]);
+
+  const closeForm = () => {
+    if (isSaving) return;
+    clearForm();
+    window.requestAnimationFrame(() => passwordTriggerRef.current?.focus());
+  };
+
+  const submitPassword = async (event) => {
     event.preventDefault();
-    if (isCreating) return;
-
+    if (isSaving || !currentId) return;
+    if (!password) {
+      setFormError('Enter a new application password.');
+      passwordInputRef.current?.focus();
+      return;
+    }
     setFormError('');
-    if (!form.password || !form.opensAt || !form.closesAt) {
-      setFormError('Complete every field before opening the application window.');
-      return;
-    }
-
-    setIsCreating(true);
+    setIsSaving(true);
     try {
-      await onCreate(applicationWindowSubmission(form));
-      setForm(defaultApplicationWindow());
-      setPasswordVisible(false);
-      window.requestAnimationFrame(() => document.querySelector('.assessment-add-window')?.focus());
-    } catch (requestError) {
-      setFormError(requestError?.message || 'The application window could not be opened.');
+      await onChangePassword(password);
+      clearForm();
+      window.requestAnimationFrame(() => passwordTriggerRef.current?.focus());
+    } catch (error) {
+      setFormError(error?.message || 'The application password could not be updated.');
     } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const removeWindow = async () => {
-    if (!currentId || isRemoving) return;
-
-    setRemoveError('');
-    setIsRemoving(true);
-    try {
-      await onRemove(currentId);
-      setRemoveOpen(false);
-      window.requestAnimationFrame(() => document.querySelector('.assessment-add-window')?.focus());
-    } catch (requestError) {
-      setRemoveError(requestError?.message || 'The application window could not be removed.');
-    } finally {
-      setIsRemoving(false);
-    }
-  };
-
-  const cancelRemove = () => {
-    if (isRemoving) return;
-    setRemoveOpen(false);
-    setRemoveError('');
-  };
-
-  const handleRemoveDialogKeyDown = (event) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      cancelRemove();
-      return;
-    }
-    if (event.key !== 'Tab') return;
-
-    const dialog = removeDialogRef.current;
-    const focusableButtons = [removeCancelRef.current, removeConfirmRef.current].filter(
-      (button) => button && !button.disabled,
-    );
-    if (!focusableButtons.length) {
-      event.preventDefault();
-      dialog?.focus();
-      return;
-    }
-
-    const firstButton = focusableButtons[0];
-    const lastButton = focusableButtons[focusableButtons.length - 1];
-    const activeElement = document.activeElement;
-    if (event.shiftKey && (activeElement === firstButton || !dialog?.contains(activeElement))) {
-      event.preventDefault();
-      lastButton.focus();
-    } else if (!event.shiftKey && (activeElement === lastButton || !dialog?.contains(activeElement))) {
-      event.preventDefault();
-      firstButton.focus();
+      setIsSaving(false);
     }
   };
 
   return (
     <div className="assessment-cohorts">
-      {currentWindow && !showCreateForm && (
-        <section className="assessment-current-cohort" aria-labelledby="assessment-window-title">
-          <header>
-            <div>
-              <span className="assessment-window-label">Application Window</span>
-              <h2 id="assessment-window-title">{title}</h2>
-            </div>
-          </header>
-
-          {currentId && (
-            <button
-              className="assessment-window-remove"
-              type="button"
-              ref={removeTriggerRef}
-              aria-label={`Remove ${title} application window`}
-              title="Remove application window"
-              aria-haspopup="dialog"
-              aria-expanded={removeOpen}
-              aria-controls={removeOpen ? 'assessment-remove-window' : undefined}
-              onClick={() => {
-                setRemoveOpen(true);
-                setRemoveError('');
-              }}
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          )}
-
-          {outcomeNavigation}
-        </section>
-      )}
-
-      {!currentWindow && !showCreateForm && outcomeNavigation}
-
-      {currentWindow && !showCreateForm && removeOpen && (
-        <div
-          className="assessment-cohort-delete-backdrop"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) cancelRemove();
-          }}
-        >
-          <div
-            className="assessment-cohort-delete-dialog"
-            id="assessment-remove-window"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="assessment-remove-window-title"
-            aria-describedby="assessment-remove-window-message"
-            aria-busy={isRemoving}
-            ref={removeDialogRef}
-            tabIndex="-1"
-            onKeyDown={handleRemoveDialogKeyDown}
-          >
-            <h2 id="assessment-remove-window-title">Remove application window?</h2>
-            <p id="assessment-remove-window-message">
-              Remove the {title} window and permanently delete everything in Inbox, Pass, Fail, Rejected and Invited,
-              including earlier windows and all recordings? This cannot be undone.
-            </p>
-            {removeError && (
-              <p className="assessment-confirmation-error" role="alert">
-                {removeError}
-              </p>
-            )}
-            <div className="assessment-cohort-delete-actions">
-              <button
-                className="assessment-button assessment-button-secondary"
-                type="button"
-                ref={removeCancelRef}
-                onClick={cancelRemove}
-                disabled={isRemoving}
-              >
-                Cancel
-              </button>
-              <button
-                className="assessment-button assessment-button-danger"
-                type="button"
-                ref={removeConfirmRef}
-                onClick={removeWindow}
-                disabled={isRemoving}
-              >
-                {isRemoving ? 'Removing…' : 'Remove'}
-              </button>
-            </div>
+      <section className="assessment-current-cohort" aria-labelledby="assessment-opened-title">
+        <header>
+          <div>
+            <span className="assessment-window-label">Application Opened</span>
+            <h2 id="assessment-opened-title">{openedMonth}</h2>
           </div>
-        </div>
-      )}
+        </header>
 
-      {showCreateForm && (
-        <section
-          className="assessment-cohort-create"
-          id="assessment-window-create"
-          aria-labelledby="assessment-window-create-title"
-        >
-          <h2 id="assessment-window-create-title" ref={createHeadingRef} tabIndex="-1">
-            Open Application Window
-          </h2>
+        <nav className="assessment-outcome-nav" aria-label="Assessment views">
+          {[
+            ['inbox', 'Inbox'],
+            ['pass', 'Pass'],
+            ['fail', 'Fail'],
+            ['rejected', 'Rejected'],
+            ['invited', 'Invited'],
+          ].map(([view, label]) => (
+            <button
+              className="assessment-outcome-link"
+              type="button"
+              key={view}
+              aria-current={activeView === view ? 'page' : undefined}
+              onClick={() => onViewChange?.(view)}
+            >
+              <span>{label}</span>
+              <strong>{viewCounts[view] ?? 0}</strong>
+            </button>
+          ))}
+        </nav>
 
-          <form onSubmit={submitWindow} noValidate>
+        {currentId && (
+          <button
+            className="assessment-button assessment-button-secondary assessment-change-password"
+            type="button"
+            ref={passwordTriggerRef}
+            aria-expanded={formOpen}
+            aria-controls={formOpen ? 'assessment-password-form' : undefined}
+            disabled={isSaving}
+            onClick={() => {
+              if (formOpen) closeForm();
+              else {
+                setPassword('');
+                setPasswordVisible(false);
+                setFormError('');
+                setFormOpen(true);
+              }
+            }}
+          >
+            Change Password
+          </button>
+        )}
+
+        {formOpen && (
+          <form
+            className="assessment-password-form"
+            id="assessment-password-form"
+            aria-label="Change application password"
+            aria-busy={isSaving}
+            onSubmit={submitPassword}
+            noValidate
+          >
             <div className="assessment-field">
-              <label htmlFor="assessment-shared-password">Shared applicant password</label>
+              <label htmlFor="assessment-new-password">New application password</label>
               <div className="assessment-password-control">
                 <input
-                  id="assessment-shared-password"
+                  id="assessment-new-password"
                   name="password"
                   type={passwordVisible ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={updateField}
+                  value={password}
+                  ref={passwordInputRef}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    setFormError('');
+                  }}
                   autoComplete="new-password"
                   spellCheck="false"
+                  autoCapitalize="none"
+                  disabled={isSaving}
                   aria-invalid={Boolean(formError)}
-                  aria-describedby={formError ? 'assessment-window-form-error' : undefined}
+                  aria-describedby={formError ? 'assessment-password-error' : undefined}
                   required
                 />
                 <button
@@ -300,6 +155,7 @@ export default function AssessmentCohorts({
                   onClick={() => setPasswordVisible((visible) => !visible)}
                   aria-label={passwordVisible ? 'Hide password' : 'Show password'}
                   aria-pressed={passwordVisible}
+                  disabled={isSaving}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                     <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
@@ -309,65 +165,39 @@ export default function AssessmentCohorts({
                 </button>
               </div>
             </div>
-
-            <div className="assessment-field-row">
-              <label className="assessment-field">
-                <span>Open</span>
-                <input
-                  name="opensAt"
-                  type="date"
-                  value={form.opensAt}
-                  onChange={updateField}
-                  aria-invalid={Boolean(formError)}
-                  aria-describedby={formError ? 'assessment-window-form-error' : undefined}
-                  required
-                />
-              </label>
-              <label className="assessment-field">
-                <span>Close</span>
-                <input
-                  name="closesAt"
-                  type="date"
-                  value={form.closesAt}
-                  onChange={updateField}
-                  aria-invalid={Boolean(formError)}
-                  aria-describedby={formError ? 'assessment-window-form-error' : undefined}
-                  required
-                />
-              </label>
-            </div>
-
+            <p className="assessment-password-help">
+              Applications stay open. Changing the password keeps every applicant and recording.
+            </p>
             {formError && (
-              <p className="assessment-form-error" id="assessment-window-form-error" role="alert">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M12 3.5 21 20H3L12 3.5Z" />
-                  <path d="M12 9v5" />
-                  <path d="M12 17.25h.01" />
-                </svg>
-                <span>{formError}</span>
+              <p className="assessment-form-error" id="assessment-password-error" role="alert">
+                {formError}
               </p>
             )}
-
-            <button
-              className="assessment-button assessment-button-primary"
-              type="submit"
-              disabled={isCreating}
-            >
-              {isCreating ? 'Opening…' : 'Open'}
-            </button>
+            <div className="assessment-password-actions">
+              <button
+                className="assessment-button assessment-button-secondary"
+                type="button"
+                onClick={closeForm}
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                className="assessment-button assessment-button-primary"
+                type="submit"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving…' : 'Save Password'}
+              </button>
+            </div>
           </form>
-        </section>
-      )}
-
-      {!currentWindow && !showCreateForm && activeView === 'inbox' && (
-        <section className="assessment-cohort-empty" aria-labelledby="assessment-no-window-title">
-          <span className="assessment-cohort-empty-icon" aria-hidden="true">
-            +
-          </span>
-          <h2 id="assessment-no-window-title">No application window</h2>
-          <p>Use the + button above to open one.</p>
-        </section>
-      )}
+        )}
+        {!currentId && (
+          <p className="assessment-password-help" role="status">
+            Recruitment settings are unavailable. Reload the page to try again.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

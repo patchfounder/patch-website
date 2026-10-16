@@ -284,6 +284,7 @@ export function assertMonthKey(value) {
 
 export function cohortWindowState(cohort, now = new Date()) {
   if (!cohort) return "unavailable";
+  if (cohort.alwaysOpen === true) return "open";
   const nowMs = now instanceof Date ? now.getTime() : Date.parse(now);
   const opensMs = Date.parse(cohort.opensAt);
   const closesMs = Date.parse(cohort.closesAt);

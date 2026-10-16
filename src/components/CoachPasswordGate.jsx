@@ -202,22 +202,12 @@ export default function CoachPasswordGate({ onUnlocked }) {
           title: 'We could not check application access',
           copy: 'You can still try your password, or check again shortly.',
         }
-      : gateState === 'unavailable'
+      : ['unavailable', 'not_open', 'closed'].includes(gateState)
         ? {
-            title: 'Applications are currently closed.',
-            copy: 'No application password is active. The deadline for this application window has now passed.',
+            title: 'Application access is temporarily unavailable',
+            copy: 'You can try your application password, or check again shortly.',
           }
-        : gateState === 'not_open'
-          ? {
-              title: 'This application window has not opened yet',
-              copy: 'Your application password will work when the application window opens.',
-            }
-          : gateState === 'closed'
-            ? {
-                title: 'Applications are currently closed.',
-                copy: 'No application password is active. The deadline for this application window has now passed.',
-              }
-            : null;
+        : null;
 
   return (
     <main className="coach-recruitment-ui coach-gate-shell">

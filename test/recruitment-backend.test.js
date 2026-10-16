@@ -734,6 +734,7 @@ test("one-step activation restores quarantined recordings if the database transi
   writeFileSync(privateAudioPath, "private-audio");
   const service = createRecruitmentService({
     database: {
+      getCohortBySlot: () => null,
       previewCreateAndActivate: () => ({
         purgeCohortMonths: ["2026-09"],
         purgeAudioStorageKeys: ["2026-09/private-recording.webm"],
@@ -774,6 +775,7 @@ test("active-cohort deletion restores the full recording folder if the database 
   writeFileSync(orphanPath, "orphan-audio");
   const service = createRecruitmentService({
     database: {
+      getCohortBySlot: () => null,
       previewDeleteCurrentCohort: () => ({
         expectedCurrentId: "current",
         monthKey: "2026-10",
@@ -811,6 +813,7 @@ test("activation may defer cleanup but explicit removal must report cleanup fail
   let cleanupAttempts = 0;
   const service = createRecruitmentService({
     database: {
+      getCohortBySlot: () => current,
       previewCreateAndActivate: () => ({ purgeCohortMonths: [], purgeAudioStorageKeys: [] }),
       createAndActivateCohort: () => ({ current, previous: null, purgedCohortIds: [] }),
       previewDeleteCurrentCohort: () => ({

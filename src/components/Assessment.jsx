@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AssessmentQueue from './AssessmentQueue.jsx';
 import AssessmentCohorts from './AssessmentCohorts.jsx';
-import { applicationInputValue } from '../recruitment-time.js';
 import '../assessment.css';
 
 const REVIEWER_API = '/api/recruitment/reviewer';
@@ -155,7 +154,6 @@ export default function Assessment() {
     current: null,
     pendingTotal: 0,
   });
-  const [isWindowFormOpen, setIsWindowFormOpen] = useState(false);
   const [activeView, setActiveView] = useState(currentAssessmentView);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
@@ -165,7 +163,6 @@ export default function Assessment() {
 
   const invalidateReviewerSession = useCallback(() => {
     setReviewerState(normalizeReviewerState({ authenticated: false }));
-    setIsWindowFormOpen(false);
     setNotice('');
     setPageError('');
   }, []);
@@ -173,7 +170,6 @@ export default function Assessment() {
   useEffect(() => {
     const restoreView = () => {
       setActiveView(currentAssessmentView());
-      setIsWindowFormOpen(false);
     };
     window.addEventListener('hashchange', restoreView);
     return () => window.removeEventListener('hashchange', restoreView);
@@ -182,7 +178,6 @@ export default function Assessment() {
   const selectView = (view) => {
     if (!ASSESSMENT_VIEWS.has(view)) return;
     setActiveView(view);
-    setIsWindowFormOpen(false);
     setNotice('');
     if (window.location.hash !== `#${view}`) window.location.hash = view;
   };
@@ -394,87 +389,51 @@ export default function Assessment() {
     }
   };
 
-  const handleCreateWindow = async (applicationWindow) => {
-    const previousWindowId = String(
-      reviewerState.currentCohort?.id || reviewerState.currentCohort?.cohortId || '',
-    );
+  const handleChangePassword = async (password) => {
+    const currentCohort = reviewerState.currentCohort;
+    const cohortId = currentCohort?.id || currentCohort?.cohortId || currentCohort?.cohort_id;
+    if (!cohortId) throw new Error('Reload recruitment settings before changing the password.');
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    setNotice('');
     try {
-      const result = await reviewerRequest('/cohorts', {
-        method: 'POST',
-        body: applicationWindow,
+      const result = await reviewerRequest('/password', {
+        method: 'PUT',
+        signal: controller.signal,
+        body: { cohortId, expectedRevision: currentCohort.passwordRevision ?? 0, password },
       });
-      const activatedWindow = result?.current || result?.cohort || null;
+      const updated = result?.currentCohort;
+      const updatedId = updated?.id || updated?.cohortId || updated?.cohort_id;
+      if (String(updatedId) !== String(cohortId)
+        || !Number.isSafeInteger(updated?.passwordRevision)
+        || updated.passwordRevision <= (currentCohort.passwordRevision ?? 0)) {
+        throw new Error('The password update could not be confirmed. Reload the page before trying again.');
+      }
+      // Password rotation changes only recruitment settings, never applicant
+      // queues, recordings, counts, history, or the selected assessment view.
       setReviewerState((state) => ({
         ...state,
-        currentCohort: activatedWindow || state.currentCohort,
-        previousCohort:
-          result && Object.hasOwn(result, 'previous') ? result.previous : state.previousCohort,
-        queue: [],
-        current: null,
-        pendingTotal: 0,
-        history: state.history.filter((application) => (
-          [activatedWindow?.id, activatedWindow?.cohortId, result?.previous?.id, result?.previous?.cohortId]
-            .filter(Boolean).map(String).includes(String(application.cohortId || application.cohort_id))
-        )),
+        currentCohort: {
+          ...state.currentCohort,
+          alwaysOpen: updated.alwaysOpen,
+          passwordRevision: updated.passwordRevision,
+        },
       }));
-      const refreshed = await loadReviewerState({ quiet: true });
-      selectView('inbox');
-      setNotice(
-        refreshed
-          ? 'Application window open.'
-          : 'Application window open. Reload the page to refresh its latest counts.',
-      );
-      return activatedWindow;
+      setNotice('Application password updated.');
     } catch (error) {
       if (error?.status === 401 || error?.status === 403) {
         invalidateReviewerSession();
-        throw error;
-      }
-      if (error?.status) throw error;
-      const refreshed = await loadReviewerState({ quiet: true });
-      const refreshedWindow = refreshed?.currentCohort;
-      const refreshedWindowId = String(refreshedWindow?.id || refreshedWindow?.cohortId || '');
-      const matchesRequestedWindow =
-        applicationInputValue(refreshedWindow?.opensAt) === applicationWindow.opensAt
-        && applicationInputValue(refreshedWindow?.closesAt) === applicationWindow.closesAt;
-      if (refreshedWindowId && refreshedWindowId !== previousWindowId && matchesRequestedWindow) {
-        selectView('inbox');
-        setNotice('Application window open.');
-        return refreshedWindow;
+      } else if (error?.status === 409) {
+        const refreshed = await loadReviewerState({ quiet: true, signal: controller.signal });
+        throw new Error(refreshed?.authenticated
+          ? 'The password was changed elsewhere. Settings have been refreshed; review and save again.'
+          : 'The password was changed elsewhere. Reload the page before trying again.');
+      } else if (error?.name === 'AbortError') {
+        throw new Error('The request timed out. Reload the page before trying again; the password may have been updated.');
       }
       throw error;
-    }
-  };
-
-  const handleRemoveWindow = async (id) => {
-    try {
-      const result = await reviewerRequest(`/cohorts/${encodeURIComponent(String(id))}`, {
-        method: 'DELETE',
-        body: { confirm: true },
-      });
-      if (result?.deletionComplete !== true) {
-        throw new Error('Permanent deletion could not be confirmed. Please try Remove again.');
-      }
-      setIsWindowFormOpen(false);
-      setReviewerState({
-        authenticated: true,
-        currentCohort: null,
-        previousCohort: null,
-        queue: [],
-        current: null,
-        pendingTotal: 0,
-        history: [],
-      });
-      selectView('inbox');
-      setNotice('The application window, all applications and recordings were permanently removed.');
-    } catch (error) {
-      if (error?.status === 401 || error?.status === 403) {
-        invalidateReviewerSession();
-        throw error;
-      }
-      // An empty state cannot prove that file cleanup finished. Keep Remove
-      // available after an uncertain response; the server safely accepts retries.
-      throw error;
+    } finally {
+      window.clearTimeout(timeout);
     }
   };
 
@@ -547,25 +506,6 @@ export default function Assessment() {
           </div>
         </section>
 
-        <div className="assessment-page-actions" role="group" aria-label="Assessment actions">
-          <button
-            type="button"
-            className="assessment-icon-action assessment-add-window"
-            aria-label={isWindowFormOpen ? 'Close application window form' : 'Add application window'}
-            title={isWindowFormOpen ? 'Close application window form' : 'Add application window'}
-            aria-expanded={isWindowFormOpen}
-            aria-controls={isWindowFormOpen ? 'assessment-window-create' : undefined}
-            onClick={() => {
-              setNotice('');
-              setIsWindowFormOpen((isOpen) => !isOpen);
-            }}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </button>
-        </div>
-
         <div className="assessment-live-region" role="status" aria-live="polite">
           {notice}
         </div>
@@ -581,7 +521,6 @@ export default function Assessment() {
 
         <AssessmentCohorts
           currentWindow={reviewerState.currentCohort}
-          showCreateForm={isWindowFormOpen}
           activeView={activeView}
           onViewChange={selectView}
           viewCounts={{
@@ -591,11 +530,10 @@ export default function Assessment() {
             rejected: outcomeLists.rejected.length,
             invited: outcomeLists.invited.length,
           }}
-          onCreate={handleCreateWindow}
-          onRemove={handleRemoveWindow}
+          onChangePassword={handleChangePassword}
         />
 
-        {reviewerState.currentCohort && !isWindowFormOpen && activeView === 'inbox' && (
+        {reviewerState.currentCohort && activeView === 'inbox' && (
           <section className="assessment-outcome-list" aria-label="Inbox voice notes">
             {queue.length ? queue.map((application, index) => (
               <AssessmentQueue
@@ -611,7 +549,7 @@ export default function Assessment() {
           </section>
         )}
 
-        {!isWindowFormOpen && activeView !== 'inbox' && (
+        {activeView !== 'inbox' && (
           <section
             className="assessment-outcome-list"
             aria-label={{ pass: 'Passed voice notes', fail: 'Failed voice notes', rejected: 'Rejected voice notes', invited: 'Invited voice notes' }[activeView]}
