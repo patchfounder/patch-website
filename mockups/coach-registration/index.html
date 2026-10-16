@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="An interactive design preview of Patch coach registration." />
+    <title>Coach registration · Patch — Design preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./registration.css" />
+    <script src="./registration.js" defer></script>
+  </head>
+  <body class="registration-preview">
+    <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="arrow-right" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6" /></symbol>
+      <symbol id="arrow-left" viewBox="0 0 24 24"><path d="M20 12H5m6-6-6 6 6 6" /></symbol>
+      <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6" /></symbol>
+      <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7" /></symbol>
+      <symbol id="camera" viewBox="0 0 24 24"><path d="m8 5 1.5-2h5L16 5h3a2 2 0 0 1 2 2v12H3V7a2 2 0 0 1 2-2Z" /><circle cx="12" cy="11.5" r="3.5" /></symbol>
+      <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></symbol>
+      <symbol id="person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></symbol>
+      <symbol id="mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></symbol>
+      <symbol id="phone" viewBox="0 0 24 24"><path d="M7 3 4 4c-3 6 10 19 16 16l1-3-5-3-2 2a15 15 0 0 1-6-6l2-2Z" /></symbol>
+      <symbol id="link" viewBox="0 0 24 24"><path d="m10 13 4-4M8 15l-1 1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0m2 10a3.5 3.5 0 0 0 5 0l4-4a3.5 3.5 0 0 0-5-5l-1 1" transform="translate(1 0) scale(.91 1)" /></symbol>
+      <symbol id="contact" viewBox="0 0 24 24"><rect x="5" y="3" width="15" height="18" rx="2" /><path d="M3 7h4M3 12h4M3 17h4" /><circle cx="12.5" cy="9" r="2" /><path d="M9 17v-1a3.5 3.5 0 0 1 7 0v1" /></symbol>
+    </svg>
+
+    <header class="registration-header">
+      <div class="header-inner">
+        <a href="#top" class="brand" aria-label="Patch registration, top of page"><img src="../../public/patch-logo-2.png" alt="Patch" width="116" height="50" /></a>
+        <span class="header-caption">Coach registration</span>
+        <span class="preview-badge"><span></span> Design preview</span>
+      </div>
+    </header>
+
+    <main class="registration-shell" id="top">
+      <div class="intro">
+        <div>
+          <p class="eyebrow" id="page-eyebrow">Patch coaching</p>
+          <h1 id="page-title" tabindex="-1">Welcome to the team.</h1>
+          <p class="intro-copy" id="page-description">Add your details and let us know when you’re available to coach.</p>
+        </div>
+        <button type="button" class="example-button" id="fill-example">Try with example details <svg class="icon"><use href="#arrow-right" /></svg></button>
+      </div>
+
+      <div id="registration-stage">
+        <div class="registration-layout">
+          <form id="registration-form" class="registration-form">
+            <section class="form-card" aria-labelledby="details-title">
+              <div class="section-heading"><span class="section-number">01</span><h2 id="details-title">Your details</h2></div>
+              <div class="fields-grid">
+                <label class="field">First name<input name="firstName" id="firstName" autocomplete="given-name" placeholder="First name" required /></label>
+                <label class="field">Surname<input name="surname" id="surname" autocomplete="family-name" placeholder="Surname" required /></label>
+                <label class="field">Email address<input name="email" id="email" type="email" autocomplete="email" placeholder="you@example.com" required /></label>
+                <label class="field">Mobile number<input name="phone" id="phone" type="tel" autocomplete="tel" placeholder="+44" required /></label>
+                <label class="field field-wide">LinkedIn profile URL<input name="linkedin" id="linkedin" type="text" inputmode="url" autocomplete="url" placeholder="www.linkedin.com/in/your-name" required /></label>
+              </div>
+              <div class="photo-section">
+                <div class="photo-copy"><h3>Contact card photo</h3><p>This will only be used for your contact card.</p></div>
+                <div class="photo-upload" id="photo-upload">
+                  <div class="upload-portrait" id="upload-portrait"><svg class="icon"><use href="#camera" /></svg></div>
+                  <div class="upload-actions"><button type="button" class="button button-outline button-small" id="choose-photo">Choose photo</button><span id="photo-caption">JPG or PNG</span><button type="button" class="text-button remove-photo" id="remove-photo" hidden>Remove photo</button></div>
+                  <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp" hidden />
+                </div>
+                <p class="field-error" id="photo-error" role="alert" hidden></p>
+              </div>
+            </section>
+
+            <section class="form-card availability-card" aria-labelledby="availability-title">
+              <div class="section-heading"><span class="section-number">02</span><h2 id="availability-title">Your availability</h2></div>
+              <p class="section-description">Choose your usual availability from Monday to Friday. You can change your availability later in the Patch app.</p>
+              <div class="availability-meta"><span class="timezone"><svg class="icon"><use href="#clock" /></svg> London time <span class="timezone-season">GMT / BST</span></span><span id="hours-summary" aria-live="polite">No times added</span></div>
+              <div id="availability-days"></div>
+              <p class="field-error availability-error" id="availability-error" role="alert" hidden></p>
+            </section>
+
+          </form>
+
+          <aside class="registration-aside" aria-labelledby="contact-preview-title">
+            <section class="contact-preview">
+              <div class="contact-preview-heading"><svg class="icon"><use href="#contact" /></svg><p class="eyebrow" id="contact-preview-title">Your contact card</p></div>
+              <div class="contact-person"><div class="contact-avatar" id="contact-avatar"><svg class="icon"><use href="#person" /></svg></div><h3 id="contact-name">Your name</h3><p>Patch Coach</p></div>
+              <div class="contact-fields">
+                <div><svg class="icon"><use href="#phone" /></svg><div><span>Mobile</span><p id="contact-phone">Your mobile number</p></div></div>
+                <div><svg class="icon"><use href="#mail" /></svg><div><span>Email</span><p id="contact-email">Your email address</p></div></div>
+                <div><svg class="icon"><use href="#link" /></svg><div><span>LinkedIn</span><p id="contact-linkedin">Your profile URL</p></div></div>
+              </div>
+            </section>
+            <div class="next-steps"><h3>When you register</h3><div><svg class="icon"><use href="#check" /></svg><p>Your Patch Coach account is created.</p></div><div><svg class="icon"><use href="#check" /></svg><p>Your weekly availability is added.</p></div><div><svg class="icon"><use href="#check" /></svg><p>Patrick receives a confirmation email and your contact card.</p></div></div>
+          </aside>
+          <div class="form-actions"><button class="button button-primary review-button" type="submit" form="registration-form">Review registration <svg class="icon"><use href="#arrow-right" /></svg></button></div>
+        </div>
+      </div>
+
+      <section class="form-card review-card" id="review-stage" aria-labelledby="review-title" hidden>
+        <div class="review-intro"><div><p class="eyebrow">Final review</p><h2 id="review-title" tabindex="-1">Check your registration.</h2><p>Check your details and weekly availability before creating your account.</p></div><div class="review-portrait" id="review-portrait"><svg class="icon"><use href="#contact" /></svg></div></div>
+        <dl class="review-details" id="review-details"></dl>
+        <div class="review-availability"><div class="review-availability-heading"><h3>Weekly availability</h3><span class="timezone"><svg class="icon"><use href="#clock" /></svg> London time</span></div><div id="review-times"></div></div>
+        <div class="review-note"><svg class="icon"><use href="#mail" /></svg><p>Patrick will receive a confirmation email with your contact card attached.</p></div>
+        <div class="review-actions"><button type="button" class="button button-outline" id="edit-registration"><svg class="icon"><use href="#arrow-left" /></svg> Go back</button><button type="button" class="button button-primary" id="create-account">Create account <svg class="icon"><use href="#arrow-right" /></svg></button></div>
+      </section>
+
+      <section class="form-card confirmation-card" id="confirmation-stage" aria-labelledby="confirmation-title" hidden>
+        <span class="confirmation-check"><svg class="icon"><use href="#check" /></svg></span>
+        <p class="eyebrow">Registration confirmation preview</p>
+        <h2 id="confirmation-title" tabindex="-1">You’re all set.</h2>
+        <p class="confirmation-description">This is the confirmation screen coaches would reach after creating their account.</p>
+        <div class="email-preview"><p class="eyebrow">Email to Patrick</p><h3 id="confirmation-subject">New coach registration</h3><p id="confirmation-body"></p><div class="attachment"><svg class="icon"><use href="#contact" /></svg><div><strong id="confirmation-file">contact.vcf</strong><span>Contact details and photo</span></div></div></div>
+        <p class="preview-notice">This is an interactive mockup. No account has been created and no email has been sent.</p>
+        <button type="button" class="button button-primary" id="restart-preview"><svg class="icon"><use href="#arrow-left" /></svg> Back to registration</button>
+      </section>
+
+      <footer class="preview-footer"><span>PATCH · COACH REGISTRATION</span><p>Interactive design preview · Nothing is sent or saved</p></footer>
+    </main>
+  </body>
+</html>

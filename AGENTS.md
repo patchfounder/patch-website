@@ -2,6 +2,27 @@
 
 These instructions govern every task, agent, subagent, tool, script, command, and process used for recruitment work in `/Users/patrick/Desktop/Patch/Website`.
 
+## EXPLICIT COACH REGISTRATION LIVE RELEASE EXCEPTION — 2026-10-16
+
+Patrick replied "yes" to this exact request in this chat: "May I finish the Website-to-Patch OS connection, configure its server-only credentials, commit, push and deploy both services, and enable confirmation emails with VCF attachments to patrick@patch.app? Real submissions will then create Coach profiles and availability. I won't alter existing accounts or create live test accounts."
+
+- This supersedes the earlier local-only/no-deployment restriction solely for this Coach registration feature and its dedicated server-to-server connection. Allow scoped Website implementation, the already implemented Patch OS registration/MCP capability, related verification, server-only integration credentials, commits/pushes, and the existing Website and Patch OS service releases.
+- Production inspection/configuration is limited to identifying those two existing services, their deployment status and the dedicated registration credentials/URL plus existing email configuration. Do not inspect unrelated production data or modify existing accounts, schedules, calls, storage, domains, networking, or other services.
+- No live test accounts or unsolicited test emails. Use synthetic isolated fixtures for all account/email verification. Real registration submissions may create accounts and send their VCF confirmation only to patrick@patch.app.
+- Preserve the requested initial password 123456, Europe/London defaults, duplicate-contact allowance and VCF-only photo. Preserve all Coach/User ICS behavior and unrelated work. Secrets must never enter Git, browser bundles, logs or chat output.
+- Report scoped local Patch OS changes and actual release state truthfully. Do not claim full release verification before Patrick's required authenticated Back Office refresh.
+- Patrick separately approved including the existing unpushed Patch OS commit `9e9dcf51` ("Guard Support footer version against iOS build metadata") with this registration release. No other unrelated commits or changes are included by that approval.
+
+## EXPLICIT LOCAL COACH REGISTRATION EXCEPTION — 2026-10-16
+
+Patrick explicitly confirmed this override in this chat after the earlier automatic-approval rejection: "I override the Website-only and Patch OS read-only restrictions for local implementation and testing of Coach registration, account creation, availability, and related MCP tools. Do not deploy." His reply was "I confirm". This specific authorization overrides the conflicting rules below only for that local implementation and verification scope in `/Users/patrick/Desktop/Patch/Patch OS`.
+
+- Allowed: inspect and edit the dedicated Coach registration endpoint/service, atomic Coach account creation and weekly availability persistence, related Patch Admin MCP tools and OAuth capability declarations, directly related tests, and their local Website integration contract.
+- Use only synthetic test data in isolated temporary directories. Preserve the requested initial password and Europe/London defaults, allow distinct registrations with duplicate contact details, and exclude the contact-card photo from Patch profiles.
+- Existing unrelated Patch OS code and all Coach/User ICS behavior remain protected. Do not use production APIs, operational data, infrastructure, credentials, account creation, email sending, migrations, or environment changes for verification.
+- No commit, push, or deployment is authorized by this exception. Those actions require a separate release decision.
+- Reports must accurately disclose scoped local Patch OS access/edits; all production resources remain outside this exception.
+
 ## HARD SAFETY GATE — PATCH OS IS OUT OF SCOPE AND PERMANENTLY READ-ONLY
 
 This gate overrides convenience, inferred permission, implementation approval, and any less-restrictive instruction.

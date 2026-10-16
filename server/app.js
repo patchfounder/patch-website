@@ -16,6 +16,7 @@ import { inspectRecruitmentAudio } from "./recruitment-audio.js";
 import { createAdminPasswordAuth, validateAdminPasswordHash } from "./recruitment-admin-auth.js";
 import { createRecruitmentDatabase } from "./recruitment-db.js";
 import { createRecruitmentEmailSender } from "./recruitment-email.js";
+import { createCoachRegistrationRuntime } from "./coach-registration.js";
 import { createRecruitmentService } from "./recruitment-service.js";
 import {
   createRecruitmentStorage,
@@ -155,6 +156,7 @@ export function mountRecruitmentRoutes(app, options) {
     maxAudioBytes = DEFAULT_MAX_AUDIO_BYTES,
     staticDirectory = "",
     audioInspector = inspectRecruitmentAudio,
+    coachRegistrationRuntime = null,
   } = options;
   if (!app || !express || !multer || !service || !cookieCodec) {
     throw new Error("Express, Multer, service, and cookie codec are required.");
@@ -187,6 +189,7 @@ export function mountRecruitmentRoutes(app, options) {
   };
 
   app.disable("x-powered-by");
+  coachRegistrationRuntime?.mount(app, { express, multer });
   app.post("/api/recruitment/reviewer/login", (req, res, next) => {
     noStore(res);
     if (!req.is("application/json")) {
@@ -528,7 +531,14 @@ export async function createRecruitmentRuntime(options = {}) {
   });
   storage.initialize();
   const database = options.database || createRecruitmentDatabase({ databasePath: storage.databasePath });
+  let coachRegistrationRuntime = null;
   try {
+    coachRegistrationRuntime = options.coachRegistrationRuntime || createCoachRegistrationRuntime({
+      env,
+      dataRoot,
+      fetchImpl: options.coachRegistrationFetch,
+      emailClient: options.coachRegistrationEmailClient,
+    });
     if (
       typeof storage.recoverInterruptedOperations === "function"
       && typeof database.listCohortMonthKeys === "function"
@@ -564,6 +574,7 @@ export async function createRecruitmentRuntime(options = {}) {
       secureCookies: options.secureCookies ?? env.NODE_ENV === "production",
       maxAudioBytes: storage.maxAudioBytes,
       staticDirectory: options.staticDirectory || "",
+      coachRegistrationRuntime,
     });
     let closed = false;
     return Object.freeze({
@@ -571,13 +582,16 @@ export async function createRecruitmentRuntime(options = {}) {
       service,
       database,
       storage,
+      coachRegistration: coachRegistrationRuntime,
       close() {
         if (closed) return;
         closed = true;
+        coachRegistrationRuntime.close();
         database.close();
       },
     });
   } catch (error) {
+    if (!options.coachRegistrationRuntime) coachRegistrationRuntime?.close();
     if (!options.database) database.close();
     throw error;
   }

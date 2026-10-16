@@ -2,6 +2,8 @@
 
 This directory is a deliberately small, Website-only recruitment backend. It has no runtime, build-time, filesystem, database, network, or deployment dependency on any other Patch application.
 
+The separately approved Coach registration feature is the sole network exception: `/coach-registration/` submits through the Website server to the dedicated Patch OS registration endpoint. It does not share databases, volumes, source imports or credentials with other features. The recruitment assessment/application workflow below remains Website-only and unchanged. See `docs/coach-registration-backend.md` for the registration contract and release record.
+
 ## Hard safety gate
 
 Patch OS is outside this backend's authority and must not be changed, executed, tested,
@@ -10,6 +12,8 @@ Patch OS is an explicitly scoped, read-only reference inspection; this backend d
 perform or require one. It must never read from or write to a Patch OS filesystem,
 database, API, service, deployment, or Railway resource. Recruitment state belongs only
 to the Website-private data root described below.
+
+For Coach registration only, Patrick's explicit 16 October 2026 live-release exception in the repository `AGENTS.md` supersedes the conflicting network/release restriction. It authorizes the narrow registration integration and the two existing service releases, not operational inspection or changes to existing accounts. The contact-card photo is kept in memory and sent only in the VCF emailed to Patrick, never to the Patch profile endpoint.
 
 ## Runtime contract
 
@@ -67,6 +71,7 @@ recruitment.sqlite
 audio/YYYY-MM/<server-generated UUID>.<approved extension>
 .staging/
 .trash/
+coach-registration.sqlite  # minimal registration retry receipts, no raw contact details/photo
 ```
 
 Directories use private permissions and audio uses mode `0600`. Original client filenames are never used or stored.
