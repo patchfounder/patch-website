@@ -11,8 +11,8 @@ export default function FirmEnquiries() {
         </div>
         <div className="firm-copy">
           <p>
-            Patch is built first for individual lawyers. We also welcome conversations with firms
-            exploring a focused speaking benefit for associates, counsel, and partners.
+            Patch also welcomes conversations with firms exploring a focused speaking benefit for
+            associates, counsel, and partners.
           </p>
           {/* TODO: Replace with the approved firm enquiry destination. */}
           <a className="text-link" href="mailto:hello@patch.app">
