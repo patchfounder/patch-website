@@ -1,6 +1,6 @@
 import { DownloadAction } from './Hero.jsx';
 
-export default function AppDownloadCTA({ onDownloadClick }) {
+export default function AppDownloadCTA() {
   return (
     <section className="final-cta" id="download">
       <div className="page-shell final-cta-layout">
@@ -9,7 +9,7 @@ export default function AppDownloadCTA({ onDownloadClick }) {
           <h2>Build a stronger speaking consistency with Patch</h2>
         </div>
         <div className="final-cta-action">
-          <DownloadAction light onDownloadClick={onDownloadClick} />
+          <DownloadAction light />
           <p>
             <strong>4 sessions to try.</strong> Book your first session today.
           </p>

@@ -1,3 +1,5 @@
+import { APP_STORE_URL } from '../app-store.js';
+
 const plans = [
   {
     name: 'Simple',
@@ -20,7 +22,7 @@ const plans = [
   },
 ];
 
-export default function Pricing({ onDownloadClick }) {
+export default function Pricing() {
   return (
     <section className="section pricing-section" id="pricing">
       <div className="page-shell">
@@ -38,7 +40,7 @@ export default function Pricing({ onDownloadClick }) {
                 <span>/month</span>
               </div>
               <p className="plan-note">{plan.note}</p>
-              <a className="pricing-cta" href="#download" onClick={onDownloadClick}>
+              <a className="pricing-cta" href={APP_STORE_URL}>
                 <span className="pricing-cta-copy">
                   <strong>Download to try</strong>
                   <small>Visit the App Store</small>

@@ -1,3 +1,5 @@
+import { APP_STORE_URL } from '../app-store.js';
+
 const DEFAULT_NAVIGATION = [
   { href: '#our-vision', label: 'Our Vision' },
   { href: '#why-patch', label: 'Why Patch' },
@@ -6,7 +8,6 @@ const DEFAULT_NAVIGATION = [
 ];
 
 export default function Header({
-  onDownloadClick,
   navigation = DEFAULT_NAVIGATION,
   logoHref = '#top',
   showDownload = true,
@@ -31,7 +32,7 @@ export default function Header({
 
         {showDownload && (
           <div className="nav-actions">
-            <a className="nav-cta" href="#download" onClick={onDownloadClick}>
+            <a className="nav-cta" href={APP_STORE_URL}>
               <span>Download</span>
               <span className="nav-cta-arrow" aria-hidden="true">
                 →

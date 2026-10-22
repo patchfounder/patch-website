@@ -1,7 +1,8 @@
+import { APP_STORE_URL } from '../app-store.js';
+
 export default function Footer({
   hideColumns = false,
   logoSrc = '/patch-logo-2.png',
-  onDownloadClick,
 }) {
   return (
     <footer className={`site-footer ${hideColumns ? 'site-footer-compact' : ''}`}>
@@ -21,9 +22,7 @@ export default function Footer({
             <div>
               <strong>Product</strong>
               <a href="#product">How it works</a>
-              <a href="#download" onClick={onDownloadClick}>
-                The app
-              </a>
+              <a href={APP_STORE_URL}>The app</a>
               <a href="#pricing">Pricing</a>
             </div>
             <div>

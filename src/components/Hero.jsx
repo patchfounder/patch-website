@@ -1,7 +1,8 @@
-const DownloadAction = ({ light = false, onDownloadClick }) => (
+import { APP_STORE_URL } from '../app-store.js';
+
+const DownloadAction = ({ light = false }) => (
   <div className={`download-action ${light ? 'download-action-light' : ''}`}>
-    {/* TODO: Replace with the approved live app download destination. */}
-    <a className="button button-primary" href="#download" onClick={onDownloadClick}>
+    <a className="button button-primary" href={APP_STORE_URL}>
       Download the app
     </a>
     <span>Available on the App Store</span>
@@ -13,7 +14,7 @@ export { DownloadAction };
 const HERO_VIDEO_SRC = '/hero-background.mp4?v=20260829-2';
 const HERO_POSTER_SRC = '/hero-video-poster.png?v=20260828-5';
 
-export default function Hero({ onDownloadClick }) {
+export default function Hero() {
   return (
     <section className="hero" id="top">
       <div
@@ -127,8 +128,7 @@ export default function Hero({ onDownloadClick }) {
                 Designed for high-performance individuals.
               </span>
             </p>
-            {/* TODO: Replace with the approved live app download destination. */}
-            <a className="nav-cta hero-download-cta" href="#download" onClick={onDownloadClick}>
+            <a className="nav-cta hero-download-cta" href={APP_STORE_URL}>
               <span>Download</span>
               <span className="nav-cta-arrow" aria-hidden="true">
                 →
