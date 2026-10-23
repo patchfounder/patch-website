@@ -141,6 +141,7 @@ function applicant(id, minute, decision = 'pending', teamDecision = '') {
     applicationId: id, fullName: `Synthetic ${id}`, email: `${minute}@example.com`,
     linkedinUrl: 'https://example.com/profile', audioDurationSeconds: 1,
     submittedAt: `2026-10-03T12:0${minute}:00.000Z`, decision, teamDecision,
+    teamDecidedAt: teamDecision ? `2026-10-16T06:0${minute}:00Z` : '',
     teamEmailDrafts: {
       rejected: { to: `${minute}@example.com`, subject: 'Your Patch application', body: `Dear Synthetic ${id},\n\nYou have not been selected to join Patch.\n\nPatrick` },
       invited: { to: `${minute}@example.com`, subject: 'Welcome to Patch', body: `Dear Synthetic ${id},\n\nPlease register:\nhttps://www.patch.app/coach-registration/\n\nPatrick` },
@@ -171,6 +172,8 @@ function reviewerState() {
 
 const queueCards = (tree) => nodes(tree, (node) => node.type === QueuePlaceholder);
 const decisionButtons = (tree) => nodes(tree, (node) => node.type === 'button' && ['Pass', 'Fail'].includes(textContent(node)));
+const namedButton = (tree, label) => nodes(tree, (node) => node.type === 'button' && textContent(node) === label)[0];
+const summaryOf = (tree) => nodes(tree, (node) => node.type === CohortsPlaceholder)[0];
 
 test('Inbox renders every pending card once, oldest first, in the full-width outcome list', () => {
   const page = harness(assessmentCode, { state: reviewerState() });
@@ -205,7 +208,7 @@ test('an empty Inbox keeps the caught-up state and no-window view has no applica
   assert.equal(queueCards(harness(assessmentCode, { state: { ...state, currentCohort: null } }).render()).length, 0);
 });
 
-test('Fail, Rejected and Invited are read-only playable archives without autofocus', () => {
+test('Fail stays read-only while Rejected and Invited alone offer Move to Pass without autofocus', () => {
   for (const [view, expectedIds, badge] of [
     ['fail', ['failed-one'], 'Failed'], ['rejected', ['rejected-one'], 'Rejected'], ['invited', ['invited-one'], 'Invited'],
   ]) {
@@ -218,6 +221,9 @@ test('Fail, Rejected and Invited are read-only playable archives without autofoc
       const tree = cardHarness.render(card.props, { runEffects: true });
       assert.equal(decisionButtons(tree).length, 0);
       assert.equal(nodes(tree, (node) => node.type === 'button' && ['Reject', 'Invite', 'Confirm Sent'].includes(textContent(node))).length, 0);
+      assert.equal(Boolean(card.props.allowTeamDecisionReset), view !== 'fail');
+      assert.equal(typeof card.props.onTeamDecisionReset, view === 'fail' ? 'undefined' : 'function');
+      assert.equal(nodes(tree, (node) => node.type === 'button' && textContent(node) === 'Move to Pass').length, view === 'fail' ? 0 : 1);
       assert.equal(nodes(tree, (node) => node.props.role === 'alertdialog').length, 0);
       assert.equal(nodes(tree, (node) => node.type === AudioPlaceholder).length, 1);
       assert.equal(cardHarness.focusCalls.length, 0);
@@ -225,6 +231,30 @@ test('Fail, Rejected and Invited are read-only playable archives without autofoc
     }
   }
 });
+
+for (const [view, outcomeLabel] of [['rejected', 'Rejected'], ['invited', 'Invited']]) {
+  test(`Move to Pass from ${outcomeLabel} explains the email boundary, saves calmly, and Cancel restores focus`, () => {
+    const target = queueCards(harness(assessmentCode, { state: reviewerState(), view }).render())[0];
+    const card = harness(queueCode);
+    let tree = card.render(target.props, { runEffects: true });
+    namedButton(tree, 'Move to Pass').props.onClick();
+    tree = card.render(target.props, { runEffects: true });
+    assert.equal(nodes(tree, (node) => node.props.role === 'alertdialog').length, 1);
+    assert.match(textContent(tree), new RegExp(`clears the ${outcomeLabel} outcome`));
+    assert.match(textContent(tree), /does not send an email or recall any email already sent/);
+    assert.equal(card.focusCalls.at(-1).text, `Move Synthetic ${view}-one to Pass?`);
+
+    tree = card.render({ ...target.props, isDeciding: true });
+    assert.equal(namedButton(tree, 'Moving…').props.disabled, true);
+    assert.equal(namedButton(tree, 'Cancel').props.disabled, true);
+
+    tree = card.render(target.props);
+    namedButton(tree, 'Cancel').props.onClick();
+    tree = card.render(target.props, { runEffects: true });
+    assert.equal(nodes(tree, (node) => node.props.role === 'alertdialog').length, 0);
+    assert.equal(card.focusCalls.at(-1).text, 'Move to Pass');
+  });
+}
 
 test('ongoing summary preserves opening month and five counts, without add, remove, or date controls', () => {
   const tree = harness(assessmentCode, { state: reviewerState() }).render();
@@ -305,6 +335,203 @@ test('a missing or unsafe draft never offers Confirm Sent or writes an outcome',
 function jsonResponse(payload, status = 200) {
   return { ok: status >= 200 && status < 300, status, headers: { get: () => 'application/json' }, json: async () => payload };
 }
+
+test('Move to Pass sends the exact guarded DELETE and moves only that card without changing recruitment totals', async () => {
+  const state = reviewerState();
+  const requests = [];
+  const expectedDecidedAt = state.history.find((entry) => entry.applicationId === 'invited-one').teamDecidedAt;
+  const page = harness(assessmentCode, {
+    state, view: 'invited',
+    async fetch(url, options) {
+      requests.push({
+        url,
+        method: options.method || 'GET',
+        body: options.body ? JSON.parse(options.body) : undefined,
+      });
+      if (options.method === 'DELETE') {
+        const index = state.history.findIndex((entry) => entry.applicationId === 'invited-one');
+        const reset = { ...state.history[index], teamDecision: '', teamDecidedAt: '' };
+        state.history[index] = reset;
+        return jsonResponse({ application: reset });
+      }
+      assert.equal(url, '/api/recruitment/reviewer/state');
+      return jsonResponse(structuredClone(state));
+    },
+  });
+  const before = page.render();
+  const target = queueCards(before)[0];
+  const card = harness(queueCode);
+  let tree = card.render(target.props);
+  namedButton(tree, 'Move to Pass').props.onClick();
+  tree = card.render(target.props);
+  await namedButton(tree, 'Move to Pass').props.onClick();
+
+  assert.deepEqual(requests[0], {
+    url: '/api/recruitment/reviewer/applications/invited-one/team-decision',
+    method: 'DELETE',
+    body: { expectedDecision: 'invited', expectedDecidedAt, confirmReset: true },
+  });
+  assert.equal(requests.length, 2);
+  const after = page.render();
+  assert.equal(queueCards(after).length, 0);
+  assert.deepEqual({ ...summaryOf(after).props.viewCounts }, {
+    inbox: 3, pass: 3, fail: 1, rejected: 1, invited: 0,
+  });
+  assert.equal(state.currentCohort.pendingCount, 3);
+  assert.equal(state.currentCohort.processedCount, 3);
+  assert.match(textContent(after), /Outcome cleared.*back in Pass.*No email was sent or recalled/);
+});
+
+test('a failed Move to Pass stays open, keeps the card in place, and shows the error inline', async () => {
+  const page = harness(assessmentCode, {
+    state: reviewerState(), view: 'rejected',
+    fetch: async () => { throw new Error('Reset service unavailable'); },
+  });
+  const target = queueCards(page.render())[0];
+  const card = harness(queueCode);
+  let tree = card.render(target.props);
+  namedButton(tree, 'Move to Pass').props.onClick();
+  tree = card.render(target.props);
+  await namedButton(tree, 'Move to Pass').props.onClick();
+  tree = card.render(target.props);
+  assert.equal(nodes(tree, (node) => node.props.role === 'alertdialog').length, 1);
+  assert.match(textContent(tree), /Reset service unavailable/);
+  assert.equal(nodes(tree, (node) => node.props.role === 'alert').length, 1);
+  assert.deepEqual(queueCards(page.render()).map((entry) => entry.props.application.applicationId), ['rejected-one']);
+});
+
+test('an uncertain reset moves the card only after exact persisted reconciliation', async () => {
+  for (const resetWasCommitted of [true, false]) {
+    const state = reviewerState();
+    const page = harness(assessmentCode, {
+      state, view: 'invited',
+      async fetch(url, options) {
+        if (options.method === 'DELETE') {
+          if (resetWasCommitted) {
+            const target = state.history.find((entry) => entry.applicationId === 'invited-one');
+            target.teamDecision = '';
+            target.teamDecidedAt = '';
+          }
+          throw new Error('Connection interrupted');
+        }
+        return jsonResponse(structuredClone(state));
+      },
+    });
+    const target = queueCards(page.render())[0];
+    if (resetWasCommitted) {
+      await target.props.onTeamDecisionReset(target.props.application);
+    } else {
+      await assert.rejects(
+        target.props.onTeamDecisionReset(target.props.application),
+        /Connection interrupted/,
+      );
+    }
+    assert.equal(queueCards(page.render()).length, resetWasCommitted ? 0 : 1);
+  }
+});
+
+test('a concurrent cross-view outcome change stays visible as a page-level reconciliation error', async () => {
+  const state = reviewerState();
+  const page = harness(assessmentCode, {
+    state, view: 'invited',
+    async fetch(url, options) {
+      if (options.method === 'DELETE') {
+        const target = state.history.find((entry) => entry.applicationId === 'invited-one');
+        target.teamDecision = 'rejected';
+        target.teamDecidedAt = '2026-10-23T09:00:00.000Z';
+        return jsonResponse({ message: 'The team decision changed. Reload and try again.' }, 409);
+      }
+      return jsonResponse(structuredClone(state));
+    },
+  });
+  const target = queueCards(page.render())[0];
+  await assert.rejects(
+    target.props.onTeamDecisionReset(target.props.application),
+    /outcome changed elsewhere/i,
+  );
+
+  const after = page.render();
+  assert.equal(queueCards(after).length, 0);
+  assert.match(textContent(after), /outcome changed elsewhere.*assessment has been refreshed/i);
+  assert.equal(nodes(after, (node) => node.props.role === 'alert').length, 1);
+  assert.deepEqual({ ...summaryOf(after).props.viewCounts }, {
+    inbox: 3, pass: 2, fail: 1, rejected: 2, invited: 0,
+  });
+  assert.equal(page.focusCalls.at(-1).text, 'active navigation');
+});
+
+test('a cleared DELETE response is accepted only when refresh confirms the same exact applicant state', async () => {
+  const state = reviewerState();
+  let requestCount = 0;
+  const page = harness(assessmentCode, {
+    state, view: 'rejected',
+    async fetch(url, options) {
+      requestCount += 1;
+      if (options.method === 'DELETE') {
+        const target = state.history.find((entry) => entry.applicationId === 'rejected-one');
+        return jsonResponse({ application: { ...target, teamDecision: '', teamDecidedAt: '' } });
+      }
+      return jsonResponse(structuredClone(state));
+    },
+  });
+  const target = queueCards(page.render())[0];
+  await assert.rejects(
+    target.props.onTeamDecisionReset(target.props.application),
+    /outcome changed elsewhere/i,
+  );
+  assert.equal(requestCount, 2);
+  assert.deepEqual(queueCards(page.render()).map((entry) => entry.props.application.applicationId), ['rejected-one']);
+});
+
+test('an invalid reset response never moves a card unless exact reconciliation proves it was cleared', async () => {
+  const state = reviewerState();
+  const page = harness(assessmentCode, {
+    state, view: 'invited',
+    async fetch(url, options) {
+      if (options.method === 'DELETE') {
+        const target = state.history.find((entry) => entry.applicationId === 'invited-one');
+        return jsonResponse({ application: { ...target, applicationId: 'another-applicant', teamDecision: '', teamDecidedAt: '' } });
+      }
+      return jsonResponse(structuredClone(state));
+    },
+  });
+  const target = queueCards(page.render())[0];
+  await assert.rejects(
+    target.props.onTeamDecisionReset(target.props.application),
+    /could not be confirmed/,
+  );
+  assert.deepEqual(queueCards(page.render()).map((entry) => entry.props.application.applicationId), ['invited-one']);
+});
+
+test('expired or forbidden reset sessions invalidate the reviewer without a local move', async () => {
+  for (const status of [401, 403]) {
+    let requestCount = 0;
+    const page = harness(assessmentCode, {
+      state: reviewerState(), view: 'invited',
+      fetch: async () => {
+        requestCount += 1;
+        return jsonResponse({ message: 'Session expired' }, status);
+      },
+    });
+    const target = queueCards(page.render())[0];
+    await target.props.onTeamDecisionReset(target.props.application);
+    assert.equal(requestCount, 1);
+    const after = page.render();
+    assert.equal(after.type.name, 'InvalidSession');
+    assert.equal(queueCards(after).length, 0);
+  }
+});
+
+test('a final team card without its persisted decision timestamp cannot open Move to Pass', () => {
+  const props = {
+    application: { ...applicant('invalid-history', 9, 'pass', 'invited'), teamDecidedAt: '' },
+    readOnly: true,
+    allowTeamDecisionReset: true,
+    onTeamDecisionReset() {},
+  };
+  const tree = harness(queueCode).render(props);
+  assert.equal(namedButton(tree, 'Move to Pass'), undefined);
+});
 
 for (const [label, outcome] of [['Reject', 'rejected'], ['Invite', 'invited']]) {
   test(`Confirm Sent for ${label} targets only that passed applicant and leaves Inbox/processed counts unchanged`, async () => {
@@ -438,7 +665,6 @@ test('confirming a decision on a later Inbox card targets that applicant, not th
 const buttonNamed = (tree, label) => nodes(tree, (node) => node.type === 'button' && textContent(node) === label)[0];
 const passwordForm = (tree) => nodes(tree, (node) => node.type === 'form')[0];
 const passwordInput = (tree) => nodes(tree, (node) => node.type === 'input' && node.props.name === 'password')[0];
-const summaryOf = (tree) => nodes(tree, (node) => node.type === CohortsPlaceholder)[0];
 
 test('Change Password starts blank, supports visibility and Cancel clears it without changing any records', () => {
   const summary = summaryOf(harness(assessmentCode, { state: reviewerState() }).render());

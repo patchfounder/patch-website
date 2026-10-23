@@ -98,6 +98,7 @@ test("admin HTTP login grants only the existing expiring reviewer session and su
     for (const [method, route] of [
       ["GET", "/state"], ["GET", "/cohorts"], ["GET", "/applications/fixture/audio"],
       ["POST", "/applications/fixture/decision"], ["POST", "/cohorts"], ["DELETE", "/cohorts/fixture"],
+      ["DELETE", "/applications/fixture/team-decision"],
     ]) {
       const response = await fetch(`${baseUrl}/api/recruitment/reviewer${route}`, { method });
       assert.equal(response.status, 401);

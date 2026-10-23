@@ -189,6 +189,20 @@ Requires the reviewer cookie, same-origin `Origin`/fetch metadata and JSON:
 
 Schema version 2 adds `team_decision` and `team_decided_at` transactionally without rebuilding existing tables. Existing Pass records remain undecided until explicitly confirmed. Reviewer history exposes `teamDecision`/`teamDecidedAt` and, only for passed applicants awaiting a team decision, `teamEmailDrafts.invited` and `.rejected`.
 
+### `DELETE /api/recruitment/reviewer/applications/:applicationId/team-decision`
+
+Moves a final Invited or Rejected card back to Pass. It requires the reviewer cookie, same-origin `Origin`/fetch metadata and JSON containing the exact outcome revision currently shown on the card:
+
+```json
+{
+  "expectedDecision": "invited",
+  "expectedDecidedAt": "2026-10-16T07:00:00.000Z",
+  "confirmReset": true
+}
+```
+
+The outcome and timestamp form an optimistic compare-and-set guard. A stale request cannot clear a newer team outcome, while retrying after a completed reset is idempotent as long as the outcome remains blank. The operation clears only `team_decision` and `team_decided_at`; it does not send email or change the Stage One decision, Stage One email metadata, applicant details, recording, or cohort. The applicant appears in Pass again with fresh manual email drafts available for a later explicit team decision.
+
 ## Ongoing recruitment and manual password changes
 
 ### `PUT /api/recruitment/reviewer/password`

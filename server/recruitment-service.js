@@ -293,20 +293,22 @@ export function createRecruitmentService(options = {}) {
     });
   }
 
-  function listProcessedApplications(limit) {
-    return database.listProcessedApplications(limit).map((application) => {
-      const createDraft = emailSender.createTeamEmailDraft;
-      const teamEmailDrafts = application.decision === "pass" && !application.teamDecision && typeof createDraft === "function"
-        ? {
-          rejected: createDraft(application, "rejected"),
-          invited: createDraft(application, "invited"),
-        }
-        : null;
-      return Object.freeze({
-        ...reviewerApplication(application),
-        ...(teamEmailDrafts ? { teamEmailDrafts } : {}),
-      });
+  function processedReviewerApplication(application) {
+    const createDraft = emailSender.createTeamEmailDraft;
+    const teamEmailDrafts = application.decision === "pass" && !application.teamDecision && typeof createDraft === "function"
+      ? {
+        rejected: createDraft(application, "rejected"),
+        invited: createDraft(application, "invited"),
+      }
+      : null;
+    return Object.freeze({
+      ...reviewerApplication(application),
+      ...(teamEmailDrafts ? { teamEmailDrafts } : {}),
     });
+  }
+
+  function listProcessedApplications(limit) {
+    return database.listProcessedApplications(limit).map(processedReviewerApplication);
   }
 
   function getReviewerAudio(applicationId) {
@@ -385,7 +387,43 @@ export function createRecruitmentService(options = {}) {
     // This records the reviewer's manual-send confirmation only. It must never
     // call an email provider or mutate the original Stage One/email decision.
     const recorded = database.decideTeamApplication(applicationId, decision, currentTime().toISOString());
-    return { application: reviewerApplication(recorded) };
+    return { application: processedReviewerApplication(recorded) };
+  }
+
+  function resetTeamApplication(applicationId, expectedDecision, expectedDecidedAt, confirmReset) {
+    if (confirmReset !== true) {
+      throw new RecruitmentServiceError(
+        "Confirm that you want to move this applicant back to Pass.",
+        "team_decision_reset_confirmation_required",
+      );
+    }
+    if (expectedDecision !== "rejected" && expectedDecision !== "invited") {
+      throw new RecruitmentServiceError(
+        "Expected team decision must be rejected or invited.",
+        "invalid_team_decision",
+      );
+    }
+    if (
+      typeof expectedDecidedAt !== "string"
+      || !expectedDecidedAt
+      || expectedDecidedAt.length > 128
+    ) {
+      throw new RecruitmentServiceError(
+        "Expected team decision timestamp is required.",
+        "invalid_team_decision_revision",
+      );
+    }
+    if (typeof applicationId !== "string" || !applicationId.trim()) {
+      throw new RecruitmentServiceError("Application not found.", "application_missing", 404);
+    }
+    // Resetting changes only the persisted team-outcome overlay. It must never
+    // send email or alter the original Stage One decision/email metadata.
+    const recorded = database.resetTeamApplication(
+      applicationId,
+      expectedDecision,
+      expectedDecidedAt,
+    );
+    return { application: processedReviewerApplication(recorded) };
   }
 
   async function prepareCohort(input) {
@@ -575,6 +613,7 @@ export function createRecruitmentService(options = {}) {
     getReviewerAudio,
     decideApplication,
     decideTeamApplication,
+    resetTeamApplication,
     createNextCohort,
     createAndActivateCohort,
     deleteCurrentCohort,

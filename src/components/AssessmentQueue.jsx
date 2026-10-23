@@ -47,13 +47,16 @@ export default function AssessmentQueue({
   application,
   onDecision,
   onTeamDecision,
+  onTeamDecisionReset,
   allowTeamDecision = false,
+  allowTeamDecisionReset = false,
   isDeciding = false,
   readOnly = false,
   focusOnLoad = true,
 }) {
   const [pendingDecision, setPendingDecision] = useState('');
   const [pendingTeamDecision, setPendingTeamDecision] = useState('');
+  const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const [decisionError, setDecisionError] = useState('');
   const applicantHeadingRef = useRef(null);
   const confirmationHeadingRef = useRef(null);
@@ -62,6 +65,7 @@ export default function AssessmentQueue({
   const passButtonRef = useRef(null);
   const rejectButtonRef = useRef(null);
   const inviteButtonRef = useRef(null);
+  const moveToPassButtonRef = useRef(null);
   const id = getApplicationId(application);
   const cardId = useId();
   const applicantHeadingId = `${cardId}-applicant`;
@@ -73,21 +77,31 @@ export default function AssessmentQueue({
   const hasDecision = decision === 'pass' || decision === 'fail';
   const canDecide = !readOnly && !hasDecision;
   const teamDecision = applicationValue(application, 'teamDecision');
+  const teamDecidedAt = applicationValue(application, 'teamDecidedAt');
   const canTeamDecide = !readOnly && allowTeamDecision && decision === 'pass' && !teamDecision;
-  const pendingAction = pendingTeamDecision || pendingDecision;
+  const canResetTeamDecision = allowTeamDecisionReset
+    && decision === 'pass'
+    && ['rejected', 'invited'].includes(teamDecision)
+    && typeof teamDecidedAt === 'string'
+    && Boolean(teamDecidedAt.trim())
+    && typeof onTeamDecisionReset === 'function';
+  const pendingAction = pendingTeamDecision || pendingDecision || (isResetConfirmationOpen ? 'team-reset' : '');
 
   useEffect(() => {
     setPendingDecision('');
     setPendingTeamDecision('');
+    setIsResetConfirmationOpen(false);
     setDecisionError('');
     if (application && canDecide && focusOnLoad) {
       applicantHeadingRef.current?.focus({ preventScroll: true });
     }
-  }, [id, canDecide, canTeamDecide, focusOnLoad]);
+  }, [id, canDecide, canTeamDecide, canResetTeamDecision, focusOnLoad]);
 
   useEffect(() => {
-    if (pendingAction && (canDecide || canTeamDecide)) confirmationHeadingRef.current?.focus();
-  }, [pendingAction, canDecide, canTeamDecide]);
+    if (pendingAction && (canDecide || canTeamDecide || canResetTeamDecision)) {
+      confirmationHeadingRef.current?.focus();
+    }
+  }, [pendingAction, canDecide, canTeamDecide, canResetTeamDecision]);
 
   if (!application) {
     return (
@@ -205,9 +219,27 @@ export default function AssessmentQueue({
     }
   };
 
+  const openTeamDecisionReset = () => {
+    if (!canResetTeamDecision || !id || isDeciding) return;
+    decisionTriggerRef.current = 'moveToPass';
+    setDecisionError('');
+    setIsResetConfirmationOpen(true);
+  };
+
+  const confirmTeamDecisionReset = async () => {
+    if (!canResetTeamDecision || !id || !isResetConfirmationOpen || isDeciding) return;
+    setDecisionError('');
+    try {
+      await onTeamDecisionReset(application);
+    } catch (error) {
+      setDecisionError(error?.message || 'The outcome could not be cleared. Reload the page before trying again.');
+    }
+  };
+
   const closeConfirmation = () => {
     setPendingDecision('');
     setPendingTeamDecision('');
+    setIsResetConfirmationOpen(false);
     setDecisionError('');
     window.requestAnimationFrame(() => {
       const trigger = {
@@ -215,6 +247,7 @@ export default function AssessmentQueue({
         fail: failButtonRef,
         rejected: rejectButtonRef,
         invited: inviteButtonRef,
+        moveToPass: moveToPassButtonRef,
       }[decisionTriggerRef.current];
       trigger?.current?.focus();
     });
@@ -419,6 +452,58 @@ export default function AssessmentQueue({
                 disabled={isDeciding}
               >
                 {isDeciding ? 'Saving decision…' : 'Confirm Sent'}
+              </button>
+            </div>
+          </section>
+        ))}
+
+        {canResetTeamDecision && (!isResetConfirmationOpen ? (
+          <div className="assessment-decision-actions assessment-team-reset-actions" aria-label={`Outcome action for ${name}`}>
+            {decisionError && <p className="assessment-confirmation-error" role="alert">{decisionError}</p>}
+            <div>
+              <button
+                className="assessment-button assessment-button-reset"
+                ref={moveToPassButtonRef}
+                type="button"
+                onClick={openTeamDecisionReset}
+                disabled={isDeciding || !id}
+              >
+                Move to Pass
+              </button>
+            </div>
+          </div>
+        ) : (
+          <section
+            className="assessment-confirmation assessment-confirmation-reset"
+            role="alertdialog"
+            aria-labelledby={confirmationHeadingId}
+            aria-describedby={confirmationCopyId}
+          >
+            <p className="assessment-eyebrow">Update outcome</p>
+            <h3 id={confirmationHeadingId} ref={confirmationHeadingRef} tabIndex="-1">
+              Move {name} to Pass?
+            </h3>
+            <p id={confirmationCopyId}>
+              This clears the {teamDecision === 'invited' ? 'Invited' : 'Rejected'} outcome and moves the card back to Pass.
+              It does not send an email or recall any email already sent.
+            </p>
+            {decisionError && <p className="assessment-confirmation-error" role="alert">{decisionError}</p>}
+            <div className="assessment-confirmation-actions">
+              <button
+                className="assessment-button assessment-button-secondary"
+                type="button"
+                onClick={closeConfirmation}
+                disabled={isDeciding}
+              >
+                Cancel
+              </button>
+              <button
+                className="assessment-button assessment-button-reset"
+                type="button"
+                onClick={confirmTeamDecisionReset}
+                disabled={isDeciding}
+              >
+                {isDeciding ? 'Moving…' : 'Move to Pass'}
               </button>
             </div>
           </section>

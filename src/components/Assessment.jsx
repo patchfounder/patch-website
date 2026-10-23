@@ -88,6 +88,16 @@ function applicationId(application) {
   return application?.id || application?.applicationId || application?.application_id || null;
 }
 
+function isClearedTeamDecision(application, expectedId) {
+  return Boolean(
+    application
+    && String(applicationId(application)) === String(expectedId)
+    && application.decision === 'pass'
+    && application.teamDecision === ''
+    && application.teamDecidedAt === '',
+  );
+}
+
 function applicationTimestamp(application) {
   const raw =
     application?.receivedAt ||
@@ -389,6 +399,87 @@ export default function Assessment() {
     }
   };
 
+  const handleTeamDecisionReset = async (application) => {
+    const id = applicationId(application);
+    const expectedDecision = application?.teamDecision;
+    const expectedDecidedAt = application?.teamDecidedAt;
+    if (!id || isDeciding || application?.decision !== 'pass'
+      || !['rejected', 'invited'].includes(expectedDecision)
+      || activeView !== expectedDecision) return;
+    if (typeof expectedDecidedAt !== 'string' || !expectedDecidedAt.trim()) {
+      throw new Error('The saved outcome timestamp is unavailable. Reload the page before trying again.');
+    }
+
+    setIsDeciding(true);
+    setNotice('');
+    setPageError('');
+    let responseConfirmed = false;
+
+    try {
+      const result = await reviewerRequest(
+        `/applications/${encodeURIComponent(String(id))}/team-decision`,
+        {
+          method: 'DELETE',
+          body: { expectedDecision, expectedDecidedAt, confirmReset: true },
+        },
+      );
+      if (!isClearedTeamDecision(result?.application, id)) {
+        throw new Error('The cleared outcome could not be confirmed. The assessment will be refreshed before you try again.');
+      }
+      responseConfirmed = true;
+      setReviewerState((state) => ({
+        ...state,
+        history: state.history.map((candidate) => (
+          String(applicationId(candidate)) === String(id)
+            ? { ...candidate, ...result.application }
+            : candidate
+        )),
+      }));
+
+      const refreshed = await loadReviewerState({ quiet: true });
+      if (refreshed) {
+        const saved = refreshed.history.find(
+          (candidate) => String(applicationId(candidate)) === String(id),
+        );
+        if (!isClearedTeamDecision(saved, id)) {
+          const message = 'The outcome changed elsewhere. The assessment has been refreshed; review the latest status before trying again.';
+          setPageError(message);
+          window.requestAnimationFrame(() => document.querySelector('.assessment-outcome-link[aria-current="page"]')?.focus());
+          throw new Error(message);
+        }
+      }
+      setNotice(`Outcome cleared. ${application.fullName || 'The applicant'} is back in Pass. No email was sent or recalled.${refreshed ? '' : ' Reload the page to refresh its latest counts.'}`);
+      window.requestAnimationFrame(() => document.querySelector('.assessment-outcome-link[aria-current="page"]')?.focus());
+    } catch (error) {
+      if (error?.status === 401 || error?.status === 403) {
+        invalidateReviewerSession();
+        return;
+      }
+      if (responseConfirmed) throw error;
+
+      // A lost response can follow a committed reset. Only accept reconciliation
+      // when this exact applicant is still a Stage One pass with both team fields cleared.
+      const refreshed = await loadReviewerState({ quiet: true });
+      const saved = refreshed?.history.find(
+        (candidate) => String(applicationId(candidate)) === String(id),
+      );
+      if (refreshed?.authenticated && isClearedTeamDecision(saved, id)) {
+        setNotice(`Outcome cleared. ${application.fullName || 'The applicant'} is back in Pass. No email was sent or recalled.`);
+        window.requestAnimationFrame(() => document.querySelector('.assessment-outcome-link[aria-current="page"]')?.focus());
+        return;
+      }
+      if (refreshed?.authenticated && (!saved || saved.teamDecision !== expectedDecision)) {
+        const message = 'The outcome changed elsewhere. The assessment has been refreshed; review the latest status before trying again.';
+        setPageError(message);
+        window.requestAnimationFrame(() => document.querySelector('.assessment-outcome-link[aria-current="page"]')?.focus());
+        throw new Error(message);
+      }
+      throw error;
+    } finally {
+      setIsDeciding(false);
+    }
+  };
+
   const handleChangePassword = async (password) => {
     const currentCohort = reviewerState.currentCohort;
     const cohortId = currentCohort?.id || currentCohort?.cohortId || currentCohort?.cohort_id;
@@ -561,6 +652,10 @@ export default function Assessment() {
                 readOnly={activeView !== 'pass'}
                 allowTeamDecision={activeView === 'pass'}
                 onTeamDecision={activeView === 'pass' ? handleTeamDecision : undefined}
+                allowTeamDecisionReset={activeView === 'rejected' || activeView === 'invited'}
+                onTeamDecisionReset={activeView === 'rejected' || activeView === 'invited'
+                  ? handleTeamDecisionReset
+                  : undefined}
                 isDeciding={isDeciding}
               />
             )) : (

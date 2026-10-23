@@ -408,7 +408,8 @@ export function mountRecruitmentRoutes(app, options) {
     return res.json({ ok: true, ...result });
   }));
 
-  app.post("/api/recruitment/reviewer/applications/:applicationId/team-decision", requireReviewer, asyncRoute(async (req, res) => {
+  const teamDecisionPath = "/api/recruitment/reviewer/applications/:applicationId/team-decision";
+  const requireTeamDecisionRequest = (req, res, next) => {
     noStore(res);
     if (!req.is("application/json")) {
       return res.status(415).json({ ok: false, code: "team_decision_json_required", message: "Use a JSON decision request." });
@@ -424,7 +425,21 @@ export function mountRecruitmentRoutes(app, options) {
         message: "Open the assessment page on the Patch website and try again.",
       });
     }
+    return next();
+  };
+
+  app.post(teamDecisionPath, requireReviewer, requireTeamDecisionRequest, asyncRoute(async (req, res) => {
     const result = await service.decideTeamApplication(req.params.applicationId, req.body?.decision, req.body?.confirmSent);
+    return res.json({ ok: true, ...result });
+  }));
+
+  app.delete(teamDecisionPath, requireReviewer, requireTeamDecisionRequest, asyncRoute(async (req, res) => {
+    const result = await service.resetTeamApplication(
+      req.params.applicationId,
+      req.body?.expectedDecision,
+      req.body?.expectedDecidedAt,
+      req.body?.confirmReset,
+    );
     return res.json({ ok: true, ...result });
   }));
 

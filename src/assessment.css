@@ -535,6 +535,17 @@
   color: var(--assessment-black);
 }
 
+.assessment-button-reset {
+  border-color: #b9d4d9 !important;
+  background: #f7fbfb;
+  color: var(--assessment-navy);
+}
+
+.assessment-button-reset:hover {
+  border-color: #8fbac2 !important;
+  background: var(--assessment-soft-blue);
+}
+
 .assessment-button-danger {
   background: var(--assessment-danger);
   color: var(--assessment-white);
@@ -555,6 +566,11 @@
   background: var(--assessment-danger-soft);
 }
 
+.assessment-confirmation-reset {
+  border-color: #c9dfe3;
+  background: #f7fafb;
+}
+
 .assessment-confirmation h3 {
   margin-bottom: 10px;
   font-size: 1.35rem;
@@ -568,6 +584,14 @@
 
 .assessment-confirmation-error {
   margin-bottom: 14px;
+}
+
+.assessment-team-reset-actions > div {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.assessment-team-reset-actions .assessment-button-reset {
+  width: 100%;
 }
 
 .assessment-page .assessment-email-reopen {

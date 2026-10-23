@@ -203,7 +203,7 @@ test("team decisions require an exact Confirm Sent and valid outcome without cha
   } finally { f.close(); }
 });
 
-test("both final outcomes survive reopening, are idempotent, and cannot be reversed or emailed twice", () => {
+test("both final outcomes survive reopening, are idempotent, and cannot be overwritten or emailed twice", () => {
   const f = createFixture();
   try {
     const records = [f.createApplication("pass", "invited"), f.createApplication("pass", "rejected")];
@@ -222,6 +222,171 @@ test("both final outcomes survive reopening, are idempotent, and cannot be rever
       assert.equal(f.service.listProcessedApplications().find((card) => card.applicationId === record.applicationId).teamEmailDrafts, undefined);
       assert.equal(existsSync(record.filePath), true);
     });
+    assert.equal(f.deliveries(), 0);
+  } finally { f.close(); }
+});
+
+test("team resets use the exact outcome revision, preserve Stage One, and send no email", () => {
+  const f = createFixture();
+  try {
+    const records = [f.createApplication("pass", "reset-invited"), f.createApplication("pass", "reset-rejected")];
+    const decisions = ["invited", "rejected"];
+    const finalized = records.map((record, index) => {
+      f.setNow(`2026-10-16T0${7 + index}:00:00.000Z`);
+      return f.service.decideTeamApplication(record.applicationId, decisions[index], true).application;
+    });
+    const before = records.map((record) => f.database.getApplication(record.applicationId));
+    const staleRemoval = f.database.previewDeleteCurrentCohort(f.cohort.cohortId);
+
+    records.forEach((record, index) => {
+      const result = f.service.resetTeamApplication(
+        record.applicationId,
+        decisions[index],
+        finalized[index].teamDecidedAt,
+        true,
+      );
+      assert.equal(result.application.decision, "pass");
+      assert.equal(result.application.teamDecision, "");
+      assert.equal(result.application.teamDecidedAt, "");
+      assert.deepEqual(result.application.teamEmailDrafts, {
+        rejected: { to: record.email, subject: "rejected", body: `${record.fullName}: rejected` },
+        invited: { to: record.email, subject: "invited", body: `${record.fullName}: invited` },
+      });
+
+      const saved = f.database.getApplication(record.applicationId);
+      const { teamDecision, teamDecidedAt, ...preserved } = saved;
+      const {
+        teamDecision: _oldDecision,
+        teamDecidedAt: _oldTimestamp,
+        ...original
+      } = before[index];
+      assert.equal(teamDecision, "");
+      assert.equal(teamDecidedAt, "");
+      assert.deepEqual(preserved, original);
+      assert.equal(existsSync(record.filePath), true);
+
+      const repeated = f.service.resetTeamApplication(
+        record.applicationId,
+        decisions[index],
+        finalized[index].teamDecidedAt,
+        true,
+      );
+      assert.equal(repeated.application.teamDecision, "");
+      const passCard = f.service.listProcessedApplications()
+        .find((card) => card.applicationId === record.applicationId);
+      assert.deepEqual(passCard.teamEmailDrafts, {
+        rejected: { to: record.email, subject: "rejected", body: `${record.fullName}: rejected` },
+        invited: { to: record.email, subject: "invited", body: `${record.fullName}: invited` },
+      });
+    });
+
+    assert.throws(
+      () => f.database.deleteCurrentCohort(staleRemoval),
+      (error) => error.code === "cohort_delete_conflict" && error.statusCode === 409,
+    );
+    f.reopen();
+    records.forEach((record) => {
+      assert.equal(f.database.getApplication(record.applicationId).teamDecision, "");
+    });
+
+    f.setNow("2026-10-17T09:00:00.000Z");
+    const newer = f.service.decideTeamApplication(records[0].applicationId, "invited", true).application;
+    assert.equal(newer.teamDecision, "invited");
+    assert.notEqual(newer.teamDecidedAt, finalized[0].teamDecidedAt);
+    assert.throws(
+      () => f.service.resetTeamApplication(
+        records[0].applicationId,
+        "invited",
+        finalized[0].teamDecidedAt,
+        true,
+      ),
+      (error) => error.code === "application_team_decision_conflict" && error.statusCode === 409,
+    );
+    assert.equal(f.database.getApplication(records[0].applicationId).teamDecision, "invited");
+    assert.equal(f.database.getApplication(records[0].applicationId).teamDecidedAt, newer.teamDecidedAt);
+
+    f.service.resetTeamApplication(records[0].applicationId, "invited", newer.teamDecidedAt, true);
+    f.setNow("2026-10-18T09:00:00.000Z");
+    const different = f.service.decideTeamApplication(records[0].applicationId, "rejected", true).application;
+    assert.throws(
+      () => f.service.resetTeamApplication(
+        records[0].applicationId,
+        "invited",
+        newer.teamDecidedAt,
+        true,
+      ),
+      (error) => error.code === "application_team_decision_conflict" && error.statusCode === 409,
+    );
+    assert.equal(f.database.getApplication(records[0].applicationId).teamDecision, "rejected");
+    assert.equal(f.database.getApplication(records[0].applicationId).teamDecidedAt, different.teamDecidedAt);
+    assert.equal(f.deliveries(), 0);
+  } finally { f.close(); }
+});
+
+test("team reset validates confirmation, revision, application, and Stage One pass", () => {
+  const f = createFixture();
+  try {
+    const passed = f.createApplication("pass");
+    const finalized = f.service.decideTeamApplication(passed.applicationId, "invited", true).application;
+    for (const confirmReset of [undefined, false, null, "true", 1, {}, []]) {
+      assert.throws(
+        () => f.service.resetTeamApplication(
+          passed.applicationId,
+          "invited",
+          finalized.teamDecidedAt,
+          confirmReset,
+        ),
+        (error) => error.code === "team_decision_reset_confirmation_required" && error.statusCode === 400,
+      );
+    }
+    for (const expectedDecision of [undefined, null, "pass", "fail", "Invited", "invited ", 1, {}]) {
+      assert.throws(
+        () => f.service.resetTeamApplication(
+          passed.applicationId,
+          expectedDecision,
+          finalized.teamDecidedAt,
+          true,
+        ),
+        (error) => error.code === "invalid_team_decision" && error.statusCode === 400,
+      );
+    }
+    for (const expectedDecidedAt of [undefined, null, "", 1, {}, "x".repeat(129)]) {
+      assert.throws(
+        () => f.service.resetTeamApplication(
+          passed.applicationId,
+          "invited",
+          expectedDecidedAt,
+          true,
+        ),
+        (error) => error.code === "invalid_team_decision_revision" && error.statusCode === 400,
+      );
+    }
+    for (const stage of ["pending", "fail"]) {
+      const other = f.createApplication(stage, `reset-${stage}`);
+      assert.throws(
+        () => f.service.resetTeamApplication(
+          other.applicationId,
+          "invited",
+          finalized.teamDecidedAt,
+          true,
+        ),
+        (error) => error.code === "team_decision_requires_pass" && error.statusCode === 409,
+      );
+    }
+    assert.throws(
+      () => f.service.resetTeamApplication("does-not-exist", "invited", finalized.teamDecidedAt, true),
+      (error) => error.code === "application_missing" && error.statusCode === 404,
+    );
+    assert.throws(
+      () => f.service.resetTeamApplication(
+        passed.applicationId,
+        "invited",
+        "2026-10-16T06:00:00.001Z",
+        true,
+      ),
+      (error) => error.code === "application_team_decision_conflict" && error.statusCode === 409,
+    );
+    assert.equal(f.database.getApplication(passed.applicationId).teamDecision, "invited");
     assert.equal(f.deliveries(), 0);
   } finally { f.close(); }
 });
@@ -254,7 +419,7 @@ test("team changes invalidate a stale Remove snapshot and a fresh Remove clears 
   } finally { f.close(); }
 });
 
-test("team-decision HTTP requires reviewer auth, JSON, same origin and confirmation; competing outcomes cannot both win", async () => {
+test("team-decision HTTP protects finalization and revision-guarded reset with the same request policy", async () => {
   const f = createFixture();
   const codec = createSignedCookieCodec("synthetic-team-decision-cookie-secret-at-least-32-bytes");
   const cookie = `${REVIEWER_COOKIE_NAME}=${codec.seal({ v: 1, kind: "reviewer", exp: Math.floor(NOW.getTime() / 1000) + 600 })}`;
@@ -270,12 +435,18 @@ test("team-decision HTTP requires reviewer auth, JSON, same origin and confirmat
   const url = `${base}/api/recruitment/reviewer/applications/${passed.applicationId}/team-decision`;
   const headers = { Cookie: cookie, "Content-Type": "application/json", Origin: base };
   const post = (body = { decision: "invited", confirmSent: true }, requestHeaders = headers) => fetch(url, { method: "POST", headers: requestHeaders, body: JSON.stringify(body) });
+  const reset = (
+    body = { expectedDecision: "invited", expectedDecidedAt: NOW.toISOString(), confirmReset: true },
+    requestHeaders = headers,
+  ) => fetch(url, { method: "DELETE", headers: requestHeaders, body: JSON.stringify(body) });
   try {
     const anonymous = await post(undefined, { "Content-Type": "application/json", Origin: base });
     assert.equal(anonymous.status, 401);
+    assert.equal((await reset(undefined, { "Content-Type": "application/json", Origin: base })).status, 401);
     const expired = `${REVIEWER_COOKIE_NAME}=${codec.seal({ v: 1, kind: "reviewer", exp: Math.floor(NOW.getTime() / 1000) - 1 })}`;
     assert.equal((await post(undefined, { ...headers, Cookie: expired })).status, 401);
     assert.equal((await post(undefined, { ...headers, "Content-Type": "text/plain" })).status, 415);
+    assert.equal((await reset(undefined, { ...headers, "Content-Type": "text/plain" })).status, 415);
     for (const requestHeaders of [
       { Cookie: cookie, "Content-Type": "application/json" },
       { ...headers, Origin: "https://attacker.example" },
@@ -285,6 +456,15 @@ test("team-decision HTTP requires reviewer auth, JSON, same origin and confirmat
       { ...headers, "Sec-Fetch-Site": "none" },
     ]) {
       const denied = await post(undefined, requestHeaders);
+      assert.equal(denied.status, 403);
+      assert.equal((await denied.json()).code, "team_decision_origin");
+    }
+    for (const requestHeaders of [
+      { Cookie: cookie, "Content-Type": "application/json" },
+      { ...headers, Origin: "https://attacker.example" },
+      { ...headers, "Sec-Fetch-Site": "cross-site" },
+    ]) {
+      const denied = await reset(undefined, requestHeaders);
       assert.equal(denied.status, 403);
       assert.equal((await denied.json()).code, "team_decision_origin");
     }
@@ -307,6 +487,31 @@ test("team-decision HTTP requires reviewer auth, JSON, same origin and confirmat
     const state = await history.json();
     assert.equal(state.history[0].teamDecision, recorded.teamDecision);
     assert.equal(state.history[0].teamEmailDrafts, undefined);
+
+    const resetBody = {
+      expectedDecision: recorded.teamDecision,
+      expectedDecidedAt: recorded.teamDecidedAt,
+      confirmReset: true,
+    };
+    assert.equal((await reset({ ...resetBody, confirmReset: false })).status, 400);
+    assert.equal((await reset({ ...resetBody, expectedDecidedAt: "2026-10-16T06:00:00.001Z" })).status, 409);
+    const resetResponse = await reset(resetBody);
+    assert.equal(resetResponse.status, 200);
+    const resetPayload = await resetResponse.json();
+    assert.equal(resetPayload.application.decision, "pass");
+    assert.equal(resetPayload.application.teamDecision, "");
+    assert.equal(resetPayload.application.teamDecidedAt, "");
+    assert.ok(resetPayload.application.teamEmailDrafts.invited);
+    assert.ok(resetPayload.application.teamEmailDrafts.rejected);
+    const resetRetry = await reset(resetBody);
+    assert.equal(resetRetry.status, 200);
+    assert.equal((await resetRetry.json()).application.teamDecision, "");
+    const resetHistory = await fetch(`${base}/api/recruitment/reviewer/state`, { headers: { Cookie: cookie } });
+    const resetState = await resetHistory.json();
+    assert.equal(resetState.history[0].decision, "pass");
+    assert.equal(resetState.history[0].teamDecision, "");
+    assert.ok(resetState.history[0].teamEmailDrafts.invited);
+    assert.ok(resetState.history[0].teamEmailDrafts.rejected);
     assert.equal(f.deliveries(), 0);
   } finally {
     await new Promise((resolve) => server.close(resolve));
@@ -314,7 +519,7 @@ test("team-decision HTTP requires reviewer auth, JSON, same origin and confirmat
   }
 });
 
-test("team confirmation accepts the public HTTPS origin behind TLS termination, without trusting a foreign origin", async () => {
+test("team finalization and reset accept the public HTTPS origin behind TLS termination only", async () => {
   const f = createFixture();
   const codec = createSignedCookieCodec("synthetic-team-proxy-cookie-secret-at-least-32-bytes");
   const cookie = `${REVIEWER_COOKIE_NAME}=${codec.seal({ v: 1, kind: "reviewer", exp: Math.floor(NOW.getTime() / 1000) + 600 })}`;
@@ -333,26 +538,48 @@ test("team confirmation accepts the public HTTPS origin behind TLS termination, 
   };
   // Node's fetch replaces Host with the loopback destination. Use the HTTP
   // client here so the fixture accurately represents Railway TLS termination.
-  const post = (origin = headers.Origin) => new Promise((resolve, reject) => {
-    const req = request(url, { method: "POST", headers: { ...headers, Origin: origin } }, (res) => {
-      let body = "";
+  const send = (
+    method = "POST",
+    origin = headers.Origin,
+    body = { decision: "invited", confirmSent: true },
+  ) => new Promise((resolve, reject) => {
+    const payload = JSON.stringify(body);
+    const req = request(url, {
+      method,
+      headers: { ...headers, Origin: origin, "Content-Length": Buffer.byteLength(payload) },
+    }, (res) => {
+      let responseBody = "";
       res.setEncoding("utf8");
-      res.on("data", (chunk) => { body += chunk; });
-      res.on("end", () => resolve({ status: res.statusCode, payload: JSON.parse(body) }));
+      res.on("data", (chunk) => { responseBody += chunk; });
+      res.on("end", () => resolve({ status: res.statusCode, payload: JSON.parse(responseBody) }));
       res.on("error", reject);
     });
     req.on("error", reject);
-    req.end(JSON.stringify({ decision: "invited", confirmSent: true }));
+    req.end(payload);
   });
   try {
     for (const origin of ["http://www.patch.app", "https://other.example", "https://www.patch.app.evil.example"]) {
-      const response = await post(origin);
+      const response = await send("POST", origin);
       assert.equal(response.status, 403);
       assert.equal(f.database.getApplication(passed.applicationId).teamDecision, "");
     }
-    const response = await post();
+    const response = await send();
     assert.equal(response.status, 200);
     assert.equal(response.payload.application.teamDecision, "invited");
+    const resetBody = {
+      expectedDecision: "invited",
+      expectedDecidedAt: response.payload.application.teamDecidedAt,
+      confirmReset: true,
+    };
+    for (const origin of ["http://www.patch.app", "https://other.example", "https://www.patch.app.evil.example"]) {
+      const denied = await send("DELETE", origin, resetBody);
+      assert.equal(denied.status, 403);
+      assert.equal(f.database.getApplication(passed.applicationId).teamDecision, "invited");
+    }
+    const reset = await send("DELETE", headers.Origin, resetBody);
+    assert.equal(reset.status, 200);
+    assert.equal(reset.payload.application.teamDecision, "");
+    assert.equal(reset.payload.application.decision, "pass");
     assert.equal(f.deliveries(), 0);
   } finally {
     await new Promise((resolve) => server.close(resolve));

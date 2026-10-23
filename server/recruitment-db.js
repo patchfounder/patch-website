@@ -835,6 +835,55 @@ export function createRecruitmentDatabase(options = {}) {
     });
   }
 
+  function resetTeamApplication(applicationId, expectedDecision, expectedDecidedAt) {
+    if (expectedDecision !== "rejected" && expectedDecision !== "invited") {
+      throw new RecruitmentDatabaseError("Expected team decision must be rejected or invited.", "invalid_team_decision", 400);
+    }
+    if (typeof expectedDecidedAt !== "string" || !expectedDecidedAt || expectedDecidedAt.length > 128) {
+      throw new RecruitmentDatabaseError("Expected team decision timestamp is required.", "invalid_team_decision_revision", 400);
+    }
+    return transaction(database, () => {
+      const existing = getApplication(applicationId);
+      if (!existing) {
+        throw new RecruitmentDatabaseError("Application not found.", "application_missing", 404);
+      }
+      if (existing.decision !== "pass") {
+        throw new RecruitmentDatabaseError(
+          "Only an application that passed Stage One can have its team decision reset.",
+          "team_decision_requires_pass",
+          409,
+        );
+      }
+      // A repeated reset is safe only while the team outcome remains blank. If a
+      // later outcome exists, the expected outcome and timestamp below must match it.
+      if (!existing.teamDecision && !existing.teamDecidedAt) return existing;
+      if (
+        existing.teamDecision !== expectedDecision
+        || existing.teamDecidedAt !== expectedDecidedAt
+      ) {
+        throw new RecruitmentDatabaseError(
+          "The team decision changed. Reload and try again.",
+          "application_team_decision_conflict",
+          409,
+        );
+      }
+      const result = database.prepare(`
+        UPDATE recruitment_applications
+        SET team_decision = '', team_decided_at = NULL
+        WHERE application_id = ? AND decision = 'pass'
+          AND team_decision = ? AND team_decided_at = ?
+      `).run(applicationId, expectedDecision, expectedDecidedAt);
+      if (Number(result.changes) !== 1) {
+        throw new RecruitmentDatabaseError(
+          "The team decision changed. Reload and try again.",
+          "application_team_decision_conflict",
+          409,
+        );
+      }
+      return getApplication(applicationId);
+    });
+  }
+
   function healthCheck() {
     try {
       const result = database.prepare("PRAGMA quick_check").get();
@@ -874,6 +923,7 @@ export function createRecruitmentDatabase(options = {}) {
     listProcessedApplications,
     decideApplication,
     decideTeamApplication,
+    resetTeamApplication,
     recordEmailResult,
     healthCheck,
     close,
