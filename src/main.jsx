@@ -6,6 +6,7 @@ import Administration from './components/Administration.jsx';
 import CoachApplication from './components/CoachApplication.jsx';
 import Legal from './components/Legal.jsx';
 import Meeting from './components/Meeting.jsx';
+import Activation from './components/Activation.jsx';
 import Activity from './components/Activity.jsx';
 import ActivityContent from './components/ActivityContent.jsx';
 import Cancel from './components/Cancel.jsx';
@@ -25,6 +26,7 @@ const bookingRoutes = {
   '/assessment': Assessment,
   '/legal': Legal,
   '/meeting': Meeting,
+  '/activation': Activation,
   '/activity': Activity,
   '/activity-content': ActivityContent,
   '/cancel': Cancel,

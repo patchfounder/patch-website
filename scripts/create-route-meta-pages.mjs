@@ -7,6 +7,11 @@ const PREVIEW_IMAGE_URL = 'https://www.patch.app/patch-whatsapp-preview-v2.jpg';
 
 const routes = [
   {
+    path: 'activation',
+    title: 'Activation Call | Patch',
+    description: 'A 30-minute call to activate your Patch account and show you how to deliver a Patch Call in 7 Steps.',
+  },
+  {
     path: 'meeting',
     title: 'Patch Meeting',
     description: 'Your Patch meeting link.',
