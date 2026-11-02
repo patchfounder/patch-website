@@ -148,11 +148,12 @@ export function createRecruitmentEmailSender(options = {}) {
           "Kind regards,",
         ]
       : [
-          `Dear ${name},`,
-          "Thank you for your interest in the Legal Speaking Coach internship at Patch and for the time you have taken throughout the application process.",
-          "After careful consideration, I regret to inform you that you have not been selected to join the team on this occasion.",
-          "I appreciate your interest in Patch and wish you every success with your future endeavours.",
-          "Kind regards,",
+          `Hi ${name},`,
+          "Thanks so much for taking the time to interview. It was lovely getting to know you, and I really appreciate your interest in Patch.",
+          "A couple of the red flags we discussed before the interview came up during our conversation, so unfortunately I’m unable to move forward with your application this time.",
+          "You’re very welcome to apply again next month. With some work on those areas, you could be in a stronger position.",
+          `Thanks again, ${name}, and I hope to hear from you soon.`,
+          "Best wishes,",
         ];
     // Match the existing manual Pass workflow: the reviewer's mail application
     // supplies Patrick's configured signature, avoiding a duplicated signature.

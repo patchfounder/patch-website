@@ -227,10 +227,12 @@ test("Invite and Reject create personalised manual drafts without sending or hid
   const rejected = sender.createTeamEmailDraft(application, "rejected");
   assert.equal(rejected.to, application.email);
   assert.equal(rejected.subject, "Your Patch application");
-  assert.match(rejected.body, /^Dear Isabella,/);
-  assert.match(rejected.body, /not been selected to join the team/);
-  assert.doesNotMatch(rejected.body, /Stage One|Stage 1|interview|coach-registration/);
-  assert.ok(rejected.body.endsWith("Kind regards,"));
+  assert.match(rejected.body, /^Hi Isabella,/);
+  assert.match(rejected.body, /red flags we discussed before the interview/);
+  assert.match(rejected.body, /apply again next month/);
+  assert.match(rejected.body, /Thanks again, Isabella, and I hope to hear from you soon\./);
+  assert.doesNotMatch(rejected.body, /Stage One|Stage 1|coach-registration|Patrick Beattie|Founder \| CEO/);
+  assert.ok(rejected.body.endsWith("Best wishes,"), "the mail application's configured signature is not duplicated");
   assert.equal(sends, 0);
 });
 
