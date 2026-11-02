@@ -2,6 +2,15 @@
 
 These instructions govern every task, agent, subagent, tool, script, command, and process used for recruitment work in `/Users/patrick/Desktop/Patch/Website`.
 
+## EXPLICIT SEQUENCED EXISTING-WORK RELEASE — 2026-11-02
+
+After reviewing the exact remaining working-tree inventory, Patrick requested: "Shouldn't we push, commit, and deploy this? The work tree should be clean. Then do the red flag thing afterwards and push, commit, and deploy the MCP thing afterwards as well."
+
+- This authorises separate reviewed commits and existing-service releases in this order: the existing same-day User picker and Messages history timeout/retry web fixes plus their tests and current planning/release records; the previously approved rejection-email wording and test in Website; then the already reviewed recruitment read-only MCP adapter. The 16 pre-existing Patch OS files are now included only as those existing changes or records, superseding the earlier exclusion for this sequence.
+- Preserve all work and published history. The unpublished recruitment MCP commit may be retained on a safety branch and replayed after the earlier web fixes to satisfy the requested sequence. Do not force-push, weaken production preflight, or silently change existing code beyond the reviewed fixes. No stash is needed if all included records are committed.
+- The planning records do not authorise implementing Smart Notify, cross-month rescheduling or other planned features. No native archive, upload, distribution or live operational mutation is included. The rejection change updates the draft template only; it does not authorise sending emails.
+- Retain all monitor read-only restrictions, new-scope consent requirements, paused-until-verified monitoring and Coach/User ICS protections. Request Patrick's required authenticated refresh after production release and record the result truthfully.
+
 ## EXPLICIT READ-ONLY RECRUITMENT MONITOR RELEASE EXCEPTION — 2026-11-02
 
 Patrick answered "Do you need to push, commit, and deploy? If so do it." after the specific request "May I commit, push and deploy the reviewed monitoring changes, then configure the read-only connection?" This authorises the bounded release described below and supersedes the earlier local-only restriction for this feature.
