@@ -18,6 +18,7 @@ import { createRecruitmentDatabase } from "./recruitment-db.js";
 import { createRecruitmentEmailSender } from "./recruitment-email.js";
 import { createCoachRegistrationRuntime } from "./coach-registration.js";
 import { createRecruitmentService } from "./recruitment-service.js";
+import { createRecruitmentMonitor, mountRecruitmentMonitorRoutes } from "./recruitment-monitor.js";
 import {
   createRecruitmentStorage,
   DEFAULT_MAX_AUDIO_BYTES,
@@ -96,6 +97,14 @@ function parseRange(rangeHeader, size) {
 }
 
 function streamReviewerAudio(req, res, audio) {
+  const pipeAudio = (options) => {
+    const stream = createReadStream(audio.filePath, options);
+    // A reviewer may remove a recording after stat() but before open(). A lost
+    // file or disconnected listener must fail this stream, not the process.
+    stream.on("error", () => res.destroy());
+    res.once("close", () => stream.destroy());
+    stream.pipe(res);
+  };
   const commonHeaders = {
     "Accept-Ranges": "bytes",
     "Cache-Control": "private, no-store",
@@ -114,11 +123,11 @@ function streamReviewerAudio(req, res, audio) {
       "Content-Range": `bytes ${range.start}-${range.end}/${audio.fileSize}`,
       "Content-Length": String(range.end - range.start + 1),
     });
-    createReadStream(audio.filePath, { start: range.start, end: range.end }).pipe(res);
+    pipeAudio({ start: range.start, end: range.end });
     return;
   }
   res.status(200).set({ ...commonHeaders, "Content-Length": String(audio.fileSize) });
-  createReadStream(audio.filePath).pipe(res);
+  pipeAudio();
 }
 
 function recruitmentErrorHandler(error, _req, res, next) {
@@ -157,6 +166,8 @@ export function mountRecruitmentRoutes(app, options) {
     staticDirectory = "",
     audioInspector = inspectRecruitmentAudio,
     coachRegistrationRuntime = null,
+    recruitmentMonitor = null,
+    recruitmentMonitorToken = "",
   } = options;
   if (!app || !express || !multer || !service || !cookieCodec) {
     throw new Error("Express, Multer, service, and cookie codec are required.");
@@ -190,6 +201,9 @@ export function mountRecruitmentRoutes(app, options) {
 
   app.disable("x-powered-by");
   coachRegistrationRuntime?.mount(app, { express, multer });
+  mountRecruitmentMonitorRoutes(app, {
+    monitor: recruitmentMonitor, token: recruitmentMonitorToken, streamAudio: streamReviewerAudio,
+  });
   app.post("/api/recruitment/reviewer/login", (req, res, next) => {
     noStore(res);
     if (!req.is("application/json")) {
@@ -616,6 +630,7 @@ export async function createRecruitmentRuntime(options = {}) {
     });
     const cookieCodec = options.cookieCodec || createSignedCookieCodec(env.RECRUITMENT_COOKIE_SECRET);
     const reviewerSecret = validateReviewerSecret(options.reviewerSecret || env.RECRUITMENT_REVIEWER_SECRET);
+    const recruitmentMonitor = createRecruitmentMonitor({ database, service, now: options.now });
     const app = await createRecruitmentApp({
       ...options,
       service,
@@ -627,6 +642,8 @@ export async function createRecruitmentRuntime(options = {}) {
       maxAudioBytes: storage.maxAudioBytes,
       staticDirectory: options.staticDirectory || "",
       coachRegistrationRuntime,
+      recruitmentMonitor,
+      recruitmentMonitorToken: env.RECRUITMENT_MONITOR_READ_TOKEN || "",
     });
     let closed = false;
     return Object.freeze({

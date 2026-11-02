@@ -2,6 +2,24 @@
 
 These instructions govern every task, agent, subagent, tool, script, command, and process used for recruitment work in `/Users/patrick/Desktop/Patch/Website`.
 
+## EXPLICIT READ-ONLY RECRUITMENT MONITOR RELEASE EXCEPTION — 2026-11-02
+
+Patrick answered "Do you need to push, commit, and deploy? If so do it." after the specific request "May I commit, push and deploy the reviewed monitoring changes, then configure the read-only connection?" This authorises the bounded release described below and supersedes the earlier local-only restriction for this feature.
+
+- Allow scoped commits, pushes and releases of the reviewed Website monitor and Patch OS read-only adapter through their existing services, plus their dedicated server-only monitor token and Website origin configuration. Preserve the existing production release gates and unrelated working-tree changes; do not reset, clean, stash or include unrelated work under this authorisation.
+- No new services, storage, migrations, live test applicants, application decisions, applicant messages or changes to existing accounts, schedules, calls, domains or networking. Obtain any new OAuth scope consent through the normal connection flow; never widen an existing grant silently.
+- Read live recruitment records only through configured Patch Admin MCP tools. Activate the prepared monitoring tasks only after complete real read-only verification and establish a truthful initial baseline.
+- Record actual release state and keep the authenticated user-performed Back Office refresh pending until Patrick reports its result. Preserve all Coach/User ICS behaviour.
+
+## EXPLICIT LOCAL READ-ONLY RECRUITMENT MCP EXCEPTION — 2026-11-02
+
+Patrick requested the read-only application/audio monitor and then explicitly answered "Authorise the bounded local Patch OS adapter and tests" to the question asking for an exception to this file for that adapter. This supersedes the isolation gate below only for this local implementation and verification.
+
+- Allow Website-only read endpoints on its existing recruitment runtime and a dedicated Patch Admin MCP adapter, directly related OAuth scope/tool declarations, tests and documentation in Patch OS. Recruitment data and audio remain in Website private storage; the adapter must not open Website SQLite or create another recruitment runtime.
+- The integration is read-only: application lists/statuses, individual application details and authenticated private audio. Preserve applicant/reviewer passwords, submission and assessment UI, Pass/Fail and team decisions, existing email behaviour, registration, and all Coach/User ICS behaviour.
+- Use synthetic isolated fixtures and OS temporary storage only. No live applicant inspection outside Patch Admin MCP, operational mutation, credential generation/configuration, email sending, account changes, infrastructure changes, commits, pushes or deployments are authorised by this exception. Production activation and any new OAuth consent remain separate steps.
+- Earlier unrelated Patch OS work must be preserved. Report actual scoped Patch OS reads/edits truthfully; do not use the older "not accessed or modified" assertion for this exception.
+
 ## EXPLICIT COACH REGISTRATION LIVE RELEASE EXCEPTION — 2026-10-16
 
 Patrick replied "yes" to this exact request in this chat: "May I finish the Website-to-Patch OS connection, configure its server-only credentials, commit, push and deploy both services, and enable confirmation emails with VCF attachments to patrick@patch.app? Real submissions will then create Coach profiles and availability. I won't alter existing accounts or create live test accounts."

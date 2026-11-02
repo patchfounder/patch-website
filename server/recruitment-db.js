@@ -708,6 +708,55 @@ export function createRecruitmentDatabase(options = {}) {
       .get(applicationId));
   }
 
+  // SELECT-only integration readers. Pagination is for one complete scan, not a
+  // polling watermark: later inserts can share a timestamp with an earlier UUID.
+  function monitoringSelection({ status = "all", cohortId = "" } = {}) {
+    const clauses = [];
+    const parameters = [];
+    if (cohortId) {
+      clauses.push("a.cohort_id = ?");
+      parameters.push(cohortId);
+    }
+    if (status === "pending") clauses.push("a.decision IS NULL");
+    if (status === "pass" || status === "fail") {
+      clauses.push("a.decision = ?");
+      parameters.push(status);
+    }
+    if (status === "invited" || status === "rejected") {
+      clauses.push("a.decision = 'pass' AND a.team_decision = ?");
+      parameters.push(status);
+    }
+    return { clauses, parameters };
+  }
+
+  function listMonitoringApplications({ limit = 51, after = null, ...selection } = {}) {
+    const { clauses, parameters } = monitoringSelection(selection);
+    if (after) {
+      clauses.push("(a.submitted_at > ? OR (a.submitted_at = ? AND a.application_id > ?))");
+      parameters.push(after.submittedAt, after.submittedAt, after.applicationId);
+    }
+    const boundedLimit = Math.max(1, Math.min(101, Math.floor(Number(limit)) || 51));
+    return database.prepare(`${applicationSelect}
+      ${clauses.length ? `WHERE ${clauses.join(" AND ")}` : ""}
+      ORDER BY a.submitted_at ASC, a.application_id ASC LIMIT ?
+    `).all(...parameters, boundedLimit).map(applicationFromRow);
+  }
+
+  function readMonitoringTotals(selection = {}) {
+    const { clauses, parameters } = monitoringSelection(selection);
+    const row = database.prepare(`SELECT COUNT(*) AS total,
+      COALESCE(SUM(a.decision IS NULL), 0) AS pending,
+      COALESCE(SUM(a.decision = 'pass'), 0) AS pass,
+      COALESCE(SUM(a.decision = 'fail'), 0) AS fail,
+      COALESCE(SUM(a.decision = 'pass' AND a.team_decision = 'invited'), 0) AS invited,
+      COALESCE(SUM(a.decision = 'pass' AND a.team_decision = 'rejected'), 0) AS rejected,
+      COALESCE(SUM(a.email_status = 'failed'), 0) AS emailFailed
+      FROM recruitment_applications a
+      ${clauses.length ? `WHERE ${clauses.join(" AND ")}` : ""}
+    `).get(...parameters);
+    return Object.fromEntries(Object.entries(row).map(([key, value]) => [key, Number(value)]));
+  }
+
   function listPendingApplications(limit = 500) {
     const query = `${applicationSelect}
       WHERE a.decision IS NULL AND c.slot = 'current'
@@ -919,6 +968,8 @@ export function createRecruitmentDatabase(options = {}) {
     activateNext,
     createApplication,
     getApplication,
+    listMonitoringApplications,
+    readMonitoringTotals,
     listPendingApplications,
     listProcessedApplications,
     decideApplication,
