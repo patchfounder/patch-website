@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -7,6 +8,7 @@ import test from "node:test";
 import { createRecruitmentEmailSender } from "../server/recruitment-email.js";
 
 const SIGNATURE_HTML = readFileSync(new URL("../server/patrick-email-signature.html", import.meta.url), "utf8");
+const APPROVED_SIGNATURE_SHA256 = "e86df3b54f63306ae5711452b481d6c524df3555dda2bb47c9d62ca23571d9ca";
 const SIGNATURE_TEXT = [
   "Patrick Beattie",
   "Founder | CEO",
@@ -27,51 +29,34 @@ function visibleText(html) {
     .replace(/\s+/g, " ").trim();
 }
 
-function assertConsistentTypography(html) {
-  const outerTable = html.match(/<table\b([^>]*)>/i)?.[1] || "";
-  assert.match(outerTable, /role="presentation"/);
-  assert.match(outerTable, /\bwidth="600"/);
-  assert.match(outerTable, /width:100%/);
-  assert.match(outerTable, /max-width:600px/);
-  const stack = [];
-  let visibleRuns = 0;
-  for (const token of html.match(/<!--[\s\S]*?-->|<[^>]*>|[^<]+/g) || []) {
-    if (token.startsWith("<!--")) continue;
-    const closing = token.match(/^<\/([a-z][\w:-]*)/i);
-    if (closing) {
-      const index = stack.findLastIndex((entry) => entry.name === closing[1].toLowerCase());
-      if (index >= 0) stack.splice(index);
-      continue;
-    }
-    const opening = token.match(/^<([a-z][\w:-]*)\b/i);
-    if (opening) {
-      const name = opening[1].toLowerCase();
-      if (!["br", "hr", "img", "meta", "link", "input"].includes(name) && !token.endsWith("/>")) {
-        stack.push({ name, style: token.match(/\bstyle="([^"]*)"/i)?.[1] || "" });
-      }
-      continue;
-    }
-    if (!visibleText(token)) continue;
-    const style = stack.at(-1)?.style || "";
-    assert.match(style, /font-family:\s*Arial,\s*Helvetica,\s*sans-serif\s*;/i);
-    assert.match(style, /font-size:\s*14px\s*;/i);
-    assert.match(style, /font-weight:\s*(?:400|normal)\s*;/i);
-    assert.match(style, /line-height:\s*20px\s*;/i);
-    visibleRuns += 1;
-  }
-  assert.ok(visibleRuns >= 10, "body, booking link, and signature text are all checked");
+function assertApprovedFormatting(html) {
+  const authored = html.replace(SIGNATURE_HTML, "");
+  assert.match(authored, /^<div data-email-content dir="ltr" style="overflow-wrap:anywhere;word-break:break-word;">/);
+  assert.doesNotMatch(authored, /font-size|font-family|line-height|<\s*h[1-6]\b|<\s*font\b|<\s*big\b/i,
+    "authored text inherits normal mail-client typography");
+  assert.equal((authored.match(/<div><br><\/div>/g) || []).length, 5,
+    "the approved greeting, paragraph, closing and signature gaps are retained");
+  const signatureAt = html.indexOf(SIGNATURE_HTML);
+  const signOffAt = html.lastIndexOf("<div>Patrick</div>", signatureAt);
+  assert.ok(signOffAt >= 0, "a personal Patrick sign-off precedes the signature");
+  assert.match(html.slice(signOffAt, signatureAt), /^<div>Patrick<\/div>\s*<div><br><\/div>\s*$/);
+  assert.match(authored, /<div>Kind regards,<\/div>\s*<div>Patrick<\/div>/);
 }
 
-function assertOriginalSignature(payload) {
+function assertCanonicalSignature(payload) {
+  assert.equal(createHash("sha256").update(SIGNATURE_HTML).digest("hex"), APPROVED_SIGNATURE_SHA256,
+    "the Website signature is the exact static asset approved in the preview");
   assert.equal(payload.html.split(SIGNATURE_HTML).length - 1, 1, "the exact signature asset is embedded once");
-  assert.equal((payload.html.match(/data-patch-signature/g) || []).length, 1);
   assert.equal(payload.text.split(SIGNATURE_TEXT).length - 1, 1, "the full plain-text signature is included once");
-  assert.ok(payload.text.endsWith(SIGNATURE_TEXT));
+  assert.ok(payload.text.endsWith(`Kind regards,\nPatrick\n\n${SIGNATURE_TEXT}`),
+    "the plain-text personal sign-off is separate from the full signature");
   assert.doesNotMatch(payload.html, /<\s*(?:img|picture|svg)\b|\bcid:|data:image\/|background(?:-image)?\s*:[^;]*url\(/i);
   assert.equal(payload.attachments, undefined, "the text-only signature requires no image attachments");
   assert.doesNotMatch(payload.html, /Patrick<br>Founder, Patch/);
   assert.doesNotMatch(payload.text, /Patrick\nFounder, Patch/);
-  assertConsistentTypography(payload.html);
+  assert.match(SIGNATURE_HTML, /font-size:15px/);
+  assert.match(SIGNATURE_HTML, /font-size:12px/);
+  assertApprovedFormatting(payload.html);
 }
 
 test("pass invitations open as a prefilled draft and only fail outcomes use Resend", async () => {
@@ -134,29 +119,32 @@ test("pass invitations open as a prefilled draft and only fail outcomes use Rese
   assert.deepEqual(payloads[0].to, ["taylor@example.com"]);
   assert.equal(payloads[0].replyTo, "patrick@example.com");
   assert.equal(payloads[0].subject, "Your Patch application");
-  assert.match(payloads[0].text, /Legal Speaking Coach internship/);
-  assert.match(payloads[0].text, /voice note/);
-  assert.match(payloads[0].text, /I won’t be inviting you to an interview/);
-  assert.match(payloads[0].text, /wish you every success with your next steps/);
   assert.equal(payloads[0].text, [
     "Hi Taylor,",
     "",
-    "Thank you for taking the time to apply for the Legal Speaking Coach internship and send me your voice note.",
+    "Thank you for your interest in Patch and for taking the time to submit your recording.",
     "",
-    "After reviewing your application, I won’t be inviting you to an interview on this occasion.",
+    "Unfortunately, your application has not been selected for the next stage on this occasion.",
     "",
-    "I appreciate your interest in Patch and wish you every success with your next steps.",
+    "Thank you again for the time and effort put into your application, and best wishes for the future.",
+    "",
+    "Kind regards,",
+    "Patrick",
     "",
     SIGNATURE_TEXT,
   ].join("\n"));
-  assertOriginalSignature(payloads[0]);
+  assertCanonicalSignature(payloads[0]);
   assert.equal(visibleText(payloads[0].html.replace(SIGNATURE_HTML, "")), [
     "Hi Taylor,",
-    "Thank you for taking the time to apply for the Legal Speaking Coach internship and send me your voice note.",
-    "After reviewing your application, I won’t be inviting you to an interview on this occasion.",
-    "I appreciate your interest in Patch and wish you every success with your next steps.",
+    "Thank you for your interest in Patch and for taking the time to submit your recording.",
+    "Unfortunately, your application has not been selected for the next stage on this occasion.",
+    "Thank you again for the time and effort put into your application, and best wishes for the future.",
+    "Kind regards,",
+    "Patrick",
   ].join(" "));
-  assert.doesNotMatch(payloads[0].text, /send us|we won’t|Stage Two|We appreciate/);
+  const authoredBody = payloads[0].text.replace(SIGNATURE_TEXT, "").replace(/^Hi [^\n]+,\n\n/, "");
+  assert.doesNotMatch(authoredBody, /\b(?:I|we|me|us|our)\b/i);
+  assert.doesNotMatch(payloads[0].text, /I won’t|I appreciate|red flags|Stage Two/);
   assert.equal(payloads.length, 1);
 });
 
@@ -187,7 +175,27 @@ test("the signature resolves relative to the email module, independently of the 
   assert.equal(child.status, 0, child.stderr || child.error?.message);
   const { result, payload } = JSON.parse(child.stdout);
   assert.deepEqual(result, { ok: true, providerId: "synthetic-cwd-test" });
-  assertOriginalSignature(payload);
+  assertCanonicalSignature(payload);
+});
+
+test("rejection greetings escape applicant-provided HTML while preserving plain text and approved formatting", async () => {
+  let captured;
+  const sender = createRecruitmentEmailSender({
+    apiKey: "", from: "Patch <recruitment@example.com>",
+    client: { emails: { async send(payload) {
+      captured = payload;
+      return { data: { id: "synthetic-escaping-test" } };
+    } } },
+  });
+  const first = "A&<\"'>";
+  const result = await sender.sendOutcome({
+    fullName: `${first} Applicant`, email: "synthetic@example.com", decision: "fail",
+  });
+  assert.deepEqual(result, { ok: true, providerId: "synthetic-escaping-test" });
+  assert.ok(captured.text.startsWith(`Hi ${first},\n\n`));
+  assert.ok(captured.html.includes("<div>Hi A&amp;&lt;&quot;&#39;&gt;,</div>"));
+  assert.equal(captured.html.includes(`<div>Hi ${first},</div>`), false);
+  assertCanonicalSignature(captured);
 });
 
 test("missing sender configuration reports failure without making a provider call", async () => {

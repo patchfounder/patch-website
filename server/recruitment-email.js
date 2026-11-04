@@ -32,12 +32,20 @@ function firstName(fullName) {
 }
 
 function outcomeHtml(paragraphs) {
-  return `<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;border-collapse:collapse;${EMAIL_TEXT_STYLE}">
-    <tr><td style="padding:0;color:#222222;${EMAIL_TEXT_STYLE}">
-      ${paragraphs.map((paragraph) => `<p style="margin:0 0 16px;${EMAIL_TEXT_STYLE}">${paragraph}</p>`).join("\n")}
-      ${PATRICK_SIGNATURE_HTML}
-    </td></tr>
-  </table>`;
+  const [greeting, ...body] = paragraphs;
+  return `<div data-email-content dir="ltr" style="overflow-wrap:anywhere;word-break:break-word;">
+  <!-- PATCH_CONTENT_START -->
+  <div>${greeting}</div>
+  <div><br></div>
+  ${body.map((paragraph) => `<div>${paragraph}</div>`).join("\n<div><br></div>\n")}
+  <div><br></div>
+  <div>Kind regards,</div>
+  <div>Patrick</div>
+  <div><br></div>
+  ${PATRICK_SIGNATURE_HTML}
+  <!-- PATCH_CONTENT_END -->
+</div>
+`;
 }
 
 function outcomeContent(application, bookingUrl) {
@@ -73,19 +81,22 @@ function outcomeContent(application, bookingUrl) {
     text: [
       `Hi ${name},`,
       "",
-      "Thank you for taking the time to apply for the Legal Speaking Coach internship and send me your voice note.",
+      "Thank you for your interest in Patch and for taking the time to submit your recording.",
       "",
-      "After reviewing your application, I won’t be inviting you to an interview on this occasion.",
+      "Unfortunately, your application has not been selected for the next stage on this occasion.",
       "",
-      "I appreciate your interest in Patch and wish you every success with your next steps.",
+      "Thank you again for the time and effort put into your application, and best wishes for the future.",
+      "",
+      "Kind regards,",
+      "Patrick",
       "",
       PATRICK_SIGNATURE_TEXT,
     ].join("\n"),
     html: outcomeHtml([
       `Hi ${escapeHtml(name)},`,
-      "Thank you for taking the time to apply for the Legal Speaking Coach internship and send me your voice note.",
-      "After reviewing your application, I won’t be inviting you to an interview on this occasion.",
-      "I appreciate your interest in Patch and wish you every success with your next steps.",
+      "Thank you for your interest in Patch and for taking the time to submit your recording.",
+      "Unfortunately, your application has not been selected for the next stage on this occasion.",
+      "Thank you again for the time and effort put into your application, and best wishes for the future.",
     ]),
   };
 }
