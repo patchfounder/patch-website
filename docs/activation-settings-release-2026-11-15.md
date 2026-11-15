@@ -22,4 +22,10 @@ Installed SDK 2.24.1 source verified `Room.getLocalDevices(undefined, false)`, `
 
 Patrick explicitly approved the local browser check. Synthetic devices/media verified Enter-only pre-entry and reloaded-open-room states, white entry text, red connected Leave, cog opening/closing/Escape focus return, both device selectors, mute/video-off preservation across selection, and host Leave closure. At 375/390/430 px the 180 px panel remains within the room with no horizontal overflow; controls are 44/48 px and Leave stays reachable. The cog is spaced clear of an hour-length timer. Evidence is in `/private/tmp/activation-settings-qa`; it contains simulated media and device names, not real camera captures. Existing live calls were not operated.
 
-Deployment is pending; this validation record does not itself imply a live release.
+## Deployed and verified
+
+Runtime commit `319bfdff2b4d70ff20b5007917a5f3122411d921` was pushed and deployed as Website deployment `25a2d53c-7b6e-45e0-88df-40bad67998ff` (**SUCCESS**). All 170 committed source files in the isolated export matched Git object hashes before packaging. Existing single-instance service settings and live room state were preserved; no production room was entered, removed or closed by verification.
+
+At 12:46 UTC on 15 November, health, both training pages, room readiness and deployment provenance returned 200. Provenance matched the exact runtime commit. Served assets `index-DpXsZpwC.js` and `index-ChTwY2ky.css` contain the settings/device-selection code, corner timer, white entry text and red Leave, without obsolete always-visible controls or preview code. Room readiness was true. Existing Activation booking/applicant pages and the unchanged approved PDF remained available.
+
+The private receipt and synthetic screenshots are stored at `/Users/patrick/Desktop/Patch/Coaches/Training/records/activation-release/2026-11-15-settings.json` and its sibling evidence directory. Physical hardware switching was not tested by this release. Previous receipts remain preserved.
