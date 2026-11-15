@@ -20,4 +20,12 @@ The exact eight-file selection was exported to `/private/tmp/activation-minimal-
 
 Patrick authorised a local browser check. Synthetic media verified Go/Enter, host Remove without closing the host connection, one host Leave closing the room, and the eligible coach's next-module handoff. At 375/390/430 px there is no horizontal overflow; the connected host has one 48 px Leave button, and the 28 px timer is clear of the self-view. Host plus coach shows only Remove/Leave; the coach shows only Leave. Computed colours match navy RGB(8,55,93) and primary accent RGB(0,165,192), with black button text. The isolated component screenshot is `/private/tmp/activation-minimal-qa/room-preview.jpg`; its black self-view is simulated media, not a real camera capture.
 
-Production build: main JavaScript 349.23 kB / 98.73 kB gzip, CSS 135.78 kB / 25.04 kB gzip. The unchanged lazy LiveKit chunk remains 607.88 kB / 161.30 kB gzip. No real LiveKit room or current production call was operated during QA. Deployment verification is pending.
+Production build: main JavaScript 349.23 kB / 98.73 kB gzip, CSS 135.78 kB / 25.04 kB gzip. The unchanged lazy LiveKit chunk remains 607.88 kB / 161.30 kB gzip. No real LiveKit room or current production call was operated during QA. Deployment verification follows.
+
+## Deployed and verified
+
+Runtime commit `7d68514391e6fa24930e343bbb9fc29982555ab2` was pushed and deployed as Website deployment `d47f89cd-8547-40b0-9e3d-774eda264116` (**SUCCESS**). All 169 committed source files in the isolated export matched Git object hashes before packaging. No configuration or live room operations were performed.
+
+At 11:56 UTC on 15 November, health, both training pages, room status and release provenance returned 200. Provenance matched the runtime commit; room readiness was true. Served assets `index-BE57as4b.js` and `index-OkimygK6.css` contain the minimal UI/corner timer and canonical navy/cyan, with no removed-control labels, refresh/expand styles or synthetic preview code. Existing Activation booking and applicant pages remained available. The PDF's byte count and SHA-256 are unchanged.
+
+The existing live room was left untouched. Physical camera/microphone testing was not performed by this release. The private receipt and preview evidence are stored at `/Users/patrick/Desktop/Patch/Coaches/Training/records/activation-release/2026-11-15-minimal-controls.json` and its sibling evidence directory. Earlier release receipts remain preserved.
