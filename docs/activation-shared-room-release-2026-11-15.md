@@ -22,7 +22,15 @@ Independent review found no release-blocking defect. Focused tests exercise real
 
 Patrick authorised in-app-browser QA. A local synthetic LiveKit provider and browser SDK, stored outside the repository, verified Go → Enter → Remove (host remains connected) → Finish. No real camera, microphone, participant or provider room was used by this fixture. Exact 375/390/430-pixel frame layouts have no horizontal overflow, no forms/password inputs, and 44/48-pixel controls; desktop has a centred shared-width layout. Expand/collapse and preserved tutorial/PDF links were checked. Source screenshots and metrics are in `/private/tmp/activation-shared-qa`. Physical-device media remains a separate acceptance check.
 
-Deployment is still pending; this validation record does not itself imply a live release.
+## Deployed and verified
+
+Runtime commit `bea3704d39247a683b2abdd978d3d050be84a2b7` was pushed and deployed as Website deployment `61b89c84-35f3-4188-b214-f5c19d3b8216` (**SUCCESS**), using the verified isolated source. No production variables or service settings changed.
+
+At 11:37 UTC on 15 November, health, both training pages, the new room status and release provenance all returned 200. The room reported `ready:true`, `closed`, and `mayGo:true`. Provenance matched the exact feature commit. The served main bundle contains the shared-room API and excludes the old host form and all synthetic preview code. The PDF retains its original SHA-256 and byte count. Existing Activation booking and applicant pages remained available.
+
+The live host page was then inspected in the approved browser: no forms/password inputs, Go enabled. The host page is https://www.patch.app/training/activation/host and the coach page is https://www.patch.app/training/activation. No real provider room was opened by verification. Patrick's physical Mac/iPhone camera and microphone trial remains pending.
+
+The private receipt and screenshot are in `/Users/patrick/Desktop/Patch/Coaches/Training/records/activation-release/2026-11-15-shared-room.json` and its sibling evidence directory. The prior release receipt and historical invitation records remain unchanged.
 
 ## Integration limits
 
