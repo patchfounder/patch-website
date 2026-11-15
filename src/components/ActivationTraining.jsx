@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ACTIVATION_BOOKING_URL, MODULE_ONE_URL, manageExpandedRoomFocus, safeBookingUrl } from './training-room-state.js';
+import { ACTIVATION_BOOKING_URL, MODULE_ONE_URL, safeBookingUrl } from './training-room-state.js';
 import { acceptsSharedRoomUpdate, sharedRoomClock, sharedRoomMessage, sharedRoomNextStage } from './activation-shared-room-state.js';
 import './ActivationTraining.css';
 
@@ -36,24 +36,18 @@ export default function ActivationTraining({ host = false }) {
   const [session, setSession] = useState(null);
   const [connection, setConnection] = useState('idle');
   const [remotePresent, setRemotePresent] = useState(false);
-  const [cameraOn, setCameraOn] = useState(true);
-  const [microphoneOn, setMicrophoneOn] = useState(true);
   const [needsAudio, setNeedsAudio] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState('');
   const [busyAction, setBusyAction] = useState(null);
   const [now, setNow] = useState(Date.now());
   const [offset, setOffset] = useState(0);
   const roomRef = useRef(null);
   const sessionRef = useRef(null);
-  const pageRef = useRef(null);
-  const dialogRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const intentionalLeave = useRef(false);
   const mounted = useRef(true);
-  const cameraFacing = useRef('user');
   const joinGeneration = useRef(0);
   const joinPending = useRef(false);
   const pollPending = useRef(false);
@@ -70,7 +64,7 @@ export default function ActivationTraining({ host = false }) {
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (mounted.current) {
-      setConnection(nextConnection); setRemotePresent(false); setNeedsAudio(false); setExpanded(false);
+      setConnection(nextConnection); setRemotePresent(false); setNeedsAudio(false);
     }
   }
 
@@ -118,20 +112,6 @@ export default function ActivationTraining({ host = false }) {
       document.title = previousTitle;
     };
   }, [host]);
-
-  useEffect(() => {
-    if (!expanded) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const releaseFocus = manageExpandedRoomFocus(dialogRef.current, pageRef.current, document);
-    const escape = event => { if (event.key === 'Escape') setExpanded(false); };
-    document.addEventListener('keydown', escape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', escape);
-      releaseFocus();
-    };
-  }, [expanded]);
 
   function attachLocal(room, sdk) {
     const publication = room.localParticipant.getTrackPublication(sdk.Track.Source.Camera);
@@ -193,7 +173,7 @@ export default function ActivationTraining({ host = false }) {
       await room.localParticipant.setCameraEnabled(true);
       if (!stillCurrent()) { await room.disconnect(); return; }
       attachLocal(room, sdk); syncRemote();
-      setCameraOn(true); setMicrophoneOn(true); cameraFacing.current = 'user'; setConnection('connected');
+      setConnection('connected');
       refreshSession();
     } catch (cause) {
       intentionalLeave.current = true;
@@ -209,35 +189,11 @@ export default function ActivationTraining({ host = false }) {
     }
   }
 
-  async function toggleMicrophone() {
-    const room = roomRef.current;
-    if (!room) return;
-    try { await room.localParticipant.setMicrophoneEnabled(!microphoneOn); if (mounted.current && roomRef.current === room) setMicrophoneOn(!microphoneOn); }
-    catch (cause) { if (mounted.current && roomRef.current === room) setError(messageForError(cause)); }
-  }
-
-  async function toggleCamera() {
-    const room = roomRef.current;
-    if (!room) return;
-    try { await room.localParticipant.setCameraEnabled(!cameraOn); if (mounted.current && roomRef.current === room) setCameraOn(!cameraOn); }
-    catch (cause) { if (mounted.current && roomRef.current === room) setError(messageForError(cause)); }
-  }
-
-  async function flipCamera() {
-    const room = roomRef.current;
-    if (!room) return;
-    try {
-      const sdk = await import('livekit-client');
-      if (!mounted.current || roomRef.current !== room) return;
-      const track = room.localParticipant.getTrackPublication(sdk.Track.Source.Camera)?.track;
-      if (!track) return;
-      const next = cameraFacing.current === 'user' ? 'environment' : 'user';
-      await track.restartTrack({ facingMode: next });
-      if (mounted.current && roomRef.current === room) cameraFacing.current = next;
-    } catch (cause) { if (mounted.current && roomRef.current === room) setError(messageForError(cause)); }
-  }
-
   async function leave() {
+    if (host) {
+      if (sessionRef.current?.mayEnd) await roomAction('/end');
+      return;
+    }
     if (actionPending.current || joinPending.current) return;
     const sessionId = sessionRef.current?.sessionId;
     actionPending.current = true;
@@ -257,7 +213,7 @@ export default function ActivationTraining({ host = false }) {
       const value = await roomRequest(path, { method: 'POST', body: JSON.stringify({ sessionId: sessionRef.current?.sessionId, ...(path === '/remove' ? { coachId: sessionRef.current?.coachId } : {}) }) });
       applySession(value);
       if (path === '/remove') setRemotePresent(false);
-    } catch (cause) { if (mounted.current) setError(messageForError(cause)); }
+    } catch (cause) { if (mounted.current) setError(path === '/end' ? 'We couldn’t confirm that the call closed. Please try Leave again.' : messageForError(cause)); }
     finally { actionPending.current = false; if (mounted.current) setBusyAction(null); }
   }
 
@@ -271,7 +227,7 @@ export default function ActivationTraining({ host = false }) {
   const mayEnter = session?.ready && (host ? session.mayGo : session.mayJoin && !showNext);
 
   return (
-    <div className="activation-training-page" ref={pageRef}>
+    <div className="activation-training-page">
       <header className="activation-training-header">
         <div className="activation-training-brand"><img src="/patch-logo-2.png" width="96" height="42" alt="Patch" /><span className="activation-training-brand-caption">Academy</span></div>
         <span className="activation-training-stage">Step 1 of 6</span>
@@ -299,35 +255,28 @@ export default function ActivationTraining({ host = false }) {
 
         <section className="activation-training-section" aria-labelledby="activation-call-title">
           <div className="activation-training-section-heading"><span>03</span><div><p className="activation-training-eyebrow">Meet Patrick</p><h2 id="activation-call-title">A little conversation. A clear next step.</h2></div></div>
-          <p>We’ll answer your questions, talk about being part of Patch and make sure you feel ready. Aim for a five-minute check-in; the call stays open until you leave or Patrick finishes it.</p>
-          <div className={`activation-training-room${expanded ? ' is-expanded' : ''}`} ref={dialogRef} role={expanded ? 'dialog' : undefined} aria-modal={expanded ? true : undefined} aria-label={expanded ? 'Activation video call' : undefined}>
-            <div className="activation-training-room-top"><span className="activation-training-room-label">{host ? 'Activation · Host' : 'Activation room'}</span><button type="button" className="activation-training-expand" onClick={() => setExpanded(!expanded)} aria-label={expanded ? 'Collapse video call' : 'Expand video call'}>{expanded ? 'Collapse' : 'Expand'}</button></div>
+          <p>We’ll answer your questions and make sure you feel ready to deliver your first Patch Call.</p>
+          <div className="activation-training-room" aria-label="Activation video call">
             <div className={`activation-training-stage-video${connected ? ' is-connected' : ''}`}>
+              {clock && <span className="activation-training-timer" aria-label={`Call duration ${clock}`}>{clock}</span>}
               <video ref={remoteVideoRef} className="activation-training-remote-video" autoPlay playsInline aria-label={`${otherName}’s video`} />
               {(!connected || !remotePresent) && <div className="activation-training-room-placeholder">
                 <span className="activation-training-monogram" aria-hidden="true">P</span>
                 <h3>{roomTitle}</h3>
                 <p>{roomCopy}</p>
               </div>}
-              <div className={`activation-training-self${connected ? ' is-visible' : ''}`}><video ref={localVideoRef} autoPlay playsInline muted aria-label="Your video preview" />{!cameraOn && <span>Camera off</span>}<small>You</small></div>
-              {connected && <div className="activation-training-connection"><span />{connection === 'reconnecting' ? 'Reconnecting' : remotePresent ? `With ${otherName}` : 'In the room'}</div>}
+              <div className={`activation-training-self${connected ? ' is-visible' : ''}`}><video ref={localVideoRef} autoPlay playsInline muted aria-label="Your video preview" /></div>
             </div>
             <audio ref={remoteAudioRef} autoPlay />
             <div className="activation-training-room-bottom">
               {error && <p className="activation-training-error" role="alert">{error}</p>}
-              {clock && <p className="activation-training-live-clock"><span>{clock}</span> since room opened · Five-minute check-in</p>}
-              {connected ? <div className="activation-training-controls">
-                <button type="button" aria-pressed={microphoneOn} onClick={toggleMicrophone}>{microphoneOn ? 'Mic on' : 'Mic off'}</button>
-                <button type="button" aria-pressed={cameraOn} onClick={toggleCamera}>{cameraOn ? 'Camera on' : 'Camera off'}</button>
-                <button type="button" onClick={flipCamera} disabled={!cameraOn}>Flip camera</button>
-                <button type="button" className="activation-training-leave" onClick={leave}>Leave</button>
-              </div> : (host || mayEnter) ? <button type="button" className="activation-training-join" onClick={join} disabled={!mayEnter || joining || Boolean(busyAction)}>{joining ? 'Connecting…' : host ? 'Go' : 'Enter'}</button> : <p className="activation-training-wait" role="status">{showNext ? 'Your next step is ready below.' : session?.removed ? 'Please wait for Patrick to open your next session.' : session?.busy ? 'Call in progress — please wait' : 'Your Enter button appears when the room is ready.'}</p>}
-              {needsAudio && connected && <button type="button" className="activation-training-enable-audio" onClick={() => roomRef.current?.startAudio().then(() => setNeedsAudio(false)).catch(() => setError('Please tap again to enable call audio.'))}>Tap to hear the call</button>}
-              {host && (session?.mayRemove || session?.mayEnd) && <div className="activation-training-host-actions">
-                {session.mayRemove && <button type="button" className="activation-training-remove" onClick={() => roomAction('/remove')} disabled={Boolean(busyAction) || joining}>{busyAction === '/remove' ? 'Removing…' : 'Remove'}</button>}
-                {session.mayEnd && <button type="button" className="activation-training-finish" onClick={() => roomAction('/end')} disabled={Boolean(busyAction) || joining}>{busyAction === '/end' ? 'Finishing…' : session.status === 'ending' ? 'Try Finish again' : 'Finish'}</button>}
+              {(connected || host || mayEnter) && <div className="activation-training-controls">
+                {!connected && (host || mayEnter) && <button type="button" className="activation-training-join" onClick={join} disabled={!mayEnter || joining || Boolean(busyAction)}>{joining ? 'Connecting…' : host ? 'Go' : 'Enter'}</button>}
+                {host && session?.mayRemove && <button type="button" className="activation-training-remove" onClick={() => roomAction('/remove')} disabled={Boolean(busyAction) || joining}>{busyAction === '/remove' ? 'Removing…' : 'Remove'}</button>}
+                {(connected || (host && session?.mayEnd)) && <button type="button" className="activation-training-leave" onClick={leave} disabled={Boolean(busyAction) || joining}>{['/leave', '/end'].includes(busyAction) ? 'Leaving…' : 'Leave'}</button>}
               </div>}
-              <button type="button" className="activation-training-refresh" onClick={() => refreshSession({ showError: true })}>Refresh room</button>
+              {!connected && !host && !mayEnter && <p className="activation-training-wait" role="status">{showNext ? 'Your next step is ready below.' : session?.removed ? 'Please wait for Patrick to open your next session.' : session?.busy ? 'Call in progress — please wait' : 'Your Enter button appears when the room is ready.'}</p>}
+              {needsAudio && connected && <button type="button" className="activation-training-enable-audio" onClick={() => roomRef.current?.startAudio().then(() => setNeedsAudio(false)).catch(() => setError('Please tap again to enable call audio.'))}>Enable audio</button>}
             </div>
           </div>
           {!host && !connected && !showNext && <div className="activation-training-booking"><h3>Choose your Activation time</h3><p>{config.bookingDurationMinutes === 5 ? 'Choose a five-minute appointment that works for you.' : `The booking calendar currently reserves ${Number(config.bookingDurationMinutes) || 30} minutes. Our conversation aims to take five.`}</p><a className="activation-training-resource activation-training-book-link" href={bookingUrl} target="_blank" rel="noopener noreferrer">{bookingUrl}</a></div>}

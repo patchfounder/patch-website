@@ -168,12 +168,16 @@ test('initial page does not invent a booking, create a fake live call or expose 
   assert.doesNotMatch(html, /<video[^>]*src=/);
 });
 
-test('camera and media only activate within explicit Go or Enter, and leaving is separate from Finish', () => {
+test('camera starts only on Go or Enter and the minimal UI keeps one Leave action', () => {
   const effect = source.slice(source.indexOf('useEffect(() => {'), source.indexOf('function attachLocal'));
   assert.doesNotMatch(effect, /getUserMedia|setCameraEnabled|setMicrophoneEnabled|participantToken/);
   const leave = source.slice(source.indexOf('async function leave()'), source.indexOf('async function roomAction('));
-  assert.doesNotMatch(leave, /['"]\/end['"]|nextStageAvailable|status: .ended/);
+  assert.match(leave, /if \(host\)/);
+  assert.match(leave, /roomAction\('\/end'\)/);
+  assert.doesNotMatch(leave, /nextStageAvailable|status: .ended/);
   assert.match(source, /if \(!host \|\| actionPending.current \|\| joinPending.current\)/);
   assert.match(source, /playsInline muted aria-label="Your video preview"/);
   assert.match(source, /referrerPolicy: 'no-referrer'/);
+  assert.doesNotMatch(source, /toggleMicrophone|toggleCamera|flipCamera|Refresh room|>Finish<|since room opened|Five-minute check-in/);
+  assert.match(source, /className="activation-training-timer"/);
 });

@@ -15,7 +15,7 @@ const response = data => ({ ok: true, json: async () => JSON.parse(JSON.stringif
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
-async function harness({ host = true, cameraFailure = false, holdLeave = null, holdJoin = null } = {}) {
+async function harness({ host = true, cameraFailure = false, holdLeave = null, holdJoin = null, endFailures = 0 } = {}) {
   const cells = [], effects = [], requests = [], mediaCalls = [], rooms = [], intervals = [];
   let cursor = 0, tree;
   let current = { ready: true, sessionId: null, revision: 0, role: host ? 'host' : 'coach', status: 'closed', hostPresent: false, coachPresent: false, busy: false, removed: false, mayGo: host, mayJoin: false, mayRemove: false, mayEnd: false, startAt: null, serverTime: '2026-11-15T13:30:00Z' };
@@ -44,6 +44,8 @@ async function harness({ host = true, cameraFailure = false, holdLeave = null, h
       return response(current);
     }
     if (endpoint === '/end') {
+      if (holdLeave) await holdLeave.promise;
+      if (endFailures > 0) { endFailures--; return { ok: false, status: 503, json: async () => ({ message: 'The room could not close. Please try Leave again.' }) }; }
       current = { ...current, revision: current.revision + 1, status: 'ended', mayEnd: false, serverTime: '2026-11-15T13:30:05Z' };
       return response(current);
     }
@@ -98,7 +100,7 @@ async function harness({ host = true, cameraFailure = false, holdLeave = null, h
   return { render, button, requests, rooms, mediaCalls, intervals, status(value) { current = { ...current, ...value }; }, async poll() { intervals.find(value => value.milliseconds === 3000).callback(); await flush(); render(); }, unmount() { cleanups.forEach(cleanup => cleanup?.()); }, text: () => text(render()) };
 }
 
-test('opening the page only reads status; explicit Go connects HD video and media controls', async () => {
+test('opening only reads status; explicit Go connects HD video with minimal controls', async () => {
   const ui = await harness();
   assert.equal(ui.rooms.length, 0); assert.equal(ui.mediaCalls.length, 0);
   assert.ok(ui.requests.every(request => !request.options.method));
@@ -108,14 +110,13 @@ test('opening the page only reads status; explicit Go connects HD video and medi
   assert.equal(JSON.stringify(ui.rooms[0].options.videoCaptureDefaults.resolution), JSON.stringify({ width: 1280, height: 720, frameRate: 24 }));
   assert.deepEqual(ui.mediaCalls, [['microphone', true], ['camera', true]]);
   assert.ok(ui.text().includes('Waiting for your coach'));
-  await ui.button('Mic on').props.onClick();
-  assert.deepEqual(ui.mediaCalls.at(-1), ['microphone', false]);
+  assert.doesNotMatch(ui.text(), /Mic on|Camera on|Flip camera|Refresh room|Finish|Expand/);
   const room = ui.rooms[0];
   room.remoteParticipants.set('coach', { identity: 'coach' });
   let attached = false;
   room.events.get('TrackSubscribed')({ kind: 'video', attach() { attached = true; } }, {}, { identity: 'coach' });
   assert.equal(attached, true);
-  assert.match(ui.text(), /With your coach/);
+  assert.doesNotMatch(ui.text(), /Waiting for your coach/);
   room.events.get('Reconnecting')(); room.remoteParticipants.clear(); room.events.get('Reconnected')();
   assert.match(ui.text(), /Waiting for your coach/);
   ui.unmount(); assert.equal(ui.rooms[0].disconnected, true);
@@ -131,20 +132,21 @@ test('camera denial disconnects and releases the admitted seat with a clear perm
   ui.unmount();
 });
 
-test('a pending Leave cannot race a new Go and revoke its fresh connection', async () => {
+test('a pending host Leave cannot race another Leave or a new Go', async () => {
   const holdLeave = deferred();
   const ui = await harness({ holdLeave });
   await ui.button('Go').props.onClick();
   const leaving = ui.button('Leave').props.onClick();
-  assert.equal(ui.button('Go').props.disabled, true);
-  await ui.button('Go').props.onClick();
+  assert.equal(ui.button('Leaving…').props.disabled, true);
+  await ui.button('Leaving…').props.onClick();
+  assert.equal(ui.requests.filter(request => request.url.endsWith('/end')).length, 1);
   assert.equal(ui.requests.filter(request => request.url.endsWith('/go')).length, 1);
   holdLeave.resolve(); await leaving;
   assert.equal(ui.button('Go').props.disabled, false);
   ui.unmount();
 });
 
-test('Remove targets the displayed coach and keeps the host connected; Finish is separate', async () => {
+test('Remove keeps the host connected and the single host Leave closes the room', async () => {
   const ui = await harness();
   await ui.button('Go').props.onClick();
   ui.status({ coachId: 'coach-seat-a', coachPresent: true, busy: true, mayRemove: true, revision: 2, serverTime: '2026-11-15T13:30:02Z' });
@@ -152,9 +154,11 @@ test('Remove targets the displayed coach and keeps the host connected; Finish is
   await ui.button('Remove').props.onClick();
   assert.deepEqual(ui.requests.find(request => request.url.endsWith('/remove')).body, { sessionId: 'shared-test-001', coachId: 'coach-seat-a' });
   assert.equal(ui.rooms[0].connected, true);
-  await ui.button('Finish').props.onClick();
+  await ui.button('Leave').props.onClick();
   assert.equal(ui.rooms[0].disconnected, true);
   assert.equal(ui.requests.find(request => request.url.endsWith('/end')).body.sessionId, 'shared-test-001');
+  assert.equal(ui.requests.filter(request => request.url.endsWith('/leave')).length, 0);
+  assert.doesNotMatch(ui.text(), /Finish|Refresh room|since room opened|Five-minute check-in/);
   assert.doesNotMatch(ui.text(), /Your next step · Module 1/);
   ui.unmount();
 });
@@ -182,5 +186,47 @@ test('coach Enter follows actual host presence, sends the current room ID and di
   assert.match(ui.text(), /Please wait for Patrick to open your next session\./);
   assert.doesNotMatch(ui.text(), /Your Enter button appears when the room is ready/);
   assert.doesNotMatch(ui.text(), /Your next step · Module 1/);
+  ui.unmount();
+});
+
+
+test('failed host Leave keeps the call connected and the same Leave action retries closure', async () => {
+  const ui = await harness({ endFailures: 1 });
+  await ui.button('Go').props.onClick();
+  await ui.button('Leave').props.onClick();
+  assert.equal(ui.rooms[0].connected, true);
+  assert.equal(ui.button('Leave').props.disabled, false);
+  assert.match(ui.text(), /Please try Leave again/);
+  await ui.button('Leave').props.onClick();
+  assert.equal(ui.rooms[0].disconnected, true);
+  assert.equal(ui.requests.filter(request => request.url.endsWith('/end')).length, 2);
+  assert.equal(ui.button('Go').props.disabled, false);
+  ui.unmount();
+});
+
+test('coach Leave disconnects and releases only their seat without closing the module room', async () => {
+  const ui = await harness({ host: false });
+  ui.status({ sessionId: 'shared-test-001', status: 'open', revision: 1, hostPresent: true, mayJoin: true, busy: false, startAt: '2026-11-15T13:30:00Z', serverTime: '2026-11-15T13:30:01Z' });
+  await ui.poll();
+  await ui.button('Enter').props.onClick();
+  await ui.button('Leave').props.onClick();
+  assert.equal(ui.rooms[0].disconnected, true);
+  assert.equal(ui.requests.filter(request => request.url.endsWith('/leave')).length, 1);
+  assert.equal(ui.requests.filter(request => request.url.endsWith('/end')).length, 0);
+  assert.equal(ui.button('Enter').props.disabled, false);
+  assert.doesNotMatch(ui.text(), /Your next step · Module 1|Finish|Refresh room/);
+  ui.unmount();
+});
+
+
+test('the owning host can close an open room with Leave after reloading without local media', async () => {
+  const ui = await harness();
+  ui.status({ sessionId: 'shared-test-001', status: 'open', revision: 2, mayEnd: true, mayGo: true, startAt: '2026-11-15T13:30:00Z', serverTime: '2026-11-15T13:30:02Z' });
+  await ui.poll();
+  assert.equal(ui.rooms.length, 0);
+  await ui.button('Leave').props.onClick();
+  assert.equal(ui.requests.filter(request => request.url.endsWith('/end')).length, 1);
+  assert.equal(ui.requests.filter(request => request.url.endsWith('/leave')).length, 0);
+  assert.equal(ui.button('Go').props.disabled, false);
   ui.unmount();
 });

@@ -35,7 +35,7 @@ const host = await load('ActivationHost.jsx', { './ActivationTraining.jsx': trai
 test('host opens the same Activation page with Go and no password or manual room form', () => {
   const html = renderToStaticMarkup(React.createElement(host.default));
   assert.match(html, />Go<\/button>/);
-  assert.match(html, /Activation · Host/);
+  assert.match(html, /aria-label="Activation video call"/);
   assert.match(html, /Watch the seven steps/);
   assert.match(html, /Patch Call Process\.pdf/);
   assert.doesNotMatch(html, /<form|<input|password|access key|sign in|Add a booked session|Create five-minute room|#session=|#access=|LIVEKIT_API|TRAINING_HOST_ACCESS_KEY/i);

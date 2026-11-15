@@ -1,12 +1,12 @@
 /* Mobile-first, single 760px column. Spacing: 8, 12, 16, 24, 32, 40, 48px.
    Shared 20px mobile edges, 24px section padding, 32px section separation. */
-.activation-training-page { --at-accent:#008ba1;--at-dark:#092c34;--at-ink:#162d33;--at-muted:#60747a;--at-line:#dce8ea;--at-soft:#f1f8f8;min-height:100vh;background:#fff;color:var(--at-ink);font:400 16px/1.5 "IBM Plex Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased; }
+.activation-training-page { --at-accent:#00A5C0;--at-dark:#08375D;--at-ink:#000000;--at-muted:#464646;--at-line:#464646;--at-soft:#FFFFFF;min-height:100vh;background:#fff;color:var(--at-ink);font:400 16px/1.5 "IBM Plex Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased; }
 .activation-training-page * { box-sizing:border-box; }
 .activation-training-page h1,.activation-training-page h2,.activation-training-page h3,.activation-training-page p { margin:0;max-width:none; }
 .activation-training-page a,.activation-training-page button { -webkit-tap-highlight-color:transparent; }
 .activation-training-page button { font:inherit;cursor:pointer; }
 .activation-training-page button:disabled { cursor:default;opacity:.55; }
-.activation-training-page a:focus-visible,.activation-training-page button:focus-visible { outline:3px solid #00a5c0;outline-offset:4px; }
+.activation-training-page a:focus-visible,.activation-training-page button:focus-visible { outline:3px solid var(--at-accent);outline-offset:4px; }
 .activation-training-header { display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:800px;margin:auto;padding:20px;border-bottom:1px solid var(--at-line); }
 .activation-training-brand { display:flex;align-items:center;gap:12px;min-height:44px;min-width:0; }
 .activation-training-brand img { width:86px;height:auto; }
@@ -14,7 +14,7 @@
 .activation-training-stage { color:var(--at-muted);font-size:12px;white-space:nowrap; }
 .activation-training-shell { max-width:800px;margin:auto;padding:32px 20px 24px; }
 .activation-training-intro { padding:8px 0 32px; }
-.activation-training-eyebrow { color:var(--at-accent);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase; }
+.activation-training-eyebrow { color:var(--at-dark);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase; }
 .activation-training-intro h1 { font-size:clamp(32px,8vw,46px);font-weight:500;line-height:1.12;letter-spacing:-.035em;margin:16px 0; }
 .activation-training-intro > p:last-of-type { color:var(--at-muted);font-size:16px;max-width:610px; }
 .activation-training-progress { display:flex;gap:5px;margin-top:24px;max-width:240px; }
@@ -22,64 +22,40 @@
 .activation-training-progress span:first-child { background:var(--at-accent); }
 .activation-training-section { padding:32px 0;border-top:1px solid var(--at-line); }
 .activation-training-section-heading { display:flex;align-items:center;gap:16px;margin-bottom:24px; }
-.activation-training-section-heading > span { color:var(--at-accent);font-size:12px;font-variant-numeric:tabular-nums;flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--at-line);border-radius:50%; }
+.activation-training-section-heading > span { color:var(--at-dark);font-size:12px;font-variant-numeric:tabular-nums;flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--at-line);border-radius:50%; }
 .activation-training-section h2,.activation-training-next h2 { font-size:23px;font-weight:500;letter-spacing:-.02em;line-height:1.25;margin-top:8px; }
 .activation-training-section > p,.activation-training-next > p:not(.activation-training-eyebrow) { color:var(--at-muted);font-size:15px; }
 .activation-training-video { width:100%;aspect-ratio:16 / 9;position:relative;border-radius:16px;overflow:hidden;background:var(--at-dark); }
 .activation-training-video iframe { position:absolute;inset:0;width:100%;height:100%;border:0; }
-.activation-training-resource { display:block;overflow-wrap:anywhere;color:var(--at-accent);font-size:12px;text-decoration:underline;text-underline-offset:3px;margin-top:16px;min-height:44px;padding:8px 0; }
+.activation-training-resource { display:block;overflow-wrap:anywhere;color:var(--at-dark);font-size:12px;text-decoration:underline;text-decoration-color:var(--at-accent);text-underline-offset:3px;margin-top:16px;min-height:44px;padding:8px 0; }
 .activation-training-download { padding:16px;border:1px solid var(--at-line);border-radius:12px;background:var(--at-soft); }
 .activation-training-page .activation-training-small { color:var(--at-muted);font-size:12px;margin-top:12px; }
-.activation-training-room { margin-top:24px;border:1px solid var(--at-line);border-radius:20px;overflow:hidden;background:var(--at-dark);color:#fff; }
-.activation-training-room-top { display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 16px; }
-.activation-training-room-label { font-size:11px;letter-spacing:.06em;color:#b5ced3; }
-.activation-training-expand { min-height:44px;padding:8px 0 8px 12px;background:transparent;color:#d9edf0;font-size:12px!important; }
-.activation-training-appointment { padding:0 24px 16px;font-size:13px;color:#fff; }
-.activation-training-appointment > span { display:block;margin-top:4px;font-size:11px;color:#a5c0c6; }
-.activation-training-stage-video { position:relative;aspect-ratio:4 / 3;min-height:255px;background:linear-gradient(145deg,#123e48,#092c34 75%);overflow:hidden; }
+/* Room uses the canonical Patch navy/cyan pair, with no gradients or colour tints. */
+.activation-training-room { margin-top:24px;border:1px solid var(--at-dark);border-radius:20px;overflow:hidden;background:var(--at-dark);color:#FFFFFF; }
+.activation-training-stage-video { position:relative;aspect-ratio:4 / 3;min-height:255px;background:var(--at-dark);overflow:hidden; }
 .activation-training-remote-video { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:transparent; }
 .activation-training-room-placeholder { position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:inherit;height:100%;padding:24px 20px;text-align:center; }
-.activation-training-monogram { display:grid;place-items:center;width:48px;height:48px;border-radius:50%;color:#b7e1e7;background:#1d505b;font-size:23px;margin-bottom:16px; }
+.activation-training-monogram { display:grid;place-items:center;width:48px;height:48px;border-radius:50%;color:#000000;background:var(--at-accent);font-size:23px;margin-bottom:16px; }
 .activation-training-room-placeholder h3 { font-size:20px;font-weight:500;line-height:1.25;letter-spacing:-.02em; }
-.activation-training-room-placeholder > p { margin-top:12px;max-width:310px;color:#b6cdd2;font-size:13px; }
-.activation-training-clock { margin-top:24px; }
-.activation-training-clock > span { display:block;color:#b6cdd2;font-size:11px; }
-.activation-training-clock > strong { display:block;margin-top:4px;color:#fff;font-size:32px;line-height:1.15;font-weight:400;letter-spacing:.03em;font-variant-numeric:tabular-nums; }
-.activation-training-self { display:none;position:absolute;top:12px;right:12px;z-index:2;width:76px;aspect-ratio:3 / 4;border:1px solid #ffffff50;border-radius:10px;overflow:hidden;background:#234c56; }
+.activation-training-room-placeholder > p { margin-top:12px;max-width:310px;color:#FFFFFF;font-size:13px; }
+.activation-training-timer { position:absolute;top:12px;left:16px;z-index:3;padding:4px 8px;border-radius:4px;background:var(--at-dark);color:#FFFFFF;font-size:12px;line-height:20px;font-variant-numeric:tabular-nums; }
+.activation-training-self { display:none;position:absolute;top:12px;right:12px;z-index:2;width:76px;aspect-ratio:3 / 4;border:1px solid #FFFFFF;border-radius:10px;overflow:hidden;background:#000000; }
 .activation-training-self.is-visible { display:block; }
 .activation-training-self video { width:100%;height:100%;object-fit:cover;transform:scaleX(-1); }
-.activation-training-self > span { position:absolute;inset:0;display:grid;place-items:center;background:#234c56;color:#d3e8ec;font-size:11px; }
-.activation-training-self small { position:absolute;bottom:4px;left:6px;font-size:10px;color:#fff;text-shadow:0 1px 3px #000; }
-.activation-training-connection { position:absolute;bottom:12px;left:16px;z-index:2;display:flex;align-items:center;gap:6px;font-size:12px;text-shadow:0 1px 3px #000; }
-.activation-training-connection > span { width:6px;height:6px;border-radius:50%;background:#97d4ba; }
 .activation-training-room-bottom { display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:16px; }
-.activation-training-live-clock { color:#b6cdd2;font-size:11px;text-align:center; }
-.activation-training-live-clock > span { font-variant-numeric:tabular-nums;color:#fff; }
-.activation-training-join { min-height:48px;padding:12px 16px;border-radius:10px;background:#00a5c0;color:#fff;font-size:14px!important;font-weight:500!important; }
-.activation-training-controls { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
-.activation-training-controls > button { min-height:44px;padding:10px 8px;border-radius:10px;color:#e6f1f3;background:#23505b;font-size:12px; }
-.activation-training-controls > button[aria-pressed="false"] { color:#fff;background:#456069; }
-.activation-training-controls > .activation-training-leave { color:#f4ced2;background:#613c48; }
-.activation-training-enable-audio { color:#fff;background:#23505b;border-radius:10px;padding:12px;min-height:44px; }
-.activation-training-finish { color:#bde6eb;background:transparent;border:1px solid #60818a;border-radius:10px;min-height:44px;padding:10px;font-size:12px!important; }
-.activation-training-host-actions { display:flex;gap:12px; }
-.activation-training-host-actions > button { flex:1;min-width:0; }
-.activation-training-remove { color:#f4ced2;background:#613c48;border:1px solid #966776;border-radius:10px;min-height:44px;padding:10px;font-size:12px!important; }
-.activation-training-wait { color:#b6cdd2;font-size:12px;text-align:center;padding:8px; }
-.activation-training-refresh { color:#a9c6cd;background:transparent;min-height:44px;font-size:12px!important;padding:8px; }
-.activation-training-room-guidance p { color:#b6cdd2;font-size:12px;text-align:center;padding:0 8px; }
-.activation-training-page .activation-training-error { padding:12px;border:1px solid #a36d76;border-radius:10px;background:#573943;color:#ffe5e8;font-size:13px; }
+.activation-training-controls { display:flex;align-items:center;gap:12px; }
+.activation-training-controls > button { flex:1;min-width:0;min-height:48px;padding:12px 16px;border:1px solid #FFFFFF;border-radius:10px;background:transparent;color:#FFFFFF;font-size:14px;font-weight:400; }
+.activation-training-controls > .activation-training-join { background:var(--at-accent);border-color:var(--at-accent);color:#000000;font-weight:500; }
+.activation-training-controls > .activation-training-remove { border-color:transparent;text-decoration:underline;text-underline-offset:3px; }
+.activation-training-enable-audio { min-height:44px;padding:12px;border:1px solid #FFFFFF;border-radius:10px;background:transparent;color:#FFFFFF;font-size:13px; }
+.activation-training-wait { color:#FFFFFF;font-size:12px;text-align:center;padding:8px; }
+.activation-training-page .activation-training-error { padding:12px;border:1px solid #FBAD26;border-radius:10px;background:var(--at-dark);color:#FFFFFF;font-size:13px; }
 .activation-training-booking { margin-top:24px;padding:24px;background:var(--at-soft);border:1px solid var(--at-line);border-radius:16px; }
 .activation-training-booking h3 { font-size:18px;font-weight:500; }
 .activation-training-booking p { margin-top:12px;color:var(--at-muted);font-size:13px; }
-.activation-training-book-link { margin-top:16px;padding:14px 16px;border-radius:10px;background:var(--at-accent);color:#fff;font-size:13px;text-align:center; }
+.activation-training-book-link { margin-top:16px;padding:14px 16px;border-radius:10px;background:var(--at-accent);color:#000000;font-size:13px;text-align:center; }
 .activation-training-next { margin:0 0 24px;padding:24px;background:var(--at-soft);border:1px solid var(--at-line);border-radius:16px; }
 .activation-training-next > p:not(:first-child) { margin-top:16px; }
 .activation-training-footer { padding-top:24px;border-top:1px solid var(--at-line);display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;color:var(--at-muted);font-size:10px;letter-spacing:.08em; }
-.activation-training-room.is-expanded { position:fixed;z-index:1000;inset:0;margin:0;border:0;border-radius:0;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);height:100dvh; }
-.activation-training-room.is-expanded .activation-training-stage-video { flex:1;min-height:0;aspect-ratio:auto; }
-.activation-training-room.is-expanded .activation-training-room-placeholder { min-height:0; }
-.activation-training-room.is-expanded .activation-training-room-bottom { flex-shrink:0; }
-.activation-training-room.is-expanded .activation-training-controls { grid-template-columns:repeat(4,minmax(0,1fr)); }
-@media(min-width:600px) { .activation-training-header { padding-inline:24px; }.activation-training-shell { padding:40px 24px 32px; }.activation-training-stage-video { aspect-ratio:16 / 10; }.activation-training-controls { grid-template-columns:repeat(4,minmax(0,1fr)); }.activation-training-self { width:104px; }.activation-training-room-placeholder { padding:32px; }.activation-training-room-placeholder h3 { font-size:24px; }.activation-training-room-placeholder > p { max-width:390px;font-size:14px; }.activation-training-clock > strong { font-size:40px; } }
+@media(min-width:600px) { .activation-training-header { padding-inline:24px; }.activation-training-shell { padding:40px 24px 32px; }.activation-training-stage-video { aspect-ratio:16 / 10; }.activation-training-self { width:104px; }.activation-training-room-placeholder { padding:32px; }.activation-training-room-placeholder h3 { font-size:24px; }.activation-training-room-placeholder > p { max-width:390px;font-size:14px; } }
 @media(prefers-reduced-motion:reduce) { .activation-training-page * { scroll-behavior:auto!important; } }
