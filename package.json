@@ -18,6 +18,8 @@
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
     "express": "^5.2.1",
+    "livekit-client": "2.24.1",
+    "livekit-server-sdk": "2.19.3",
     "multer": "^2.3.0",
     "music-metadata": "^11.13.0",
     "react": "^19.0.0",

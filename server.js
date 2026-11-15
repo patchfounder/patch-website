@@ -1,7 +1,9 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import express from 'express';
 
 import { createRecruitmentRuntime } from './server/app.js';
+import { createTrainingMeetingsRouter } from './server/training-meetings.js';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
@@ -20,7 +22,12 @@ const runtimeEnv = {
     process.env.RECRUITMENT_REVIEWER_SECRET || (isProduction ? '' : 'LOCALREVIEW1'),
 };
 
+// Training owns its authentication, private room records and LiveKit tokens.
+// Mount before the Website's static SPA fallback without changing Recruitment.
+const app = express();
+app.use('/api/training', createTrainingMeetingsRouter({ env: runtimeEnv, projectRoot }));
 const runtime = await createRecruitmentRuntime({
+  app,
   env: runtimeEnv,
   projectRoot,
   staticDirectory: isProduction ? path.join(projectRoot, 'dist') : '',

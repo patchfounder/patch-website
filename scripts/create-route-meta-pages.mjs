@@ -28,6 +28,18 @@ const routes = [
     robots: 'noindex, nofollow',
   },
   {
+    path: 'training/activation',
+    title: 'Activation | Patch Academy',
+    description: 'Prepare for your Activation check-in: watch the training video, download your call script and join your private video session.',
+    robots: 'noindex, nofollow, noarchive',
+  },
+  {
+    path: 'training/activation/host',
+    title: 'Host Activation | Patch Academy',
+    description: 'Private host access for scheduled Patch Academy Activation sessions.',
+    robots: 'noindex, nofollow, noarchive',
+  },
+  {
     path: 'pre',
     title: 'Patch Pre-Masterclass',
     description: 'Prepare for your Patch pre-masterclass session.',
