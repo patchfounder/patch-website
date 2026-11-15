@@ -15,7 +15,7 @@ const response = data => ({ ok: true, json: async () => JSON.parse(JSON.stringif
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
-async function harness({ host = true, cameraFailure = false, holdLeave = null, holdJoin = null, endFailures = 0, holdSwitch = null, holdCameraResume = null, devicesFailure = false, switchReturnsFalse = false } = {}) {
+async function harness({ host = true, cameraFailure = false, holdLeave = null, holdJoin = null, endFailures = 0, holdSwitch = null, holdCameraResume = null, devicesFailure = false, switchReturnsFalse = false, statusFailures = 0, joinFailures = 0 } = {}) {
   const cells = [], effects = [], requests = [], mediaCalls = [], rooms = [], intervals = [], deviceReads = [];
   const listeners = new Map();
   let cursor = 0, tree;
@@ -29,8 +29,12 @@ async function harness({ host = true, cameraFailure = false, holdLeave = null, h
     requests.push({ url, options, body: options.body ? JSON.parse(options.body) : null });
     if (url === '/api/training/config') return response({ bookingUrl: 'https://cal.com/patchapp/activation', bookingDurationMinutes: 30 });
     const endpoint = url.replace('/api/training/activation-room', '');
-    if (endpoint === '/status') return response(current);
+    if (endpoint === '/status') {
+      if (statusFailures > 0) { statusFailures--; return { ok: false, status: 503, json: async () => ({ message: 'The video room is temporarily unavailable. Please try again shortly.' }) }; }
+      return response(current);
+    }
     if (endpoint === '/go' || endpoint === '/join') {
+      if (joinFailures > 0) { joinFailures--; return { ok: false, status: 503, json: async () => ({ message: 'Provider unavailable' }) }; }
       if (holdJoin) await holdJoin.promise;
       current = { ...current, sessionId: 'shared-test-001', revision: 1, role: host ? 'host' : 'coach', status: 'open', hostPresent: !host, mayGo: host, mayJoin: !host, mayEnd: host, startAt: '2026-11-15T13:30:00Z', serverTime: '2026-11-15T13:30:01Z' };
       return response({ serverUrl: 'wss://fixture.livekit.cloud', participantToken: 'synthetic-token', identity: host ? 'host' : 'coach', role: current.role, session: current });
@@ -178,13 +182,13 @@ test('a pending host Leave cannot race another Leave or a new Enter', async () =
   ui.unmount();
 });
 
-test('Remove keeps the host connected and the single host Leave closes the room', async () => {
+test('the host has no Remove control and the single Leave still closes the room', async () => {
   const ui = await harness();
   await ui.button('Enter').props.onClick();
   ui.status({ coachId: 'coach-seat-a', coachPresent: true, busy: true, mayRemove: true, revision: 2, serverTime: '2026-11-15T13:30:02Z' });
   await ui.poll();
-  await ui.button('Remove').props.onClick();
-  assert.deepEqual(ui.requests.find(request => request.url.endsWith('/remove')).body, { sessionId: 'shared-test-001', coachId: 'coach-seat-a' });
+  assert.equal(ui.hasButton('Remove'), false);
+  assert.equal(ui.requests.filter(request => request.url.endsWith('/remove')).length, 0);
   assert.equal(ui.rooms[0].connected, true);
   await ui.button('Leave').props.onClick();
   assert.equal(ui.rooms[0].disconnected, true);
@@ -192,6 +196,29 @@ test('Remove keeps the host connected and the single host Leave closes the room'
   assert.equal(ui.requests.filter(request => request.url.endsWith('/leave')).length, 0);
   assert.doesNotMatch(ui.text(), /Finish|Refresh room|since room opened|Five-minute check-in/);
   assert.doesNotMatch(ui.text(), /Your next step · Module 1/);
+  ui.unmount();
+});
+
+test('a temporary passive outage stays quiet and Enter recovers only after a successful status', async () => {
+  const ui = await harness({ statusFailures: 1 });
+  assert.equal(ui.rooms.length, 0); assert.equal(ui.button('Enter').props.disabled, true);
+  assert.doesNotMatch(ui.text(), /temporarily unavailable|Please try again shortly|Couldn’t connect|Tap Enter|Allow your camera and microphone when asked/);
+  await ui.poll();
+  assert.equal(ui.button('Enter').props.disabled, false);
+  assert.doesNotMatch(ui.text(), /temporarily unavailable|Tap Enter/);
+  ui.unmount();
+});
+
+test('an explicit failed Enter remains retryable without claiming a connection or requesting media', async () => {
+  const ui = await harness({ joinFailures: 1 });
+  await ui.button('Enter').props.onClick();
+  assert.equal(ui.rooms.length, 0); assert.equal(ui.mediaCalls.length, 0);
+  assert.equal(ui.button('Enter').props.disabled, false);
+  assert.match(ui.text(), /Couldn’t connect/);
+  assert.doesNotMatch(ui.text(), /temporarily unavailable|Tap Enter/);
+  await ui.button('Enter').props.onClick();
+  assert.equal(ui.rooms[0].connected, true);
+  assert.doesNotMatch(ui.text(), /Couldn’t connect/);
   ui.unmount();
 });
 

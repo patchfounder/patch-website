@@ -17,6 +17,15 @@ test('shared-room UI reflects actual presence and an occupied seat without inven
   assert.equal(sharedRoomClock(open, Date.parse('2026-11-15T13:35:01Z')), '5:01');
 });
 
+test('entry and not-ready states use concise titles without redundant joining instructions', () => {
+  for (const [status, options] of [[null, {}], [{ ...open, ready: false }, {}], [open, {}], [open, { host: true }], [{ ...open, status: 'closed' }, { host: true }]]) {
+    const message = sharedRoomMessage(status, options);
+    assert.equal(message.copy, '');
+    assert.doesNotMatch(message.title, /temporarily unavailable|Tap Enter/);
+  }
+  assert.equal(sharedRoomMessage({ ...open, ready: false }).title, 'Activation room');
+});
+
 test('late replies cannot reopen a finished room, replace a new room, or undo a newer seat revision', () => {
   assert.equal(acceptsSharedRoomUpdate(open, { ...open, revision: 2 }), false);
   assert.equal(acceptsSharedRoomUpdate(open, { ...open, serverTime: '2026-11-15T13:29:00Z' }), false);

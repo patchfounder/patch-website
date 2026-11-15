@@ -26,7 +26,7 @@ async function roomRequest(path, options = {}) {
 function messageForError(error) {
   if (error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError') return 'Please allow your camera and microphone, then try again.';
   if (error?.name === 'NotFoundError') return 'We couldn’t find a camera or microphone. Please check your device and try again.';
-  if (error?.status === 503) return 'The video room is temporarily unavailable. Please try again shortly.';
+  if (error?.status === 503) return 'Couldn’t connect.';
   if (error?.status === 409) return error.message || 'The room is busy. Please wait a moment and try again.';
   return error?.message || 'We couldn’t connect just now. Please check your connection and try again.';
 }
@@ -110,7 +110,7 @@ export default function ActivationTraining({ host = false }) {
       applySession(value);
       if (showError && mounted.current) setError('');
     } catch (cause) {
-      if (mounted.current && (showError || !sessionRef.current)) setError(messageForError(cause));
+      if (mounted.current && cause?.status !== 503 && (showError || !sessionRef.current)) setError(messageForError(cause));
     } finally { pollPending.current = false; }
   }
 
@@ -388,7 +388,6 @@ export default function ActivationTraining({ host = false }) {
               {clock && <span className="activation-training-timer" aria-label={`Call duration ${clock}`}>{clock}</span>}
               {connected && <button ref={settingsButtonRef} type="button" className="activation-training-settings-toggle" aria-label="Call settings" aria-expanded={settingsOpen} aria-controls="activation-call-settings" onClick={toggleSettings} disabled={Boolean(busyAction) || connection === 'reconnecting'}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m9.5 3-.7 2.1-2 .9-2.1-.5-2 3.4 1.5 1.6v2.3l-1.5 1.6 2 3.4 2.1-.5 2 .9.7 2.1h4l.7-2.1 2-.9 2.1.5 2-3.4-1.5-1.6v-2.3l1.5-1.6-2-3.4-2.1.5-2-.9-.7-2.1z"/><circle cx="11.5" cy="11.7" r="3"/></svg></button>}
               {settingsOpen && connected && <div id="activation-call-settings" ref={settingsPanelRef} className="activation-training-settings" role="dialog" aria-label="Call settings" aria-busy={settingsBusy}>
-                <h4>Call settings</h4>
                 <div className="activation-training-device-choices">
                   <label>Microphone<select ref={firstSettingRef} aria-label="Microphone" value={microphoneDevice} disabled={settingsBusy || !microphones.length} onChange={event => changeMedia('audioinput', event.target.value)}>{!microphones.some(device => device.deviceId === microphoneDevice) && <option value={microphoneDevice}>Current microphone</option>}{microphones.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}</select></label>
                   <label>Camera<select aria-label="Camera" value={cameraDevice} disabled={settingsBusy || !cameras.length} onChange={event => changeMedia('videoinput', event.target.value)}>{!cameras.some(device => device.deviceId === cameraDevice) && <option value={cameraDevice}>Current camera</option>}{cameras.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>)}</select></label>
@@ -403,7 +402,7 @@ export default function ActivationTraining({ host = false }) {
               {(!connected || !remotePresent) && <div className="activation-training-room-placeholder">
                 <span className="activation-training-monogram" aria-hidden="true">P</span>
                 <h3>{roomTitle}</h3>
-                <p>{roomCopy}</p>
+                {roomCopy && <p>{roomCopy}</p>}
               </div>}
               <div className={`activation-training-self${connected ? ' is-visible' : ''}`}><video ref={localVideoRef} autoPlay playsInline muted aria-label="Your video preview" />{!cameraEnabled && <span>Video off</span>}</div>
             </div>
@@ -412,10 +411,9 @@ export default function ActivationTraining({ host = false }) {
               {error && <p className="activation-training-error" role="alert">{error}</p>}
               {(connected || host || mayEnter) && <div className="activation-training-controls">
                 {!connected && !retryClosing && (host || mayEnter) && <button type="button" className="activation-training-join" onClick={join} disabled={!mayEnter || joining || Boolean(busyAction)}>{joining ? 'Connecting…' : 'Enter'}</button>}
-                {host && connected && session?.mayRemove && <button type="button" className="activation-training-remove" onClick={() => roomAction('/remove')} disabled={Boolean(busyAction) || joining}>{busyAction === '/remove' ? 'Removing…' : 'Remove'}</button>}
                 {connected && <button type="button" className="activation-training-leave" onClick={leave} disabled={Boolean(busyAction) || joining}>{['/leave', '/end'].includes(busyAction) ? 'Leaving…' : 'Leave'}</button>}
               </div>}
-              {!connected && !host && !mayEnter && <p className="activation-training-wait" role="status">{showNext ? 'Your next step is ready below.' : session?.removed ? 'Please wait for Patrick to open your next session.' : session?.busy ? 'Call in progress — please wait' : 'Your Enter button appears when the room is ready.'}</p>}
+              {!connected && !host && !mayEnter && (showNext || session?.removed || session?.busy) && <p className="activation-training-wait" role="status">{showNext ? 'Your next step is ready below.' : session?.removed ? 'Please wait for Patrick to open your next session.' : 'Call in progress — please wait'}</p>}
               {retryClosing && <button type="button" className="activation-training-retry-close" onClick={() => roomAction('/end')} disabled={Boolean(busyAction)}>{busyAction === '/end' ? 'Closing…' : 'Retry closing'}</button>}
               {needsAudio && connected && <button type="button" className="activation-training-enable-audio" onClick={() => roomRef.current?.startAudio().then(() => setNeedsAudio(false)).catch(() => setError('Please tap again to enable call audio.'))}>Enable audio</button>}
             </div>
