@@ -20,4 +20,12 @@ The exact seven-file selection was exported to `/private/tmp/activation-turquois
 
 Independent review passed 33/33 focused tests and found no media lifecycle/closure regressions. Patrick approved the local browser check. Synthetic media/device verification covered Enter, settings open, microphone/camera changes, preserved mute/video-off state, Escape focus return and host Leave. At 375/390/430 px, no horizontal overflow; the compact popup is 154px tall, remains within the video area, and all four controls measure exactly 44px high with matching column widths. The desktop controls also measure 44px high. Timer/cog use a light frosted backing for black-text contrast over dark video. Screenshots and metrics are in `/private/tmp/activation-turquoise-qa`; they contain simulated media/devices. No live call was operated. Patrick separately reported a successful real Mac/iPhone call before this styling change.
 
-Awaiting independent Planner release decision and production read-only verification. Patch OS was not accessed or modified.
+Independent Planner approved the exact seven-file commit, push and existing Website deployment on Patrick’s explicit instruction. Patch OS was not accessed or modified.
+
+## Deployed and verified
+
+Runtime commit `326379c7576ab98a32e2da83d12aeac8f4d95471` was pushed and deployed as `08dcb66c-68e0-438c-99b8-fd094dc07370` (**SUCCESS**). All 171 committed source files in the isolated package matched Git object hashes. Existing Website configuration and live room state were preserved.
+
+At 13:15:57 UTC, public health, both training pages, room status, provenance, existing Activation booking and application routes returned 200. Room readiness was true and the existing room remained open. Provenance matched the runtime commit. Served assets `index-CGuuIRzQ.js` and `index-D-9efw72.css` contain translucent turquoise tokens, equal44px controls, settings/device selection, white entry text and red Leave; no navy room token, Remove UI or either retired sentence remains. The approved PDF hash remains unchanged.
+
+Private immutable receipt: `/Users/patrick/Desktop/Patch/Coaches/Training/records/activation-release/2026-11-15-turquoise.json`, with its sibling screenshot/metrics directory. No production call was entered, removed or closed. All unrelated registration changes remain excluded. Patch OS was not accessed or modified.
