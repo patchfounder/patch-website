@@ -15,14 +15,15 @@ const response = data => ({ ok: true, json: async () => JSON.parse(JSON.stringif
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
-async function harness({ host = true, cameraFailure = false, holdLeave = null, holdJoin = null, endFailures = 0 } = {}) {
-  const cells = [], effects = [], requests = [], mediaCalls = [], rooms = [], intervals = [];
+async function harness({ host = true, cameraFailure = false, holdLeave = null, holdJoin = null, endFailures = 0, holdSwitch = null, holdCameraResume = null, devicesFailure = false, switchReturnsFalse = false } = {}) {
+  const cells = [], effects = [], requests = [], mediaCalls = [], rooms = [], intervals = [], deviceReads = [];
+  const listeners = new Map();
   let cursor = 0, tree;
   let current = { ready: true, sessionId: null, revision: 0, role: host ? 'host' : 'coach', status: 'closed', hostPresent: false, coachPresent: false, busy: false, removed: false, mayGo: host, mayJoin: false, mayRemove: false, mayEnd: false, startAt: null, serverTime: '2026-11-15T13:30:00Z' };
   const react = {
     useState(initial) { const index = cursor++; if (!(index in cells)) cells[index] = typeof initial === 'function' ? initial() : initial; return [cells[index], value => { cells[index] = typeof value === 'function' ? value(cells[index]) : value; }]; },
     useRef(initial) { const index = cursor++; if (!(index in cells)) cells[index] = { current: initial }; return cells[index]; },
-    useEffect(callback, dependencies) { const index = cursor++; if (!cells[index]) { cells[index] = { dependencies }; effects.push(callback); } },
+    useEffect(callback, dependencies) { const index = cursor++; const old = cells[index]; if (!old || dependencies.some((value, i) => value !== old.dependencies[i])) { cells[index] = { dependencies, cleanup: old?.cleanup }; effects.push({ index, callback }); } },
   };
   async function fetch(url, options = {}) {
     requests.push({ url, options, body: options.body ? JSON.parse(options.body) : null });
@@ -46,29 +47,58 @@ async function harness({ host = true, cameraFailure = false, holdLeave = null, h
     if (endpoint === '/end') {
       if (holdLeave) await holdLeave.promise;
       if (endFailures > 0) { endFailures--; return { ok: false, status: 503, json: async () => ({ message: 'The room could not close. Please try Leave again.' }) }; }
-      current = { ...current, revision: current.revision + 1, status: 'ended', mayEnd: false, serverTime: '2026-11-15T13:30:05Z' };
+      current = { ...current, revision: current.revision + 1, status: 'ended', mayEnd: false, mayGo: host, serverTime: '2026-11-15T13:30:05Z' };
       return response(current);
     }
     throw new Error(`Unexpected endpoint ${endpoint}`);
   }
+  const deviceList = [
+    { kind: 'audioinput', deviceId: 'mic-a', label: 'Built-in microphone' }, { kind: 'audioinput', deviceId: 'mic-b', label: 'Headset' },
+    { kind: 'videoinput', deviceId: 'cam-a', label: 'Front camera' }, { kind: 'videoinput', deviceId: 'cam-b', label: 'Other camera' },
+  ];
+  const makeTrack = () => ({ live: true, stops: 0, attach(element) { element.localAttached = true; }, stop() { this.live = false; this.stops++; } });
   class Room {
+    static async getLocalDevices(kind, requestPermissions) { deviceReads.push({ kind, requestPermissions }); if (devicesFailure) throw new Error('No device list'); return deviceList; }
     constructor(options) {
       this.options = options; this.events = new Map(); this.remoteParticipants = new Map(); this.canPlaybackAudio = true;
+      this.cameraTrack = makeTrack(); this.microphoneTrack = makeTrack(); this.cameraEnables = 0;
+      this.activeDevices = { audioinput: 'mic-a', videoinput: 'cam-a' };
+      this.cameraPublication = { track: this.cameraTrack }; this.microphonePublication = { track: this.microphoneTrack };
       this.localParticipant = {
-        identity: host ? 'host' : 'coach',
-        getTrackPublication: () => ({ track: { attach: element => { element.localAttached = true; }, restartTrack: async () => {} } }),
-        setMicrophoneEnabled: async value => { mediaCalls.push(['microphone', value]); },
-        setCameraEnabled: async value => { mediaCalls.push(['camera', value]); if (cameraFailure) { const error = new Error('Denied'); error.name = 'NotAllowedError'; throw error; } },
+        identity: host ? 'host' : 'coach', isMicrophoneEnabled: false, isCameraEnabled: false,
+        trackPublications: new Map([['camera', this.cameraPublication], ['microphone', this.microphonePublication]]),
+        getTrackPublication: source => source === 'microphone' ? this.microphonePublication : this.cameraPublication,
+        setMicrophoneEnabled: async value => { mediaCalls.push(['microphone', value]); this.localParticipant.isMicrophoneEnabled = value; this.microphoneTrack.live = value; return this.microphonePublication; },
+        setCameraEnabled: async value => { mediaCalls.push(['camera', value]); if (cameraFailure) { const error = new Error('Denied'); error.name = 'NotAllowedError'; throw error; }
+          if (value && ++this.cameraEnables > 1 && holdCameraResume) await holdCameraResume.promise;
+          this.localParticipant.isCameraEnabled = value; this.cameraTrack.live = value; return this.cameraPublication;
+        },
       };
       rooms.push(this);
     }
     on(event, callback) { this.events.set(event, callback); }
+    getActiveDevice(kind) { return this.activeDevices[kind]; }
+    async switchActiveDevice(kind, value, exact) {
+      mediaCalls.push(['device', kind, value, exact]);
+      const wasEnabled = kind === 'audioinput' ? this.localParticipant.isMicrophoneEnabled : this.localParticipant.isCameraEnabled;
+      if (holdSwitch) await holdSwitch.promise;
+      if (switchReturnsFalse) return false;
+      this.activeDevices[kind] = value;
+      if (wasEnabled) (kind === 'audioinput' ? this.microphoneTrack : this.cameraTrack).live = true;
+      this.events.get('ActiveDeviceChanged')?.(kind, value); return true;
+    }
     async connect(url, token) { this.connected = true; this.token = token; current = { ...current, hostPresent: true }; }
-    async disconnect() { this.connected = false; this.disconnected = true; this.events.get('Disconnected')?.(); }
+    async disconnect() {
+      if (this.disconnected) return;
+      this.connected = false; this.disconnected = true;
+      for (const publication of this.localParticipant.trackPublications.values()) publication.track.stop();
+      this.localParticipant.trackPublications.clear();
+      this.events.get('Disconnected')?.();
+    }
     async startAudio() {}
   }
-  const sdk = { Room, Track: { Source: { Camera: 'camera' }, Kind: { Video: 'video', Audio: 'audio' } }, RoomEvent: Object.fromEntries(['TrackSubscribed', 'TrackUnsubscribed', 'ParticipantConnected', 'ParticipantDisconnected', 'Reconnecting', 'Reconnected', 'AudioPlaybackStatusChanged', 'LocalTrackPublished', 'Disconnected'].map(value => [value, value])) };
-  const document = { title: 'Before', visibilityState: 'visible', addEventListener() {}, removeEventListener() {}, body: { style: {} } };
+  const sdk = { Room, Track: { Source: { Camera: 'camera', Microphone: 'microphone' }, Kind: { Video: 'video', Audio: 'audio' } }, RoomEvent: Object.fromEntries(['TrackSubscribed', 'TrackUnsubscribed', 'ParticipantConnected', 'ParticipantDisconnected', 'Reconnecting', 'Reconnected', 'AudioPlaybackStatusChanged', 'LocalTrackPublished', 'Disconnected', 'TrackMuted', 'TrackUnmuted', 'ActiveDeviceChanged', 'MediaDevicesChanged'].map(value => [value, value])) };
+  const document = { title: 'Before', visibilityState: 'visible', addEventListener(type, fn) { const set = listeners.get(type) || new Set(); set.add(fn); listeners.set(type, set); }, removeEventListener(type, fn) { listeners.get(type)?.delete(fn); }, body: { style: {} } };
   const module = { exports: {} };
   vm.runInNewContext(code, {
     module, exports: module.exports, fetch, document,
@@ -90,22 +120,24 @@ async function harness({ host = true, cameraFailure = false, holdLeave = null, h
   }
   function render() {
     cursor = 0; tree = module.exports.default({ host });
-    visit(tree, node => { if (node.props?.ref && !node.props.ref.current) node.props.ref.current = { srcObject: null }; });
+    visit(tree, node => { if (node.props?.ref && !node.props.ref.current) node.props.ref.current = { srcObject: null, focus() { this.focused = true; }, contains(target) { return target === this; } }; });
+    for (const { index, callback } of effects.splice(0)) { cells[index].cleanup?.(); cells[index].cleanup = callback(); }
     return tree;
   }
   function text(node) { if (node == null || typeof node === 'boolean') return ''; if (typeof node !== 'object') return String(node); if (Array.isArray(node)) return node.map(text).join(''); return text(node.props?.children); }
-  function button(label) { render(); let found; visit(tree, node => { if (node.type === 'button' && text(node) === label) found = node; }); assert.ok(found, `Missing button ${label}`); return found; }
-  const cleanups = [];
-  render(); effects.splice(0).forEach(effect => cleanups.push(effect())); await flush(); render();
-  return { render, button, requests, rooms, mediaCalls, intervals, status(value) { current = { ...current, ...value }; }, async poll() { intervals.find(value => value.milliseconds === 3000).callback(); await flush(); render(); }, unmount() { cleanups.forEach(cleanup => cleanup?.()); }, text: () => text(render()) };
+  function button(label) { render(); let found; visit(tree, node => { if (node.type === 'button' && (text(node) === label || node.props['aria-label'] === label)) found = node; }); assert.ok(found, `Missing button ${label}`); return found; }
+  function select(label) { render(); let found; visit(tree, node => { if (node.type === 'select' && node.props['aria-label'] === label) found = node; }); assert.ok(found, `Missing select ${label}`); return found; }
+  function hasButton(label) { render(); let found = false; visit(tree, node => { if (node.type === 'button' && (text(node) === label || node.props['aria-label'] === label)) found = true; }); return found; }
+  render(); await flush(); render();
+  return { render, button, hasButton, select, requests, rooms, mediaCalls, intervals, deviceReads, status(value) { current = { ...current, ...value }; }, async poll() { intervals.find(value => value.milliseconds === 3000).callback(); await flush(); render(); }, dispatch(type, event) { for (const listener of listeners.get(type) || []) listener({ type, ...event }); render(); }, unmount() { cells.forEach(cell => cell?.cleanup?.()); }, text: () => text(render()) };
 }
 
-test('opening only reads status; explicit Go connects HD video with minimal controls', async () => {
+test('opening only reads status; explicit Enter connects HD video with minimal controls', async () => {
   const ui = await harness();
   assert.equal(ui.rooms.length, 0); assert.equal(ui.mediaCalls.length, 0);
   assert.ok(ui.requests.every(request => !request.options.method));
-  assert.equal(ui.button('Go').props.disabled, false);
-  await ui.button('Go').props.onClick();
+  assert.equal(ui.button('Enter').props.disabled, false);
+  await ui.button('Enter').props.onClick();
   assert.equal(ui.rooms.length, 1); assert.equal(ui.rooms[0].connected, true);
   assert.equal(JSON.stringify(ui.rooms[0].options.videoCaptureDefaults.resolution), JSON.stringify({ width: 1280, height: 720, frameRate: 24 }));
   assert.deepEqual(ui.mediaCalls, [['microphone', true], ['camera', true]]);
@@ -124,7 +156,7 @@ test('opening only reads status; explicit Go connects HD video with minimal cont
 
 test('camera denial disconnects and releases the admitted seat with a clear permission message', async () => {
   const ui = await harness({ cameraFailure: true });
-  await ui.button('Go').props.onClick();
+  await ui.button('Enter').props.onClick();
   assert.equal(ui.rooms[0].disconnected, true);
   assert.equal(ui.requests.filter(request => request.url.endsWith('/leave')).length, 1);
   assert.equal(ui.requests.find(request => request.url.endsWith('/leave')).body.sessionId, 'shared-test-001');
@@ -132,23 +164,23 @@ test('camera denial disconnects and releases the admitted seat with a clear perm
   ui.unmount();
 });
 
-test('a pending host Leave cannot race another Leave or a new Go', async () => {
+test('a pending host Leave cannot race another Leave or a new Enter', async () => {
   const holdLeave = deferred();
   const ui = await harness({ holdLeave });
-  await ui.button('Go').props.onClick();
+  await ui.button('Enter').props.onClick();
   const leaving = ui.button('Leave').props.onClick();
   assert.equal(ui.button('Leaving…').props.disabled, true);
   await ui.button('Leaving…').props.onClick();
   assert.equal(ui.requests.filter(request => request.url.endsWith('/end')).length, 1);
   assert.equal(ui.requests.filter(request => request.url.endsWith('/go')).length, 1);
   holdLeave.resolve(); await leaving;
-  assert.equal(ui.button('Go').props.disabled, false);
+  assert.equal(ui.button('Enter').props.disabled, false);
   ui.unmount();
 });
 
 test('Remove keeps the host connected and the single host Leave closes the room', async () => {
   const ui = await harness();
-  await ui.button('Go').props.onClick();
+  await ui.button('Enter').props.onClick();
   ui.status({ coachId: 'coach-seat-a', coachPresent: true, busy: true, mayRemove: true, revision: 2, serverTime: '2026-11-15T13:30:02Z' });
   await ui.poll();
   await ui.button('Remove').props.onClick();
@@ -163,9 +195,9 @@ test('Remove keeps the host connected and the single host Leave closes the room'
   ui.unmount();
 });
 
-test('an unmounted Go response never starts a camera or leaves a live SDK connection', async () => {
+test('an unmounted Enter response never starts a camera or leaves a live SDK connection', async () => {
   const holdJoin = deferred(); const ui = await harness({ holdJoin });
-  const joining = ui.button('Go').props.onClick();
+  const joining = ui.button('Enter').props.onClick();
   ui.unmount(); holdJoin.resolve(); await joining;
   assert.equal(ui.rooms.length, 0); assert.equal(ui.mediaCalls.length, 0);
 });
@@ -192,15 +224,15 @@ test('coach Enter follows actual host presence, sends the current room ID and di
 
 test('failed host Leave keeps the call connected and the same Leave action retries closure', async () => {
   const ui = await harness({ endFailures: 1 });
-  await ui.button('Go').props.onClick();
+  await ui.button('Enter').props.onClick();
   await ui.button('Leave').props.onClick();
   assert.equal(ui.rooms[0].connected, true);
   assert.equal(ui.button('Leave').props.disabled, false);
-  assert.match(ui.text(), /Please try Leave again/);
+  assert.match(ui.text(), /Please retry/);
   await ui.button('Leave').props.onClick();
   assert.equal(ui.rooms[0].disconnected, true);
   assert.equal(ui.requests.filter(request => request.url.endsWith('/end')).length, 2);
-  assert.equal(ui.button('Go').props.disabled, false);
+  assert.equal(ui.button('Enter').props.disabled, false);
   ui.unmount();
 });
 
@@ -219,14 +251,82 @@ test('coach Leave disconnects and releases only their seat without closing the m
 });
 
 
-test('the owning host can close an open room with Leave after reloading without local media', async () => {
+test('an open room reload shows Enter only, while uncertain closing has a contextual retry', async () => {
   const ui = await harness();
   ui.status({ sessionId: 'shared-test-001', status: 'open', revision: 2, mayEnd: true, mayGo: true, startAt: '2026-11-15T13:30:00Z', serverTime: '2026-11-15T13:30:02Z' });
   await ui.poll();
-  assert.equal(ui.rooms.length, 0);
-  await ui.button('Leave').props.onClick();
+  assert.equal(ui.rooms.length, 0); assert.equal(ui.hasButton('Leave'), false); assert.equal(ui.hasButton('Remove'), false); assert.equal(ui.hasButton('Call settings'), false);
+  assert.equal(ui.button('Enter').props.disabled, false);
+  ui.status({ status: 'ending', revision: 3, mayGo: false }); await ui.poll();
+  assert.equal(ui.hasButton('Enter'), false); assert.equal(ui.hasButton('Leave'), false);
+  await ui.button('Retry closing').props.onClick();
   assert.equal(ui.requests.filter(request => request.url.endsWith('/end')).length, 1);
-  assert.equal(ui.requests.filter(request => request.url.endsWith('/leave')).length, 0);
-  assert.equal(ui.button('Go').props.disabled, false);
-  ui.unmount();
+  assert.equal(ui.button('Enter').props.disabled, false); ui.unmount();
+});
+
+test('Enter shows Connecting until its response and never shows a pre-entry Leave', async () => {
+  const holdJoin = deferred(), ui = await harness({ holdJoin });
+  assert.equal(ui.hasButton('Leave'), false); assert.equal(ui.hasButton('Call settings'), false);
+  const joining = ui.button('Enter').props.onClick();
+  assert.equal(ui.button('Connecting…').props.disabled, true); assert.equal(ui.hasButton('Leave'), false);
+  holdJoin.resolve(); await joining;
+  assert.equal(ui.hasButton('Enter'), false); assert.equal(ui.hasButton('Leave'), true); ui.unmount();
+});
+
+test('settings enumerate only after opening the connected cog, and switch devices without unmuting', async () => {
+  const ui = await harness();
+  assert.equal(ui.deviceReads.length, 0); await ui.button('Enter').props.onClick();
+  assert.equal(ui.deviceReads.length, 0); assert.doesNotMatch(ui.text(), /Call settingsMicrophone/);
+  ui.button('Call settings').props.onClick(); await flush();
+  assert.deepEqual(ui.deviceReads, [{ kind: undefined, requestPermissions: false }]);
+  assert.equal(ui.select('Microphone').props.value, 'mic-a'); assert.equal(ui.select('Camera').props.value, 'cam-a');
+  await ui.button('Mute').props.onClick(); assert.equal(ui.rooms[0].localParticipant.isMicrophoneEnabled, false); assert.equal(ui.hasButton('Unmute'), true);
+  await ui.select('Microphone').props.onChange({ target: { value: 'mic-b' } }); assert.equal(ui.select('Microphone').props.value, 'mic-b');
+  assert.equal(ui.rooms[0].localParticipant.isMicrophoneEnabled, false);
+  await ui.button('Video off').props.onClick(); assert.equal(ui.rooms[0].localParticipant.isCameraEnabled, false);
+  await ui.select('Camera').props.onChange({ target: { value: 'cam-b' } }); assert.equal(ui.select('Camera').props.value, 'cam-b');
+  assert.equal(ui.rooms[0].localParticipant.isCameraEnabled, false);
+  ui.dispatch('keydown', { key: 'Escape', preventDefault() {} }); assert.equal(ui.button('Call settings').props['aria-expanded'], false);
+  assert.equal(ui.button('Call settings').props.ref.current.focused, true);
+  assert.equal(ui.hasButton('Mute'), false); assert.equal(ui.hasButton('Video on'), false); ui.unmount();
+});
+
+test('a late device restart after Leave stops its captured track even when publication maps were cleared', async () => {
+  const holdSwitch = deferred(), ui = await harness({ holdSwitch });
+  await ui.button('Enter').props.onClick(); ui.button('Call settings').props.onClick(); await flush();
+  const room = ui.rooms[0], changing = ui.select('Camera').props.onChange({ target: { value: 'cam-b' } });
+  assert.equal(ui.button('Leave').props.disabled, false);
+  await ui.button('Leave').props.onClick(); assert.equal(room.localParticipant.trackPublications.size, 0);
+  const stopsBefore = room.cameraTrack.stops;
+  holdSwitch.resolve(); await changing;
+  assert.equal(room.cameraTrack.live, false); assert.ok(room.cameraTrack.stops > stopsBefore);
+  assert.equal(ui.hasButton('Call settings'), false); assert.equal(ui.hasButton('Leave'), false); ui.unmount();
+});
+
+test('a late camera-on result after unmount is stopped without reopening the settings or media', async () => {
+  const holdCameraResume = deferred(), ui = await harness({ holdCameraResume });
+  await ui.button('Enter').props.onClick(); ui.button('Call settings').props.onClick(); await flush();
+  await ui.button('Video off').props.onClick();
+  const enabling = ui.button('Video on').props.onClick(), room = ui.rooms[0];
+  ui.unmount(); holdCameraResume.resolve(); await enabling;
+  assert.equal(room.cameraTrack.live, false); assert.ok(room.cameraTrack.stops >= 2);
+});
+
+test('unavailable devices and a rejected selection leave mute/Leave usable without claiming a changed device', async () => {
+  const missing = await harness({ devicesFailure: true }); await missing.button('Enter').props.onClick(); missing.button('Call settings').props.onClick(); await flush();
+  assert.match(missing.text(), /Device choices are unavailable/); await missing.button('Mute').props.onClick(); assert.equal(missing.hasButton('Unmute'), true); missing.unmount();
+  const rejected = await harness({ switchReturnsFalse: true }); await rejected.button('Enter').props.onClick(); rejected.button('Call settings').props.onClick(); await flush();
+  await rejected.select('Camera').props.onChange({ target: { value: 'cam-b' } });
+  assert.equal(rejected.select('Camera').props.value, 'cam-a'); assert.match(rejected.text(), /could not be selected/);
+  assert.equal(rejected.button('Leave').props.disabled, false); rejected.unmount();
+});
+
+
+test('unexpected disconnect invalidates a pending device switch and stops its late capture', async () => {
+  const holdSwitch = deferred(), ui = await harness({ holdSwitch });
+  await ui.button('Enter').props.onClick(); ui.button('Call settings').props.onClick(); await flush();
+  const room = ui.rooms[0], changing = ui.select('Camera').props.onChange({ target: { value: 'cam-b' } });
+  await room.disconnect(); assert.equal(ui.hasButton('Leave'), false); assert.equal(ui.hasButton('Call settings'), false);
+  holdSwitch.resolve(); await changing;
+  assert.equal(room.cameraTrack.live, false); assert.ok(room.cameraTrack.stops >= 2); ui.unmount();
 });

@@ -37,6 +37,15 @@ export default function ActivationTraining({ host = false }) {
   const [connection, setConnection] = useState('idle');
   const [remotePresent, setRemotePresent] = useState(false);
   const [needsAudio, setNeedsAudio] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [settingsError, setSettingsError] = useState('');
+  const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [devices, setDevices] = useState([]);
+  const [microphoneDevice, setMicrophoneDevice] = useState('');
+  const [cameraDevice, setCameraDevice] = useState('');
+  const [closureFailed, setClosureFailed] = useState(false);
   const [error, setError] = useState('');
   const [busyAction, setBusyAction] = useState(null);
   const [now, setNow] = useState(Date.now());
@@ -52,11 +61,23 @@ export default function ActivationTraining({ host = false }) {
   const joinPending = useRef(false);
   const pollPending = useRef(false);
   const actionPending = useRef(false);
+  const sdkRef = useRef(null);
+  const settingsOpenRef = useRef(false);
+  const settingsPanelRef = useRef(null);
+  const settingsButtonRef = useRef(null);
+  const firstSettingRef = useRef(null);
+  const deviceRequest = useRef(0);
+  const mediaAction = useRef(0);
+  const mediaPending = useRef(false);
 
   function disconnectMedia(nextConnection = 'idle') {
     joinGeneration.current += 1;
     joinPending.current = false;
     intentionalLeave.current = true;
+    settingsOpenRef.current = false;
+    deviceRequest.current += 1;
+    mediaAction.current += 1;
+    mediaPending.current = false;
     const room = roomRef.current;
     roomRef.current = null;
     room?.disconnect();
@@ -65,6 +86,7 @@ export default function ActivationTraining({ host = false }) {
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (mounted.current) {
       setConnection(nextConnection); setRemotePresent(false); setNeedsAudio(false);
+      setSettingsOpen(false); setSettingsBusy(false); setSettingsError('');
     }
   }
 
@@ -74,6 +96,7 @@ export default function ActivationTraining({ host = false }) {
     if (value.serverTime && Number.isFinite(Date.parse(value.serverTime))) setOffset(Date.parse(value.serverTime) - Date.now());
     sessionRef.current = value;
     setSession(value);
+    if (value.status === 'ended' || value.status === 'closed') setClosureFailed(false);
     if (value.removed || ['ending', 'ended', 'closed'].includes(value.status)
       || (previous?.sessionId && previous.sessionId !== value.sessionId)) disconnectMedia();
     return true;
@@ -113,6 +136,95 @@ export default function ActivationTraining({ host = false }) {
     };
   }, [host]);
 
+  useEffect(() => {
+    if (!settingsOpen) return undefined;
+    firstSettingRef.current?.focus?.();
+    const dismiss = event => {
+      if (event.type === 'keydown') {
+        if (event.key !== 'Escape') return;
+        event.preventDefault(); closeSettings(true);
+      } else if (!settingsPanelRef.current?.contains?.(event.target) && !settingsButtonRef.current?.contains?.(event.target)) {
+        closeSettings();
+      }
+    };
+    document.addEventListener('keydown', dismiss);
+    document.addEventListener('pointerdown', dismiss);
+    return () => {
+      document.removeEventListener('keydown', dismiss);
+      document.removeEventListener('pointerdown', dismiss);
+    };
+  }, [settingsOpen]);
+
+  function closeSettings(restoreFocus = false) {
+    settingsOpenRef.current = false;
+    deviceRequest.current += 1;
+    setSettingsOpen(false);
+    if (restoreFocus) settingsButtonRef.current?.focus?.();
+  }
+
+  function syncLocalSettings(room) {
+    if (!mounted.current || roomRef.current !== room) return;
+    setMicrophoneEnabled(room.localParticipant.isMicrophoneEnabled !== false);
+    setCameraEnabled(room.localParticipant.isCameraEnabled !== false);
+    setMicrophoneDevice(room.getActiveDevice?.('audioinput') || '');
+    setCameraDevice(room.getActiveDevice?.('videoinput') || '');
+  }
+
+  async function refreshDevices(room, sdk) {
+    const request = ++deviceRequest.current;
+    try {
+      const available = await sdk.Room.getLocalDevices(undefined, false);
+      if (!mounted.current || roomRef.current !== room || !settingsOpenRef.current || request !== deviceRequest.current) return;
+      setDevices(available.filter(device => ['audioinput', 'videoinput'].includes(device.kind)));
+      syncLocalSettings(room);
+    } catch {
+      if (mounted.current && roomRef.current === room && settingsOpenRef.current && request === deviceRequest.current) setSettingsError('Device choices are unavailable. You can still mute or turn video off.');
+    }
+  }
+
+  function toggleSettings() {
+    if (settingsOpenRef.current) { closeSettings(); return; }
+    const room = roomRef.current, sdk = sdkRef.current;
+    if (!room || !sdk || connection !== 'connected' || actionPending.current) return;
+    settingsOpenRef.current = true;
+    setSettingsOpen(true); setSettingsError(''); syncLocalSettings(room);
+    refreshDevices(room, sdk);
+  }
+
+  async function stopStaleMedia(room, capturedTracks = [], changedPublication) {
+    // A device/capture promise may settle after Leave. Stop only that old room.
+    try { await room.disconnect(); } catch { /* Continue stopping any late tracks. */ }
+    const tracks = new Set([...capturedTracks, changedPublication?.track, ...[...(room.localParticipant.trackPublications?.values?.() || [])].map(publication => publication.track)]);
+    for (const track of tracks) { try { track?.stop?.(); } catch { /* Stop the remaining old tracks as well. */ } }
+  }
+
+  async function changeMedia(kind, value) {
+    const room = roomRef.current;
+    if (!room || connection !== 'connected' || mediaPending.current || actionPending.current) return;
+    const generation = joinGeneration.current, operation = ++mediaAction.current;
+    const current = () => mounted.current && roomRef.current === room && generation === joinGeneration.current;
+    const capturedTracks = [...(room.localParticipant.trackPublications?.values?.() || [])].map(publication => publication.track);
+    const source = kind === 'microphone' || kind === 'audioinput' ? sdkRef.current?.Track.Source.Microphone : sdkRef.current?.Track.Source.Camera;
+    const affectedTrack = room.localParticipant.getTrackPublication(source)?.track;
+    if (affectedTrack) capturedTracks.push(affectedTrack);
+    let changedPublication;
+    mediaPending.current = true; setSettingsBusy(true); setSettingsError('');
+    try {
+      if (kind === 'microphone') changedPublication = await room.localParticipant.setMicrophoneEnabled(value);
+      else if (kind === 'camera') changedPublication = await room.localParticipant.setCameraEnabled(value);
+      else if (await room.switchActiveDevice(kind, value, true) === false) throw new Error('That device could not be selected.');
+      if (!current()) { await stopStaleMedia(room, capturedTracks, changedPublication); return; }
+      syncLocalSettings(room);
+      if (kind === 'camera' || kind === 'videoinput') attachLocal(room, sdkRef.current);
+    } catch (cause) {
+      if (!current()) { await stopStaleMedia(room, capturedTracks, changedPublication); return; }
+      syncLocalSettings(room);
+      setSettingsError(messageForError(cause));
+    } finally {
+      if (current() && operation === mediaAction.current) { mediaPending.current = false; setSettingsBusy(false); }
+    }
+  }
+
   function attachLocal(room, sdk) {
     const publication = room.localParticipant.getTrackPublication(sdk.Track.Source.Camera);
     if (publication?.track && localVideoRef.current) publication.track.attach(localVideoRef.current);
@@ -127,7 +239,7 @@ export default function ActivationTraining({ host = false }) {
     const stillCurrent = () => mounted.current && generation === joinGeneration.current
       && (!joinedSessionId || joinedSessionId === sessionRef.current?.sessionId)
       && !sessionRef.current?.removed && !['ending', 'ended'].includes(sessionRef.current?.status);
-    setError(''); setConnection('joining'); intentionalLeave.current = false;
+    setError(''); setClosureFailed(false); setConnection('joining'); intentionalLeave.current = false;
     let room;
     let admitted = false;
     try {
@@ -137,12 +249,13 @@ export default function ActivationTraining({ host = false }) {
         || !joined.session?.sessionId || typeof joined.serverUrl !== 'string' || typeof joined.participantToken !== 'string') throw new Error('The room could not be opened. Please try again.');
       joinedSessionId = joined.session.sessionId;
       admitted = true;
-      // A new Go replaces the last finished room without cancelling this explicit join.
+      // A new Enter replaces the last finished room without cancelling this explicit join.
       sessionRef.current = null;
       applySession(joined.session);
       if (!stillCurrent()) return;
       const sdk = await import('livekit-client');
       if (!stillCurrent()) return;
+      sdkRef.current = sdk;
       room = new sdk.Room({ adaptiveStream: true, dynacast: true, videoCaptureDefaults: { facingMode: 'user', resolution: { width: 1280, height: 720, frameRate: 24 } } });
       roomRef.current?.disconnect(); roomRef.current = room;
       const syncRemote = () => { if (stillCurrent() && roomRef.current === room) setRemotePresent(room.remoteParticipants.size > 0); };
@@ -158,10 +271,15 @@ export default function ActivationTraining({ host = false }) {
       room.on(sdk.RoomEvent.Reconnecting, () => { if (stillCurrent() && roomRef.current === room) setConnection('reconnecting'); });
       room.on(sdk.RoomEvent.Reconnected, () => { if (stillCurrent() && roomRef.current === room) { setConnection('connected'); syncRemote(); } });
       room.on(sdk.RoomEvent.AudioPlaybackStatusChanged, () => { if (stillCurrent() && roomRef.current === room) setNeedsAudio(!room.canPlaybackAudio); });
-      room.on(sdk.RoomEvent.LocalTrackPublished, () => { if (stillCurrent() && roomRef.current === room) attachLocal(room, sdk); });
+      room.on(sdk.RoomEvent.LocalTrackPublished, () => { if (stillCurrent() && roomRef.current === room) { attachLocal(room, sdk); syncLocalSettings(room); } });
+      const localTrackChanged = (_publication, participant) => { if (participant === room.localParticipant && stillCurrent()) syncLocalSettings(room); };
+      room.on(sdk.RoomEvent.TrackMuted, localTrackChanged);
+      room.on(sdk.RoomEvent.TrackUnmuted, localTrackChanged);
+      room.on(sdk.RoomEvent.ActiveDeviceChanged, () => { if (stillCurrent()) syncLocalSettings(room); });
+      room.on(sdk.RoomEvent.MediaDevicesChanged, () => { if (stillCurrent() && settingsOpenRef.current) refreshDevices(room, sdk); });
       room.on(sdk.RoomEvent.Disconnected, () => {
         if (!mounted.current || roomRef.current !== room) return;
-        setConnection(intentionalLeave.current ? 'left' : 'disconnected'); setRemotePresent(false); setNeedsAudio(false);
+        disconnectMedia(intentionalLeave.current ? 'left' : 'disconnected');
         refreshSession();
       });
       await room.connect(joined.serverUrl, joined.participantToken);
@@ -172,7 +290,7 @@ export default function ActivationTraining({ host = false }) {
       if (!stillCurrent()) { await room.disconnect(); return; }
       await room.localParticipant.setCameraEnabled(true);
       if (!stillCurrent()) { await room.disconnect(); return; }
-      attachLocal(room, sdk); syncRemote();
+      attachLocal(room, sdk); syncRemote(); syncLocalSettings(room);
       setConnection('connected');
       refreshSession();
     } catch (cause) {
@@ -190,6 +308,7 @@ export default function ActivationTraining({ host = false }) {
   }
 
   async function leave() {
+    closeSettings();
     if (host) {
       if (sessionRef.current?.mayEnd) await roomAction('/end');
       return;
@@ -213,7 +332,12 @@ export default function ActivationTraining({ host = false }) {
       const value = await roomRequest(path, { method: 'POST', body: JSON.stringify({ sessionId: sessionRef.current?.sessionId, ...(path === '/remove' ? { coachId: sessionRef.current?.coachId } : {}) }) });
       applySession(value);
       if (path === '/remove') setRemotePresent(false);
-    } catch (cause) { if (mounted.current) setError(path === '/end' ? 'We couldn’t confirm that the call closed. Please try Leave again.' : messageForError(cause)); }
+    } catch (cause) {
+      if (mounted.current) {
+        if (path === '/end') setClosureFailed(true);
+        setError(path === '/end' ? 'We couldn’t confirm that the call closed. Please retry.' : messageForError(cause));
+      }
+    }
     finally { actionPending.current = false; if (mounted.current) setBusyAction(null); }
   }
 
@@ -225,6 +349,9 @@ export default function ActivationTraining({ host = false }) {
   const showNext = sharedRoomNextStage(session);
   const bookingUrl = safeBookingUrl(config.bookingUrl);
   const mayEnter = session?.ready && (host ? session.mayGo : session.mayJoin && !showNext);
+  const retryClosing = host && !connected && session?.mayEnd && (session.status === 'ending' || closureFailed);
+  const microphones = devices.filter(device => device.kind === 'audioinput');
+  const cameras = devices.filter(device => device.kind === 'videoinput');
 
   return (
     <div className="activation-training-page">
@@ -259,23 +386,37 @@ export default function ActivationTraining({ host = false }) {
           <div className="activation-training-room" aria-label="Activation video call">
             <div className={`activation-training-stage-video${connected ? ' is-connected' : ''}`}>
               {clock && <span className="activation-training-timer" aria-label={`Call duration ${clock}`}>{clock}</span>}
+              {connected && <button ref={settingsButtonRef} type="button" className="activation-training-settings-toggle" aria-label="Call settings" aria-expanded={settingsOpen} aria-controls="activation-call-settings" onClick={toggleSettings} disabled={Boolean(busyAction) || connection === 'reconnecting'}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m9.5 3-.7 2.1-2 .9-2.1-.5-2 3.4 1.5 1.6v2.3l-1.5 1.6 2 3.4 2.1-.5 2 .9.7 2.1h4l.7-2.1 2-.9 2.1.5 2-3.4-1.5-1.6v-2.3l1.5-1.6-2-3.4-2.1.5-2-.9-.7-2.1z"/><circle cx="11.5" cy="11.7" r="3"/></svg></button>}
+              {settingsOpen && connected && <div id="activation-call-settings" ref={settingsPanelRef} className="activation-training-settings" role="dialog" aria-label="Call settings" aria-busy={settingsBusy}>
+                <h4>Call settings</h4>
+                <div className="activation-training-device-choices">
+                  <label>Microphone<select ref={firstSettingRef} aria-label="Microphone" value={microphoneDevice} disabled={settingsBusy || !microphones.length} onChange={event => changeMedia('audioinput', event.target.value)}>{!microphones.some(device => device.deviceId === microphoneDevice) && <option value={microphoneDevice}>Current microphone</option>}{microphones.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}</select></label>
+                  <label>Camera<select aria-label="Camera" value={cameraDevice} disabled={settingsBusy || !cameras.length} onChange={event => changeMedia('videoinput', event.target.value)}>{!cameras.some(device => device.deviceId === cameraDevice) && <option value={cameraDevice}>Current camera</option>}{cameras.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>)}</select></label>
+                </div>
+                <div className="activation-training-media-actions">
+                  <button type="button" aria-pressed={!microphoneEnabled} disabled={settingsBusy || Boolean(busyAction)} onClick={() => changeMedia('microphone', !microphoneEnabled)}>{microphoneEnabled ? 'Mute' : 'Unmute'}</button>
+                  <button type="button" aria-pressed={!cameraEnabled} disabled={settingsBusy || Boolean(busyAction)} onClick={() => changeMedia('camera', !cameraEnabled)}>{cameraEnabled ? 'Video off' : 'Video on'}</button>
+                </div>
+                {settingsError && <p role="alert">{settingsError}</p>}
+              </div>}
               <video ref={remoteVideoRef} className="activation-training-remote-video" autoPlay playsInline aria-label={`${otherName}’s video`} />
               {(!connected || !remotePresent) && <div className="activation-training-room-placeholder">
                 <span className="activation-training-monogram" aria-hidden="true">P</span>
                 <h3>{roomTitle}</h3>
                 <p>{roomCopy}</p>
               </div>}
-              <div className={`activation-training-self${connected ? ' is-visible' : ''}`}><video ref={localVideoRef} autoPlay playsInline muted aria-label="Your video preview" /></div>
+              <div className={`activation-training-self${connected ? ' is-visible' : ''}`}><video ref={localVideoRef} autoPlay playsInline muted aria-label="Your video preview" />{!cameraEnabled && <span>Video off</span>}</div>
             </div>
             <audio ref={remoteAudioRef} autoPlay />
             <div className="activation-training-room-bottom">
               {error && <p className="activation-training-error" role="alert">{error}</p>}
               {(connected || host || mayEnter) && <div className="activation-training-controls">
-                {!connected && (host || mayEnter) && <button type="button" className="activation-training-join" onClick={join} disabled={!mayEnter || joining || Boolean(busyAction)}>{joining ? 'Connecting…' : host ? 'Go' : 'Enter'}</button>}
-                {host && session?.mayRemove && <button type="button" className="activation-training-remove" onClick={() => roomAction('/remove')} disabled={Boolean(busyAction) || joining}>{busyAction === '/remove' ? 'Removing…' : 'Remove'}</button>}
-                {(connected || (host && session?.mayEnd)) && <button type="button" className="activation-training-leave" onClick={leave} disabled={Boolean(busyAction) || joining}>{['/leave', '/end'].includes(busyAction) ? 'Leaving…' : 'Leave'}</button>}
+                {!connected && !retryClosing && (host || mayEnter) && <button type="button" className="activation-training-join" onClick={join} disabled={!mayEnter || joining || Boolean(busyAction)}>{joining ? 'Connecting…' : 'Enter'}</button>}
+                {host && connected && session?.mayRemove && <button type="button" className="activation-training-remove" onClick={() => roomAction('/remove')} disabled={Boolean(busyAction) || joining}>{busyAction === '/remove' ? 'Removing…' : 'Remove'}</button>}
+                {connected && <button type="button" className="activation-training-leave" onClick={leave} disabled={Boolean(busyAction) || joining}>{['/leave', '/end'].includes(busyAction) ? 'Leaving…' : 'Leave'}</button>}
               </div>}
               {!connected && !host && !mayEnter && <p className="activation-training-wait" role="status">{showNext ? 'Your next step is ready below.' : session?.removed ? 'Please wait for Patrick to open your next session.' : session?.busy ? 'Call in progress — please wait' : 'Your Enter button appears when the room is ready.'}</p>}
+              {retryClosing && <button type="button" className="activation-training-retry-close" onClick={() => roomAction('/end')} disabled={Boolean(busyAction)}>{busyAction === '/end' ? 'Closing…' : 'Retry closing'}</button>}
               {needsAudio && connected && <button type="button" className="activation-training-enable-audio" onClick={() => roomRef.current?.startAudio().then(() => setNeedsAudio(false)).catch(() => setError('Please tap again to enable call audio.'))}>Enable audio</button>}
             </div>
           </div>

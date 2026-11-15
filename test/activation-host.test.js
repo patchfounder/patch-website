@@ -32,9 +32,9 @@ async function load(name, imports = {}) {
 const training = await load('ActivationTraining.jsx');
 const host = await load('ActivationHost.jsx', { './ActivationTraining.jsx': training });
 
-test('host opens the same Activation page with Go and no password or manual room form', () => {
+test('host opens the same Activation page with Enter and no password or manual room form', () => {
   const html = renderToStaticMarkup(React.createElement(host.default));
-  assert.match(html, />Go<\/button>/);
+  assert.match(html, />Enter<\/button>/);
   assert.match(html, /aria-label="Activation video call"/);
   assert.match(html, /Watch the seven steps/);
   assert.match(html, /Patch Call Process\.pdf/);

@@ -168,8 +168,8 @@ test('initial page does not invent a booking, create a fake live call or expose 
   assert.doesNotMatch(html, /<video[^>]*src=/);
 });
 
-test('camera starts only on Go or Enter and the minimal UI keeps one Leave action', () => {
-  const effect = source.slice(source.indexOf('useEffect(() => {'), source.indexOf('function attachLocal'));
+test('camera starts only on Enter and the minimal UI keeps one Leave action', () => {
+  const effect = source.slice(source.indexOf('useEffect(() => {'), source.indexOf('}, [host]);') + '}, [host]);'.length);
   assert.doesNotMatch(effect, /getUserMedia|setCameraEnabled|setMicrophoneEnabled|participantToken/);
   const leave = source.slice(source.indexOf('async function leave()'), source.indexOf('async function roomAction('));
   assert.match(leave, /if \(host\)/);
@@ -178,6 +178,7 @@ test('camera starts only on Go or Enter and the minimal UI keeps one Leave actio
   assert.match(source, /if \(!host \|\| actionPending.current \|\| joinPending.current\)/);
   assert.match(source, /playsInline muted aria-label="Your video preview"/);
   assert.match(source, /referrerPolicy: 'no-referrer'/);
-  assert.doesNotMatch(source, /toggleMicrophone|toggleCamera|flipCamera|Refresh room|>Finish<|since room opened|Five-minute check-in/);
+  assert.doesNotMatch(source, /flipCamera|Refresh room|>Finish<|since room opened|Five-minute check-in|host \? 'Go'/);
+  assert.match(source, /aria-label="Call settings"/);
   assert.match(source, /className="activation-training-timer"/);
 });
