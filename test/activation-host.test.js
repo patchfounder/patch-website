@@ -6,32 +6,38 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { transformWithEsbuild } from 'vite';
+import * as stateExports from '../src/components/training-room-state.js';
+import * as sharedExports from '../src/components/activation-shared-room-state.js';
 
 const require = createRequire(import.meta.url);
-const file = new URL('../src/components/ActivationHost.jsx', import.meta.url);
-const { code } = await transformWithEsbuild(readFileSync(file, 'utf8'), file.pathname, {
-  loader: 'jsx', format: 'cjs', jsx: 'automatic', sourcemap: false, tsconfigRaw: '{}',
-});
-const module = { exports: {} };
-vm.runInNewContext(code, {
-  module, exports: module.exports,
-  require(name) {
-    if (name.endsWith('.css')) return {};
-    assert.ok(['react', 'react/jsx-runtime'].includes(name));
-    return require(name);
-  },
-});
+async function load(name, imports = {}) {
+  const file = new URL(`../src/components/${name}`, import.meta.url);
+  const { code } = await transformWithEsbuild(readFileSync(file, 'utf8'), file.pathname, {
+    loader: 'jsx', format: 'cjs', jsx: 'automatic', sourcemap: false, tsconfigRaw: '{}',
+  });
+  const module = { exports: {} };
+  vm.runInNewContext(code, {
+    module, exports: module.exports,
+    require(name) {
+      if (name.endsWith('.css')) return {};
+      if (name === './training-room-state.js') return stateExports;
+      if (name === './activation-shared-room-state.js') return sharedExports;
+      if (imports[name]) return imports[name];
+      assert.ok(['react', 'react/jsx-runtime'].includes(name), name);
+      return require(name);
+    },
+  });
+  return module.exports;
+}
+const training = await load('ActivationTraining.jsx');
+const host = await load('ActivationHost.jsx', { './ActivationTraining.jsx': training });
 
-test('private host view begins at sign in without exposing session links or invented appointments', () => {
-  const html = renderToStaticMarkup(React.createElement(module.exports.default));
-  assert.match(html, /Host sign in/);
-  assert.match(html, /type="password"/);
-  assert.doesNotMatch(html, /#session=|#access=|coach@example|LIVEKIT_API|TRAINING_HOST_ACCESS_KEY/);
-});
-
-test('host agenda formats the same appointment explicitly in the phone timezone', () => {
-  const format = module.exports.formatHostAppointment;
-  assert.match(format('2026-11-15T13:30:00Z', 'Europe/London'), /13:30|1:30/);
-  assert.match(format('2026-11-15T13:30:00Z', 'Europe/Madrid'), /14:30|2:30/);
-  assert.equal(format('invalid', 'Europe/London'), '');
+test('host opens the same Activation page with Go and no password or manual room form', () => {
+  const html = renderToStaticMarkup(React.createElement(host.default));
+  assert.match(html, />Go<\/button>/);
+  assert.match(html, /Activation · Host/);
+  assert.match(html, /Watch the seven steps/);
+  assert.match(html, /Patch Call Process\.pdf/);
+  assert.doesNotMatch(html, /<form|<input|password|access key|sign in|Add a booked session|Create five-minute room|#session=|#access=|LIVEKIT_API|TRAINING_HOST_ACCESS_KEY/i);
+  assert.doesNotMatch(html, /Your next step · Module 1|Choose your Activation time/);
 });

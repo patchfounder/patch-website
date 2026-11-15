@@ -137,12 +137,14 @@ const sourceUrl = new URL('../src/components/ActivationTraining.jsx', import.met
 const source = readFileSync(sourceUrl, 'utf8');
 const { code } = await transformWithEsbuild(source, sourceUrl.pathname, { loader: 'jsx', format: 'cjs', jsx: 'automatic', sourcemap: false, tsconfigRaw: '{}' });
 const stateExports = await import('../src/components/training-room-state.js');
+const sharedExports = await import('../src/components/activation-shared-room-state.js');
 const module = { exports: {} };
 vm.runInNewContext(code, {
   module, exports: module.exports,
   require(name) {
     if (name.endsWith('.css')) return {};
     if (name === './training-room-state.js') return stateExports;
+    if (name === './activation-shared-room-state.js') return sharedExports;
     assert.ok(['react', 'react/jsx-runtime'].includes(name), `Unexpected static dependency: ${name}`);
     return require(name);
   },
@@ -162,16 +164,16 @@ test('Activation page preserves the approved video and manual, with visible full
 test('initial page does not invent a booking, create a fake live call or expose Module 1', () => {
   assert.doesNotMatch(html, /Starts in|Since scheduled start|You’re booked in|Your room is ready/);
   assert.doesNotMatch(html, /participantToken|accessToken|LIVEKIT_API_SECRET|Book Module 1|Your next step · Module 1/);
-  assert.match(html, /camera and microphone start only|Your five-minute check-in/);
+  assert.match(html, /Activation room|Checking the room/);
   assert.doesNotMatch(html, /<video[^>]*src=/);
 });
 
-test('camera and media only activate within the explicit join path, and leaving is separate from finishing', () => {
+test('camera and media only activate within explicit Go or Enter, and leaving is separate from Finish', () => {
   const effect = source.slice(source.indexOf('useEffect(() => {'), source.indexOf('function attachLocal'));
   assert.doesNotMatch(effect, /getUserMedia|setCameraEnabled|setMicrophoneEnabled|participantToken/);
-  const leave = source.slice(source.indexOf('function leave()'), source.indexOf('async function finish()'));
-  assert.doesNotMatch(leave, /\/end|nextStageAvailable|status: .ended/);
-  assert.match(source, /session\?\.role !== 'host' \|\| !session.mayEnd/);
+  const leave = source.slice(source.indexOf('async function leave()'), source.indexOf('async function roomAction('));
+  assert.doesNotMatch(leave, /['"]\/end['"]|nextStageAvailable|status: .ended/);
+  assert.match(source, /if \(!host \|\| actionPending.current \|\| joinPending.current\)/);
   assert.match(source, /playsInline muted aria-label="Your video preview"/);
   assert.match(source, /referrerPolicy: 'no-referrer'/);
 });
