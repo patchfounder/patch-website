@@ -22,4 +22,12 @@ Focused checks passed: 45 frontend/routing tests and 20 existing/new backend roo
 
 Patrick approved local browser QA. All six pages were rendered and visually inspected at 375px; every stage was measured at 375/390/430px without horizontal overflow, with content contained inside the shared mobile edges. All six host pages were checked on desktop, with 800px maximum shells and Enter only before joining. A synthetic two-browser Pre-Masterclass call verified host/coach Enter, matching44px settings controls, device selection/mute, host Leave and the admitted coach's exact LinkedIn Masterclass handoff. The reused video player loaded successfully; the five module pages clearly label it as a placeholder. Evidence is in `/private/tmp/training-stages-qa`, with synthetic media only. No production call was operated. Patch OS was not accessed or modified.
 
-Awaiting independent Planner release decision and production read-only verification.
+Independent Planner approved the exact 17-file commit, push and existing Website deployment on Patrick's explicit release instruction.
+
+## Deployed and verified
+
+Runtime commit `ae1e23d0000a2d035ceca1d013e89e71ca2b6f86` was pushed and deployed as Website deployment `a46120cd-7bee-445f-ba01-cf8742e58ffa` (**SUCCESS**, created 16 November at 01:09:03 UTC). All 175 committed source files in the isolated package matched Git object hashes before upload. Existing service configuration, credentials, storage and legacy Activation compatibility were preserved.
+
+At 01:11:12 UTC, all twelve new coach/host pages returned 200 with the correct stage title/share URL and noindex metadata. All six status endpoints returned 200, ready true and closed (waiting for a host). Public health, deployment provenance, legacy Activation routes, Activation booking, application and existing training pages returned 200. Provenance matched the runtime commit. Served assets `index-CuOtPXLI.js` and `index-Qr99rBmF.css` contain all six stages, placeholder labels, device controls and matching44px styles without navy, Remove UI or synthetic preview code. The approved Patch Call Process PDF hash remains unchanged.
+
+Private receipt and synthetic screenshots: `/Users/patrick/Desktop/Patch/Coaches/Training/records/activation-release/2026-11-16-six-stages.json` and its sibling evidence directory. No production call was opened, joined, removed or closed as a test. Patch OS was not accessed or modified. All 18 unrelated registration/recruitment paths remain excluded.
