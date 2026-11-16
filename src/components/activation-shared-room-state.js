@@ -19,11 +19,12 @@ export function acceptsSharedRoomUpdate(current, incoming) {
   return true;
 }
 
-export function sharedRoomNextStage(status) {
+export function sharedRoomNextStage(status, nextStageUrl = MODULE_ONE_URL) {
   // The server retains a finished coach's handoff when Patrick opens the next room.
-  return status?.role === 'coach'
+  return typeof nextStageUrl === 'string' && nextStageUrl.length > 0
+    && status?.role === 'coach'
     && status?.removed !== true && status?.nextStageAvailable === true
-    && status?.nextStageUrl === MODULE_ONE_URL;
+    && status?.nextStageUrl === nextStageUrl;
 }
 
 export function sharedRoomClock(status, nowMs = Date.now()) {
@@ -32,16 +33,16 @@ export function sharedRoomClock(status, nowMs = Date.now()) {
   return countdown((nowMs - start) / 1000);
 }
 
-export function sharedRoomMessage(status, { host = false, connection = 'idle', remotePresent = false } = {}) {
-  if (!status) return { title: 'Activation room', copy: '' };
+export function sharedRoomMessage(status, { host = false, connection = 'idle', remotePresent = false, stageTitle = 'Activation', nextStageUrl = MODULE_ONE_URL } = {}) {
+  if (!status) return { title: `${stageTitle} room`, copy: '' };
   if (status.removed) return { title: 'You’ve left this call', copy: 'Patrick has cleared your place. Please contact him if you entered the wrong session.' };
-  if (sharedRoomNextStage(status) && !status.hasSeat) return { title: 'Thanks for joining', copy: 'Your Activation call has finished. Your next step is below.' };
-  if (status.status === 'ending') return { title: 'Closing the room', copy: host ? 'The room is closing. If needed, use Retry closing.' : 'Patrick is closing the call. Your next step will appear here.' };
-  if (status.status === 'ended') return { title: 'Thanks for joining', copy: sharedRoomNextStage(status) ? 'Your next step is below.' : 'This call has finished. Patrick will open the room for the next session.' };
-  if (!status.ready) return { title: 'Activation room', copy: '' };
+  if (sharedRoomNextStage(status, nextStageUrl) && !status.hasSeat) return { title: 'Thanks for joining', copy: `Your ${stageTitle} call has finished. Your next step is below.` };
+  if (status.status === 'ending') return { title: 'Closing the room', copy: host ? 'The room is closing. If needed, use Retry closing.' : nextStageUrl ? 'Patrick is closing the call. Your next step will appear here.' : 'Patrick is closing the call.' };
+  if (status.status === 'ended') return { title: 'Thanks for joining', copy: sharedRoomNextStage(status, nextStageUrl) ? 'Your next step is below.' : 'This call has finished. Patrick will open the room for the next session.' };
+  if (!status.ready) return { title: `${stageTitle} room`, copy: '' };
   if (connection === 'reconnecting') return { title: 'Reconnecting your call', copy: 'Your camera and microphone will reconnect automatically.' };
   if (connection === 'connected' && !remotePresent) return { title: host ? 'Waiting for your coach' : 'Waiting for Patrick', copy: '' };
-  if (status.status === 'closed') return { title: host ? 'Ready when you are' : 'Your Activation room', copy: host ? '' : 'Patrick will open the room when it’s time for your call.' };
+  if (status.status === 'closed') return { title: host ? 'Ready when you are' : `Your ${stageTitle} room`, copy: host ? '' : 'Patrick will open the room when it’s time for your call.' };
   if (host) return { title: 'Your room is open', copy: '' };
   if (status.busy && !status.mayJoin) return { title: 'Call in progress', copy: 'Please wait. Patrick is speaking with another coach.' };
   if (!status.hostPresent) return { title: 'Patrick will be here shortly', copy: '' };

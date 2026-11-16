@@ -1,3 +1,4 @@
+import * as stageExports from '../src/training-stages.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -15,7 +16,7 @@ const response = data => ({ ok: true, json: async () => JSON.parse(JSON.stringif
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
-async function harness({ host = true, cameraFailure = false, holdLeave = null, holdJoin = null, endFailures = 0, holdSwitch = null, holdCameraResume = null, devicesFailure = false, switchReturnsFalse = false, statusFailures = 0, joinFailures = 0 } = {}) {
+async function harness({ stage = null, host = true, cameraFailure = false, holdLeave = null, holdJoin = null, endFailures = 0, holdSwitch = null, holdCameraResume = null, devicesFailure = false, switchReturnsFalse = false, statusFailures = 0, joinFailures = 0 } = {}) {
   const cells = [], effects = [], requests = [], mediaCalls = [], rooms = [], intervals = [], deviceReads = [];
   const listeners = new Map();
   let cursor = 0, tree;
@@ -28,7 +29,7 @@ async function harness({ host = true, cameraFailure = false, holdLeave = null, h
   async function fetch(url, options = {}) {
     requests.push({ url, options, body: options.body ? JSON.parse(options.body) : null });
     if (url === '/api/training/config') return response({ bookingUrl: 'https://cal.com/patchapp/activation', bookingDurationMinutes: 30 });
-    const endpoint = url.replace('/api/training/activation-room', '');
+    const endpoint = url.replace(stage?.apiPath || '/api/training/activation-room', '');
     if (endpoint === '/status') {
       if (statusFailures > 0) { statusFailures--; return { ok: false, status: 503, json: async () => ({ message: 'The video room is temporarily unavailable. Please try again shortly.' }) }; }
       return response(current);
@@ -113,6 +114,7 @@ async function harness({ host = true, cameraFailure = false, holdLeave = null, h
       if (name === 'react') return react;
       if (name === './training-room-state.js') return stateExports;
       if (name === './activation-shared-room-state.js') return sharedExports;
+      if (name === '../training-stages.js') return stageExports;
       if (name === 'react/jsx-runtime') return require(name);
       throw new Error(name);
     },
@@ -123,7 +125,7 @@ async function harness({ host = true, cameraFailure = false, holdLeave = null, h
     callback(node); visit(node.props?.children, callback);
   }
   function render() {
-    cursor = 0; tree = module.exports.default({ host });
+    cursor = 0; tree = module.exports.default({ host, ...(stage ? { stage } : {}) });
     visit(tree, node => { if (node.props?.ref && !node.props.ref.current) node.props.ref.current = { srcObject: null, focus() { this.focused = true; }, contains(target) { return target === this; } }; });
     for (const { index, callback } of effects.splice(0)) { cells[index].cleanup?.(); cells[index].cleanup = callback(); }
     return tree;
@@ -356,4 +358,53 @@ test('unexpected disconnect invalidates a pending device switch and stops its la
   await room.disconnect(); assert.equal(ui.hasButton('Leave'), false); assert.equal(ui.hasButton('Call settings'), false);
   holdSwitch.resolve(); await changing;
   assert.equal(room.cameraTrack.live, false); assert.ok(room.cameraTrack.stops >= 2); ui.unmount();
+});
+
+test('all six stages send only to their own API and non-Activation pages never load Activation booking configuration', async () => {
+  for (const stage of stageExports.TRAINING_STAGES) {
+    const ui = await harness({ stage });
+    assert.ok(ui.requests.some(request => request.url === `${stage.apiPath}/status`), stage.code);
+    assert.equal(ui.requests.some(request => request.url === '/api/training/config'), stage.code === 'activa', stage.code);
+    assert.equal(ui.rooms.length, 0);
+    await ui.button('Enter').props.onClick();
+    assert.ok(ui.requests.some(request => request.url === `${stage.apiPath}/go`), stage.code);
+    assert.equal(ui.rooms[0].connected, true);
+    await ui.button('Leave').props.onClick();
+    assert.equal(ui.rooms[0].disconnected, true);
+    assert.ok(ui.requests.some(request => request.url === `${stage.apiPath}/end`), stage.code);
+    assert.ok(ui.requests.every(request => request.url === '/api/training/config' || request.url.startsWith(stage.apiPath + '/')), stage.code);
+    ui.unmount();
+  }
+});
+
+test('each stage rejects a different stage handoff and only an eligible coach sees its configured next page', async () => {
+  for (const stage of stageExports.TRAINING_STAGES) {
+    const ui = await harness({ host: false, stage });
+    ui.status({ role: 'coach', status: 'ended', sessionId: 'finished-call', revision: 2, nextStageAvailable: true, hasSeat: false, nextStageUrl: 'https://www.patch.app/training/wrongx', serverTime: '2026-11-15T13:40:00Z' });
+    await ui.poll();
+    assert.doesNotMatch(ui.text(), /Your next step · Module/, stage.code);
+    ui.status({ nextStageUrl: stage.handoffUrl, revision: 3 });
+    await ui.poll();
+    if (stage.nextStageUrl) {
+      assert.ok(ui.text().includes(`Your next step · Module ${stage.nextStageModule}`), stage.code);
+      assert.ok(ui.text().includes(stage.nextStageUrl), stage.code);
+      ui.status({ removed: true, revision: 4 }); await ui.poll();
+      assert.doesNotMatch(ui.text(), /Your next step · Module/, stage.code);
+    } else {
+      assert.doesNotMatch(ui.text(), /Your next step · Module|You are certified|Your certificate is ready/, stage.code);
+    }
+    ui.unmount();
+  }
+});
+
+test('a module Enter failure remains retryable on that module without requesting media', async () => {
+  const stage = stageExports.getTrainingStage('linkmc'), ui = await harness({ stage, joinFailures: 1 });
+  await ui.button('Enter').props.onClick();
+  assert.equal(ui.rooms.length, 0); assert.equal(ui.mediaCalls.length, 0);
+  assert.equal(ui.button('Enter').props.disabled, false); assert.match(ui.text(), /Couldn’t connect/);
+  await ui.button('Enter').props.onClick();
+  assert.equal(ui.rooms[0].connected, true);
+  assert.equal(ui.requests.filter(request => request.url === `${stage.apiPath}/go`).length, 2);
+  assert.ok(ui.requests.every(request => !request.url.includes('activation-room')));
+  ui.unmount();
 });

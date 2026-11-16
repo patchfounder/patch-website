@@ -19,7 +19,7 @@
 .activation-training-intro > p:last-of-type { color:var(--at-muted);font-size:16px;max-width:610px; }
 .activation-training-progress { display:flex;gap:5px;margin-top:24px;max-width:240px; }
 .activation-training-progress span { height:3px;flex:1;border-radius:4px;background:var(--at-line); }
-.activation-training-progress span:first-child { background:var(--at-accent); }
+.activation-training-progress span.is-current { background:var(--at-accent); }
 .activation-training-section { padding:32px 0;border-top:1px solid var(--at-line); }
 .activation-training-section-heading { display:flex;align-items:center;gap:16px;margin-bottom:24px; }
 .activation-training-section-heading > span { color:var(--at-ink);font-size:12px;font-variant-numeric:tabular-nums;flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--at-line);border-radius:50%; }

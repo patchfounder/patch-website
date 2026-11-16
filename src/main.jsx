@@ -20,6 +20,7 @@ import Reactivate from './components/Reactivate.jsx';
 import Training from './components/Training.jsx';
 import ActivationTraining from './components/ActivationTraining.jsx';
 import ActivationHost from './components/ActivationHost.jsx';
+import { TRAINING_STAGES } from './training-stages.js';
 import './styles.css';
 
 const bookingRoutes = {
@@ -53,9 +54,12 @@ function normalisePathname(pathname) {
 
 const pathname = normalisePathname(window.location.pathname);
 
+const trainingStage = TRAINING_STAGES.find(stage => pathname === stage.path || pathname === stage.hostPath);
 const RootComponent = bookingRoutes[pathname] || App;
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RootComponent />
+    {trainingStage
+      ? <ActivationTraining key={trainingStage.code + (pathname === trainingStage.hostPath ? '-host' : '-coach')} stage={trainingStage} host={pathname === trainingStage.hostPath} />
+      : <RootComponent />}
   </React.StrictMode>,
 );

@@ -1,3 +1,4 @@
+import * as stageExports from '../src/training-stages.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -22,6 +23,7 @@ async function load(name, imports = {}) {
       if (name.endsWith('.css')) return {};
       if (name === './training-room-state.js') return stateExports;
       if (name === './activation-shared-room-state.js') return sharedExports;
+      if (name === '../training-stages.js') return stageExports;
       if (imports[name]) return imports[name];
       assert.ok(['react', 'react/jsx-runtime'].includes(name), name);
       return require(name);

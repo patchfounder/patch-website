@@ -1,3 +1,4 @@
+import { TRAINING_STAGES } from '../src/training-stages.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -116,6 +117,7 @@ test('client routing selects Activation with or without a trailing slash', () =>
     vm.runInNewContext(mainCode, {
       module, exports: module.exports, window: { location: { pathname } }, document: { getElementById: () => ({}) },
       require(name) {
+        if (name === './training-stages.js') return { TRAINING_STAGES };
         if (name === 'react' || name === 'react/jsx-runtime') return require(name);
         if (name === 'react-dom/client') return { createRoot: () => ({ render: value => { rendered = value; } }) };
         if (name.endsWith('.css')) return {};
@@ -131,6 +133,7 @@ test('metadata generation creates a dedicated Activation share page without file
   const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
   const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
   await vm.runInNewContext(`(async () => {\n${source}\n})()`, {
+    TRAINING_STAGES,
     path: { join: path.join, resolve: value => path.resolve(websiteRoot, value) },
     readFile: async file => { assert.equal(file, path.join(dist, 'index.html')); return readSource('index.html'); },
     mkdir: async directory => { assert.ok(directory.startsWith(dist + path.sep)); },
@@ -143,4 +146,48 @@ test('metadata generation creates a dedicated Activation share page without file
   assert.match(html, /<meta property="og:url" content="https:\/\/www\.patch\.app\/activation"/);
   assert.match(html, /<meta property="og:title" content="Activation Call \| Patch"/);
   assert.match(html, /<meta name="twitter:title" content="Activation Call \| Patch"/);
+});
+
+
+test('six-letter training URLs select the matching stage and role, including trailing slashes', () => {
+  for (const stage of TRAINING_STAGES) for (const host of [false, true]) for (const suffix of ['', '/']) {
+    let rendered;
+    const pathname = (host ? stage.hostPath : stage.path) + suffix;
+    const module = { exports: {} };
+    vm.runInNewContext(mainCode, {
+      module, exports: module.exports, window: { location: { pathname } }, document: { getElementById: () => ({}) },
+      require(name) {
+        if (name === './training-stages.js') return { TRAINING_STAGES };
+        if (name === 'react' || name === 'react/jsx-runtime') return require(name);
+        if (name === 'react-dom/client') return { createRoot: () => ({ render: value => { rendered = value; } }) };
+        if (name.endsWith('.css')) return {};
+        if (name.endsWith('.jsx')) { const component = () => null; component.displayName = path.basename(name, '.jsx'); return { __esModule: true, default: component }; }
+        throw new Error(`Unexpected entry dependency: ${name}`);
+      },
+    });
+    const selected = rendered.props.children;
+    assert.equal(selected.type.displayName, 'ActivationTraining', pathname);
+    assert.equal(selected.props.stage.code, stage.code, pathname);
+    assert.equal(selected.props.host, host, pathname);
+    assert.equal(selected.key, stage.code + (host ? '-host' : '-coach'));
+  }
+});
+
+test('each stage and host URL gets its own metadata rather than Activation or homepage metadata', async () => {
+  const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
+  const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
+  await vm.runInNewContext(`(async () => {\n${source}\n})()`, {
+    TRAINING_STAGES,
+    path: { join: path.join, resolve: value => path.resolve(websiteRoot, value) },
+    readFile: async () => readSource('index.html'), mkdir: async () => {},
+    writeFile: async (file, html) => outputs.set(file, html), console: { log() {} },
+  });
+  for (const stage of TRAINING_STAGES) for (const host of [false, true]) {
+    const route = host ? stage.hostPath : stage.path;
+    const html = outputs.get(path.join(dist, route.slice(1), 'index.html'));
+    assert.ok(html, route);
+    assert.ok(html.includes(`<title>${host ? 'Host ' : ''}${stage.title} | Patch Academy</title>`), route);
+    assert.ok(html.includes(`content="https://www.patch.app${route}"`), route);
+    assert.ok(html.includes('content="noindex, nofollow, noarchive"'), route);
+  }
 });

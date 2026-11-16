@@ -1,5 +1,7 @@
 # Activation training room
 
+The six-letter curriculum routes and per-stage rooms are documented in `training-stages.md`. The new Activation coach URL is https://www.patch.app/training/activa and host URL is https://www.patch.app/training/activa/host; they reuse this same Activation room. Existing URLs and stored room state remain compatible.
+
 ## Current experience — 15 November 2026
 
 Patrick explicitly requested one shared module room with no typed password or manual appointment setup. The public coach page is https://www.patch.app/training/activation and the host page is https://www.patch.app/training/activation/host. These are reusable module pages, not separate websites for every call.

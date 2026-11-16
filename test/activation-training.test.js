@@ -1,3 +1,4 @@
+import * as stageExports from '../src/training-stages.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -145,6 +146,7 @@ vm.runInNewContext(code, {
     if (name.endsWith('.css')) return {};
     if (name === './training-room-state.js') return stateExports;
     if (name === './activation-shared-room-state.js') return sharedExports;
+      if (name === '../training-stages.js') return stageExports;
     assert.ok(['react', 'react/jsx-runtime'].includes(name), `Unexpected static dependency: ${name}`);
     return require(name);
   },
@@ -169,7 +171,7 @@ test('initial page does not invent a booking, create a fake live call or expose 
 });
 
 test('camera starts only on Enter and the minimal UI keeps one Leave action', () => {
-  const effect = source.slice(source.indexOf('useEffect(() => {'), source.indexOf('}, [host]);') + '}, [host]);'.length);
+  const effect = source.slice(source.indexOf('useEffect(() => {'), source.indexOf('}, [host, stage.code]);') + '}, [host, stage.code]);'.length);
   assert.doesNotMatch(effect, /getUserMedia|setCameraEnabled|setMicrophoneEnabled|participantToken/);
   const leave = source.slice(source.indexOf('async function leave()'), source.indexOf('async function roomAction('));
   assert.match(leave, /if \(host\)/);
@@ -181,4 +183,25 @@ test('camera starts only on Enter and the minimal UI keeps one Leave action', ()
   assert.doesNotMatch(source, /flipCamera|Refresh room|>Finish<|since room opened|Five-minute check-in|host \? 'Go'/);
   assert.match(source, /aria-label="Call settings"/);
   assert.match(source, /className="activation-training-timer"/);
+});
+
+test('each named stage renders its own step, copy, room and full booking URL with the approved template', () => {
+  for (const stage of stageExports.TRAINING_STAGES) {
+    const page = renderToStaticMarkup(React.createElement(module.exports.default, { stage }));
+    assert.ok(page.includes(stage.headline), stage.code);
+    assert.ok(page.includes(`Step ${stage.step} of 6`), stage.code);
+    assert.ok(page.includes(`Patch Academy · ${stage.title}`), stage.code);
+    assert.ok(page.includes(`aria-label="${stage.title} video call"`), stage.code);
+    assert.ok(page.includes(`href="${stage.bookingUrl}"`), stage.code);
+    assert.ok(page.includes(`>${stage.bookingUrl}</a>`), stage.code);
+    assert.equal((page.match(/class="is-current"/g) || []).length, stage.step);
+    assert.equal(page.includes('Placeholder tutorial · the module video will be added here.'), stage.placeholderVideo);
+    assert.doesNotMatch(page, /Your next step · Module|Starts in|You’re booked in|You are certified/);
+    if (stage.code !== 'activa') {
+      assert.doesNotMatch(page, /Choose your Activation time|currently reserves 30 minutes|cal\.com\/patchapp\/activation/);
+    }
+    const hostPage = renderToStaticMarkup(React.createElement(module.exports.default, { stage, host: true }));
+    assert.match(hostPage, />Enter<\/button>/);
+    assert.doesNotMatch(hostPage, /Choose your .* time|password|>Remove<|>Leave</);
+  }
 });

@@ -3,10 +3,8 @@ import { createHash, randomBytes } from 'node:crypto';
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { getTrainingStage } from '../src/training-stages.js';
 
-const HOST_COOKIE = 'patch_activation_owner';
-const COACH_COOKIE = 'patch_activation_coach';
-const COOKIE_PATH = '/api/training/activation-room';
 const ROOM_MS = 2 * 60 * 60_000;
 const SEAT_GRACE_MS = 20_000;
 const TOKEN_SECONDS = 120;
@@ -45,7 +43,14 @@ export async function createActivationSharedLivekitProvider(config, { loadSdk = 
 }
 
 /** One explicitly open module room. No account, calendar, registration or message data is read. */
-export function createActivationSharedRoomRouter({ env = {}, projectRoot, livekitFactory = createActivationSharedLivekitProvider, now = Date.now } = {}) {
+export function createActivationSharedRoomRouter({ env = {}, projectRoot, livekitFactory = createActivationSharedLivekitProvider, now = Date.now, stageCode = 'activa' } = {}) {
+  const stage = getTrainingStage(stageCode);
+  if (!stage) throw new TypeError('Unknown training stage.');
+  const HOST_COOKIE = `patch_${stage.id}_owner`;
+  const COACH_COOKIE = `patch_${stage.id}_coach`;
+  const COOKIE_PATH = stage.apiPath;
+  const schema = `patch-${stage.id}-shared-v1`;
+  const roomPrefix = `training-shared-${stage.id}-`;
   const router = express.Router();
   const production = env.NODE_ENV === 'production';
   const root = path.resolve(projectRoot || path.join(import.meta.dirname, '..'));
@@ -66,7 +71,7 @@ export function createActivationSharedRoomRouter({ env = {}, projectRoot, liveki
     if (within(directory, realpathSync(root))) throw new Error('private path');
     origin = publicUrl.origin; ready = true;
   } catch { /* Unconfigured room does not break the rest of Website. */ }
-  const file = directory && path.join(directory, 'activation-shared-room.json');
+  const file = directory && path.join(directory, `${stage.id}-shared-room.json`);
   let providerPromise;
   const provider = () => providerPromise ||= Promise.resolve(livekitFactory(config));
   const ensureReady = () => {
@@ -79,12 +84,12 @@ export function createActivationSharedRoomRouter({ env = {}, projectRoot, liveki
     if (!ready) fail(503, 'training_unavailable', 'The video room is temporarily unavailable. Please try again shortly.');
   };
   const read = () => {
-    if (!existsSync(file)) return { schema: 'patch-activation-shared-v1', revision: 0, currentId: null, rooms: [] };
+    if (!existsSync(file)) return { schema, revision: 0, currentId: null, rooms: [] };
     const stat = lstatSync(file);
     if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0 || stat.size > 8 * 1024 * 1024) throw new Error('private record unavailable');
     const value = JSON.parse(readFileSync(file, 'utf8'));
-    if (value.schema !== 'patch-activation-shared-v1' || !Number.isSafeInteger(value.revision) || !Array.isArray(value.rooms)
-      || value.rooms.some(room => !/^[A-Za-z0-9_-]{43}$/.test(room.id) || room.roomName !== 'training-shared-activation-' + room.id
+    if (value.schema !== schema || !Number.isSafeInteger(value.revision) || !Array.isArray(value.rooms)
+      || value.rooms.some(room => !/^[A-Za-z0-9_-]{43}$/.test(room.id) || room.roomName !== roomPrefix + room.id
         || !['opening', 'open', 'ending', 'ended', 'expired'].includes(room.status) || !/^[a-f0-9]{64}$/.test(room.ownerHash)
         || !Array.isArray(room.removedHashes) || !Array.isArray(room.completedHashes) || !Array.isArray(room.admittedHashes)
         || typeof room.hostIdentity !== 'string' || !room.hostIdentity.startsWith(room.id + ':host') || !Number.isFinite(Date.parse(room.startAt)))) throw new Error('private record invalid');
@@ -149,7 +154,7 @@ export function createActivationSharedRoomRouter({ env = {}, projectRoot, liveki
     const removed = Boolean(room && guestHash && room.removedHashes.includes(guestHash));
     const status = room?.status === 'opening' ? 'open' : room?.status === 'expired' ? 'closed' : room?.status || 'closed';
     const open = room?.status === 'open' && now() < Date.parse(room.expiresAt);
-    const nextStageAvailable = Boolean(!removed && guestHash && state.rooms.some(previous => previous.status === 'ended' && previous.completedHashes.includes(guestHash)));
+    const nextStageAvailable = Boolean(stage.handoffUrl && !removed && guestHash && state.rooms.some(previous => previous.status === 'ended' && previous.completedHashes.includes(guestHash)));
     return { ready, revision: state.revision, sessionId: room?.id || null, role: owner ? 'host' : 'coach', status,
       hostPresent: seen.host, coachPresent: seen.coach, coachId: owner ? room?.coach?.identity || null : null, busy: Boolean(open && room.coach && !hasSeat && !owner), removed,
       hasSeat, mayJoin: Boolean(open && seen.host && !owner && !removed && (!room.coach || hasSeat)),
@@ -158,7 +163,7 @@ export function createActivationSharedRoomRouter({ env = {}, projectRoot, liveki
       mayEnd: Boolean(owner && ['opening', 'open', 'ending'].includes(room.status)),
       startAt: room?.startAt || null, endAt: room ? new Date(Date.parse(room.startAt) + 300_000).toISOString() : null,
       expiresAt: room?.expiresAt || null, serverTime: new Date(now()).toISOString(),
-      nextStageAvailable, nextStageUrl: nextStageAvailable ? 'https://www.patch.app/pre/' : null };
+      nextStageAvailable, nextStageUrl: nextStageAvailable ? stage.handoffUrl : null };
   }
   async function close(state, room, complete) {
     if (['ended', 'expired'].includes(room.status)) return;
@@ -191,14 +196,14 @@ export function createActivationSharedRoomRouter({ env = {}, projectRoot, liveki
   router.post('/go', route(async (req, res) => {
     sameOrigin(req);
     const state = read(); let room = currentRoom(state); await expire(state, room);
-    if (room && ['opening', 'open', 'ending'].includes(room.status) && !isOwner(req, room)) fail(409, 'host_already_open', 'The Activation room is already open in another host browser.');
+    if (room && ['opening', 'open', 'ending'].includes(room.status) && !isOwner(req, room)) fail(409, 'host_already_open', `The ${stage.title} room is already open in another host browser.`);
     if (room?.status === 'ending') fail(409, 'room_ending', 'Finish closing this room before opening the next one.');
     const service = await provider();
     if (!room || ['ended', 'expired'].includes(room.status)) {
       const ownerKey = random();
       room = { id: random(), status: 'opening', ownerHash: digest(ownerKey), startAt: new Date(now()).toISOString(),
         expiresAt: new Date(now() + ROOM_MS).toISOString(), coach: null, hostWasPresent: false, removedHashes: [], admittedHashes: [], completedHashes: [] };
-      room.roomName = 'training-shared-activation-' + room.id;
+      room.roomName = roomPrefix + room.id;
       room.hostIdentity = room.id + ':host';
       state.rooms.push(room); state.currentId = room.id; save(state);
       setCookie(res, HOST_COOKIE, ownerKey);

@@ -5,6 +5,7 @@ import express from 'express';
 import { createRecruitmentRuntime } from './server/app.js';
 import { createTrainingMeetingsRouter } from './server/training-meetings.js';
 import { createActivationSharedRoomRouter } from './server/activation-shared-room.js';
+import { TRAINING_STAGES } from './src/training-stages.js';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
@@ -26,7 +27,9 @@ const runtimeEnv = {
 // Training owns its room state and server-only LiveKit tokens.
 // Mount before the Website's static SPA fallback without changing Recruitment.
 const app = express();
-app.use('/api/training/activation-room', createActivationSharedRoomRouter({ env: runtimeEnv, projectRoot }));
+for (const stage of TRAINING_STAGES) {
+  app.use(stage.apiPath, createActivationSharedRoomRouter({ env: runtimeEnv, projectRoot, stageCode: stage.code }));
+}
 app.use('/api/training', createTrainingMeetingsRouter({ env: runtimeEnv, projectRoot }));
 const runtime = await createRecruitmentRuntime({
   app,

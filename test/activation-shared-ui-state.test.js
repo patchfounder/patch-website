@@ -46,3 +46,14 @@ test('only the admitted coach receives the next stage after authoritative Finish
   assert.match(sharedRoomMessage({ ...finished, removed: true }).title, /left this call/);
   assert.equal(sharedRoomNextStage({ ...finished, role: 'coach', nextStageAvailable: false }), false);
 });
+
+test('module messages and next-step validation stay scoped and Certification never invents a next module', () => {
+  const next = 'https://www.patch.app/training/linkac';
+  const finished = { ...open, status: 'ended', hasSeat: false, nextStageAvailable: true, nextStageUrl: next };
+  assert.equal(sharedRoomNextStage(finished), false);
+  assert.equal(sharedRoomNextStage(finished, next), true);
+  assert.equal(sharedRoomNextStage(finished, null), false);
+  assert.equal(sharedRoomMessage(null, { stageTitle: 'Certification', nextStageUrl: null }).title, 'Certification room');
+  assert.doesNotMatch(sharedRoomMessage({ ...finished, status: 'ending' }, { stageTitle: 'Certification', nextStageUrl: null }).copy, /next step/);
+  assert.doesNotMatch(sharedRoomMessage(finished, { stageTitle: 'Certification', nextStageUrl: null }).copy, /certified|next step/i);
+});

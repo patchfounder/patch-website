@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { ACTIVATION_BOOKING_URL, MODULE_ONE_URL, safeBookingUrl } from './training-room-state.js';
 import { acceptsSharedRoomUpdate, sharedRoomClock, sharedRoomMessage, sharedRoomNextStage } from './activation-shared-room-state.js';
+import { DEFAULT_TRAINING_STAGE } from '../training-stages.js';
 import './ActivationTraining.css';
 
-const VIDEO_URL = 'https://www.youtube-nocookie.com/embed/KLXFHB4zVMI?rel=0';
-const VIDEO_PAGE_URL = 'https://www.youtube.com/watch?v=KLXFHB4zVMI';
 const MANUAL_URL = 'https://www.patch.app/training/patch-call-process.pdf';
-const API = '/api/training/activation-room';
 const FALLBACK_CONFIG = { bookingUrl: ACTIVATION_BOOKING_URL, bookingDurationMinutes: 30 };
 
-async function roomRequest(path, options = {}) {
-  const response = await fetch(`${API}${path}`, {
+async function requestRoom(apiPath, path, options = {}) {
+  const response = await fetch(`${apiPath}${path}`, {
     ...options, credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer',
     headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers },
   });
@@ -31,8 +29,10 @@ function messageForError(error) {
   return error?.message || 'We couldn’t connect just now. Please check your connection and try again.';
 }
 
-export default function ActivationTraining({ host = false }) {
-  const [config, setConfig] = useState(FALLBACK_CONFIG);
+export default function ActivationTraining({ host = false, stage: suppliedStage }) {
+  const stage = suppliedStage || DEFAULT_TRAINING_STAGE;
+  const activation = stage.id === 'activation';
+  const [config, setConfig] = useState(() => activation ? FALLBACK_CONFIG : { bookingUrl: stage.bookingUrl });
   const [session, setSession] = useState(null);
   const [connection, setConnection] = useState('idle');
   const [remotePresent, setRemotePresent] = useState(false);
@@ -69,6 +69,10 @@ export default function ActivationTraining({ host = false }) {
   const deviceRequest = useRef(0);
   const mediaAction = useRef(0);
   const mediaPending = useRef(false);
+
+  function roomRequest(path, options) {
+    return requestRoom(stage.apiPath, path, options);
+  }
 
   function disconnectMedia(nextConnection = 'idle') {
     joinGeneration.current += 1;
@@ -117,9 +121,9 @@ export default function ActivationTraining({ host = false }) {
   useEffect(() => {
     mounted.current = true;
     const previousTitle = document.title;
-    document.title = host ? 'Host Activation | Patch Academy' : 'Activation | Patch Academy';
+    document.title = `${host ? 'Host ' : ''}${stage.title} | Patch Academy`;
     refreshSession({ showError: true });
-    fetch('/api/training/config', { credentials: 'same-origin', cache: 'no-store' })
+    if (activation) fetch('/api/training/config', { credentials: 'same-origin', cache: 'no-store' })
       .then(response => response.ok ? response.json() : null)
       .then(value => { if (value && mounted.current) setConfig({ ...FALLBACK_CONFIG, ...value }); })
       .catch(() => {});
@@ -134,7 +138,7 @@ export default function ActivationTraining({ host = false }) {
       document.removeEventListener('visibilitychange', onVisible);
       document.title = previousTitle;
     };
-  }, [host]);
+  }, [host, stage.code]);
 
   useEffect(() => {
     if (!settingsOpen) return undefined;
@@ -344,10 +348,11 @@ export default function ActivationTraining({ host = false }) {
   const connected = connection === 'connected' || connection === 'reconnecting';
   const joining = connection === 'joining';
   const clock = sharedRoomClock(session, now + offset);
-  const { title: roomTitle, copy: roomCopy } = sharedRoomMessage(session, { host, connection, remotePresent });
+  const { title: roomTitle, copy: roomCopy } = sharedRoomMessage(session, { host, connection, remotePresent, stageTitle: stage.title, nextStageUrl: stage.handoffUrl });
   const otherName = host ? 'your coach' : 'Patrick';
-  const showNext = sharedRoomNextStage(session);
-  const bookingUrl = safeBookingUrl(config.bookingUrl);
+  const showNext = sharedRoomNextStage(session, stage.handoffUrl);
+  const nextStageUrl = suppliedStage ? stage.nextStageUrl : MODULE_ONE_URL;
+  const bookingUrl = activation ? safeBookingUrl(config.bookingUrl) : stage.bookingUrl;
   const mayEnter = session?.ready && (host ? session.mayGo : session.mayJoin && !showNext);
   const retryClosing = host && !connected && session?.mayEnd && (session.status === 'ending' || closureFailed);
   const microphones = devices.filter(device => device.kind === 'audioinput');
@@ -357,33 +362,34 @@ export default function ActivationTraining({ host = false }) {
     <div className="activation-training-page">
       <header className="activation-training-header">
         <div className="activation-training-brand"><img src="/patch-logo-2.png" width="96" height="42" alt="Patch" /><span className="activation-training-brand-caption">Academy</span></div>
-        <span className="activation-training-stage">Step 1 of 6</span>
+        <span className="activation-training-stage">Step {stage.step} of 6</span>
       </header>
       <main className="activation-training-shell">
         <header className="activation-training-intro">
-          <p className="activation-training-eyebrow">Patch Academy · Activation</p>
-          <h1>A confident first call.</h1>
-          <p>Get to know the Patch Call in 7 Steps, then meet Patrick for a short one-to-one check-in. Bring your questions. We’re here to help you get started.</p>
-          <div className="activation-training-progress" aria-label="Activation is the first of six training stages"><span /><span /><span /><span /><span /><span /></div>
+          <p className="activation-training-eyebrow">Patch Academy · {stage.title}</p>
+          <h1>{stage.headline}</h1>
+          <p>{stage.intro}</p>
+          <div className="activation-training-progress" aria-label={`${stage.title} · stage ${stage.step} of 6`}>{Array.from({ length: 6 }, (_, index) => <span key={index} className={index < stage.step ? 'is-current' : undefined} />)}</div>
         </header>
 
         <section className="activation-training-section" aria-labelledby="activation-watch-title">
-          <div className="activation-training-section-heading"><span>01</span><div><p className="activation-training-eyebrow">Before we meet</p><h2 id="activation-watch-title">Watch the seven steps</h2></div></div>
-          <div className="activation-training-video"><iframe src={VIDEO_URL} title="How to Deliver a Patch Call in 7 Steps" loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>
-          <a className="activation-training-resource" href={VIDEO_PAGE_URL} target="_blank" rel="noopener noreferrer">{VIDEO_PAGE_URL}</a>
+          <div className="activation-training-section-heading"><span>01</span><div><p className="activation-training-eyebrow">Before we meet</p><h2 id="activation-watch-title">{activation ? 'Watch the seven steps' : 'Watch the tutorial'}</h2></div></div>
+          <div className="activation-training-video"><iframe src={stage.videoUrl} title={stage.videoTitle} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>
+          <a className="activation-training-resource" href={stage.videoPageUrl} target="_blank" rel="noopener noreferrer">{stage.videoPageUrl}</a>
+          {stage.placeholderVideo && <p className="activation-training-small">Placeholder tutorial · the module video will be added here.</p>}
         </section>
 
         <section className="activation-training-section activation-training-manual" aria-labelledby="activation-script-title">
-          <div className="activation-training-section-heading"><span>02</span><div><p className="activation-training-eyebrow">Keep it handy</p><h2 id="activation-script-title">Your call script</h2></div></div>
-          <p>The step-by-step Patch Call Process is here whenever you need it. Read it alongside the video, and note anything you’d like to ask Patrick.</p>
+          <div className="activation-training-section-heading"><span>02</span><div><p className="activation-training-eyebrow">Keep it handy</p><h2 id="activation-script-title">{stage.resourceTitle}</h2></div></div>
+          <p>{stage.resourceCopy}</p>
           <a className="activation-training-resource activation-training-download" href={MANUAL_URL} download="Patch Call Process.pdf">{MANUAL_URL}</a>
           <p className="activation-training-small">PDF · 1 page · You can download it to your phone.</p>
         </section>
 
         <section className="activation-training-section" aria-labelledby="activation-call-title">
           <div className="activation-training-section-heading"><span>03</span><div><p className="activation-training-eyebrow">Meet Patrick</p><h2 id="activation-call-title">A little conversation. A clear next step.</h2></div></div>
-          <p>We’ll answer your questions and make sure you feel ready to deliver your first Patch Call.</p>
-          <div className="activation-training-room" aria-label="Activation video call">
+          <p>{stage.callCopy}</p>
+          <div className="activation-training-room" aria-label={`${stage.title} video call`}>
             <div className={`activation-training-stage-video${connected ? ' is-connected' : ''}`}>
               {clock && <span className="activation-training-timer" aria-label={`Call duration ${clock}`}>{clock}</span>}
               {connected && <button ref={settingsButtonRef} type="button" className="activation-training-settings-toggle" aria-label="Call settings" aria-expanded={settingsOpen} aria-controls="activation-call-settings" onClick={toggleSettings} disabled={Boolean(busyAction) || connection === 'reconnecting'}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m9.5 3-.7 2.1-2 .9-2.1-.5-2 3.4 1.5 1.6v2.3l-1.5 1.6 2 3.4 2.1-.5 2 .9.7 2.1h4l.7-2.1 2-.9 2.1.5 2-3.4-1.5-1.6v-2.3l1.5-1.6-2-3.4-2.1.5-2-.9-.7-2.1z"/><circle cx="11.5" cy="11.7" r="3"/></svg></button>}
@@ -418,10 +424,10 @@ export default function ActivationTraining({ host = false }) {
               {needsAudio && connected && <button type="button" className="activation-training-enable-audio" onClick={() => roomRef.current?.startAudio().then(() => setNeedsAudio(false)).catch(() => setError('Please tap again to enable call audio.'))}>Enable audio</button>}
             </div>
           </div>
-          {!host && !connected && !showNext && <div className="activation-training-booking"><h3>Choose your Activation time</h3><p>{config.bookingDurationMinutes === 5 ? 'Choose a five-minute appointment that works for you.' : `The booking calendar currently reserves ${Number(config.bookingDurationMinutes) || 30} minutes. Our conversation aims to take five.`}</p><a className="activation-training-resource activation-training-book-link" href={bookingUrl} target="_blank" rel="noopener noreferrer">{bookingUrl}</a></div>}
+          {!host && !connected && !showNext && <div className="activation-training-booking"><h3>Choose your {stage.title} time</h3><p>{!activation ? 'Book a short review with Patrick at a time that suits you.' : config.bookingDurationMinutes === 5 ? 'Choose a five-minute appointment that works for you.' : `The booking calendar currently reserves ${Number(config.bookingDurationMinutes) || 30} minutes. Our conversation aims to take five.`}</p><a className="activation-training-resource activation-training-book-link" href={bookingUrl} target="_blank" rel="noopener noreferrer">{bookingUrl}</a></div>}
         </section>
 
-        {showNext && <section className="activation-training-next" aria-labelledby="activation-next-title"><p className="activation-training-eyebrow">Your next step · Module 1</p><h2 id="activation-next-title">Let’s build your professional profile.</h2><p>Start with a strong LinkedIn photograph. Send Patrick your finished photo, then book your Pre-Masterclass review.</p><a className="activation-training-resource activation-training-book-link" href={MODULE_ONE_URL}>{MODULE_ONE_URL}</a><p className="activation-training-small">This opens your next step. Your training outcome is recorded separately.</p></section>}
+        {showNext && nextStageUrl && <section className="activation-training-next" aria-labelledby="activation-next-title"><p className="activation-training-eyebrow">Your next step · Module {stage.nextStageModule}</p><h2 id="activation-next-title">{suppliedStage ? stage.nextStageTitle : 'Let’s build your professional profile.'}</h2><p>{suppliedStage ? stage.nextStageCopy : 'Start with a strong LinkedIn photograph. Send Patrick your finished photo, then book your Pre-Masterclass review.'}</p><a className="activation-training-resource activation-training-book-link" href={nextStageUrl}>{nextStageUrl}</a><p className="activation-training-small">This opens your next step. Your training outcome is recorded separately.</p></section>}
         <footer className="activation-training-footer"><span>PATCH ACADEMY</span><span>One step forward, together.</span></footer>
       </main>
     </div>
