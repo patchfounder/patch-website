@@ -111,7 +111,7 @@ test('mobile widths keep the direct calendar link and defer the desktop embed', 
 });
 
 test('client routing selects Activation with or without a trailing slash', () => {
-  for (const [pathname, expected] of [['/activation', 'Activation'], ['/activation/', 'Activation'], ['/reactivate', 'Reactivate']]) {
+  for (const [pathname, expected] of [['/activation', 'Activation'], ['/activation/', 'Activation'], ['/reactivate', 'Reactivate'], ['/training/prohea', 'ProHeadshotTraining'], ['/training/prohea/', 'ProHeadshotTraining']]) {
     let rendered;
     const module = { exports: {} };
     vm.runInNewContext(mainCode, {
@@ -166,7 +166,7 @@ test('six-letter training URLs select the matching stage and role, including tra
       },
     });
     const selected = rendered.props.children;
-    assert.equal(selected.type.displayName, 'ActivationTraining', pathname);
+    assert.equal(selected.type.displayName, stage.code === 'premas' && !host ? 'ProHeadshotTraining' : 'ActivationTraining', pathname);
     assert.equal(selected.props.stage.code, stage.code, pathname);
     assert.equal(selected.props.host, host, pathname);
     assert.equal(selected.key, stage.code + (host ? '-host' : '-coach'));
@@ -186,8 +186,13 @@ test('each stage and host URL gets its own metadata rather than Activation or ho
     const route = host ? stage.hostPath : stage.path;
     const html = outputs.get(path.join(dist, route.slice(1), 'index.html'));
     assert.ok(html, route);
-    assert.ok(html.includes(`<title>${host ? 'Host ' : ''}${stage.title} | Patch Academy</title>`), route);
+    const title = stage.code === 'premas' && !host ? 'Pro Headshot Stage' : stage.title;
+    assert.ok(html.includes(`<title>${host ? 'Host ' : ''}${title} | Patch Academy</title>`), route);
     assert.ok(html.includes(`content="https://www.patch.app${route}"`), route);
     assert.ok(html.includes('content="noindex, nofollow, noarchive"'), route);
   }
+  const m1 = outputs.get(path.join(dist, 'training/prohea', 'index.html'));
+  assert.ok(m1.includes('<title>Pro Headshot Stage | Patch Academy</title>'));
+  assert.ok(m1.includes('content="https://www.patch.app/training/prohea"'));
+  assert.ok(m1.includes('content="noindex, nofollow, noarchive"'));
 });

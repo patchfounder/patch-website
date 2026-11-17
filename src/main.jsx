@@ -20,6 +20,7 @@ import Reactivate from './components/Reactivate.jsx';
 import Training from './components/Training.jsx';
 import ActivationTraining from './components/ActivationTraining.jsx';
 import ActivationHost from './components/ActivationHost.jsx';
+import ProHeadshotTraining from './components/ProHeadshotTraining.jsx';
 import { TRAINING_STAGES } from './training-stages.js';
 import './styles.css';
 
@@ -41,6 +42,7 @@ const bookingRoutes = {
   '/premasterclass-content': PreMasterclassContent,
   '/reactivate': Reactivate,
   '/training': Training,
+  '/training/prohea': ProHeadshotTraining,
   '/training/activation': ActivationTraining,
   '/training/activation/host': ActivationHost,
   // Add future Unbounce replacement pages here, for example:
@@ -55,11 +57,13 @@ function normalisePathname(pathname) {
 const pathname = normalisePathname(window.location.pathname);
 
 const trainingStage = TRAINING_STAGES.find(stage => pathname === stage.path || pathname === stage.hostPath);
+const TrainingComponent = trainingStage?.code === 'premas' && pathname === trainingStage.path
+  ? ProHeadshotTraining : ActivationTraining;
 const RootComponent = bookingRoutes[pathname] || App;
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     {trainingStage
-      ? <ActivationTraining key={trainingStage.code + (pathname === trainingStage.hostPath ? '-host' : '-coach')} stage={trainingStage} host={pathname === trainingStage.hostPath} />
+      ? <TrainingComponent key={trainingStage.code + (pathname === trainingStage.hostPath ? '-host' : '-coach')} stage={trainingStage} host={pathname === trainingStage.hostPath} />
       : <RootComponent />}
   </React.StrictMode>,
 );

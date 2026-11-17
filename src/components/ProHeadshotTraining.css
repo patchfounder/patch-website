@@ -1,0 +1,33 @@
+/* M1 extends the existing Academy page only. Mobile first: 20px outer edges,
+   one column capped at 800px, 24px card padding and 32px section separation.
+   Spacing tokens: 8, 12, 16, 24, 32, 40, 48px. */
+.pro-headshot-page .activation-training-header,
+.pro-headshot-page .activation-training-section,
+.pro-headshot-page .activation-training-footer { border-color:rgb(70 70 70 / .18); }
+.pro-headshot-page .activation-training-intro h1 { max-width:640px; }
+.pro-headshot-page .activation-training-progress span:not(.is-current) { background:rgb(0 165 192 / .16); }
+.pro-headshot-page .pro-headshot-examples { margin:24px 0 0; }
+.pro-headshot-page .pro-headshot-examples img { display:block;width:100%;height:auto;border-radius:12px; }
+.pro-headshot-page .pro-headshot-examples figcaption { margin-top:12px;font-size:12px;color:var(--at-muted); }
+.pro-headshot-page .pro-headshot-resource-label { margin-top:24px;font-size:13px;color:var(--at-muted); }
+.pro-headshot-page .pro-headshot-download { margin-top:12px;border-color:var(--at-edge);background:var(--at-tint); }
+.pro-headshot-page .pro-headshot-steps { margin:0;padding-left:28px;display:grid;gap:32px; }
+.pro-headshot-page .pro-headshot-steps li { padding-left:8px;min-width:0; }
+.pro-headshot-page .pro-headshot-steps li::marker { color:var(--at-accent);font-size:14px;font-weight:500; }
+.pro-headshot-page .pro-headshot-steps h3 { font-size:17px;font-weight:500;line-height:1.4;letter-spacing:-.01em; }
+.pro-headshot-page .pro-headshot-steps p { margin-top:12px;font-size:15px;line-height:1.5;color:var(--at-muted); }
+.pro-headshot-page .pro-headshot-prompt { margin:16px 0 0;padding:24px;background:var(--at-tint);border:1px solid var(--at-edge);border-radius:12px;color:var(--at-ink);font-size:15px;line-height:1.5; }
+.pro-headshot-page .pro-headshot-copy-row { display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:16px; }
+.pro-headshot-page .pro-headshot-copy { min-height:44px;padding:12px 16px;border:1px solid var(--at-accent);border-radius:10px;background:var(--at-accent);color:#FFFFFF;font:inherit;font-size:13px;font-weight:500; }
+.pro-headshot-page .pro-headshot-copy-status { color:var(--at-muted);font-size:12px; }
+.pro-headshot-page .pro-headshot-call-card { margin-top:24px;padding:24px;border:1px solid var(--at-edge);border-radius:16px;background:var(--at-tint); }
+.pro-headshot-page .pro-headshot-call-card p { color:var(--at-muted);font-size:15px;line-height:1.5; }
+.pro-headshot-page .pro-headshot-profile-section { padding:24px 0; }
+.pro-headshot-page .pro-headshot-profiles summary { min-height:44px;padding:8px 0;color:var(--at-ink);font-size:15px;cursor:pointer; }
+.pro-headshot-page .pro-headshot-profile-list { display:grid;gap:24px;padding:24px 0 8px; }
+.pro-headshot-page .pro-headshot-profile p { font-size:14px;color:var(--at-muted); }
+.pro-headshot-page .pro-headshot-profile a { display:block;min-height:44px;padding:8px 0;color:var(--at-ink);font-size:12px;line-height:1.5;text-decoration:underline;text-decoration-color:var(--at-accent);text-underline-offset:3px;overflow-wrap:anywhere; }
+@media(min-width:600px) {
+  .pro-headshot-page .pro-headshot-steps { padding-left:32px; }
+  .pro-headshot-page .pro-headshot-prompt { max-width:640px; }
+}

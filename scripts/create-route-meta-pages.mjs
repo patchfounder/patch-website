@@ -7,8 +7,14 @@ const INDEX_PATH = path.join(DIST_DIR, 'index.html');
 const PREVIEW_IMAGE_URL = 'https://www.patch.app/patch-whatsapp-preview-v2.jpg';
 
 const routes = [
+  {
+    path: 'training/prohea',
+    title: 'Pro Headshot Stage | Patch Academy',
+    description: 'Create your professional LinkedIn headshot, follow the five photo steps and prepare for your Pro Headshot review.',
+    robots: 'noindex, nofollow, noarchive',
+  },
   ...TRAINING_STAGES.flatMap(stage => [
-    { path: stage.path.slice(1), title: `${stage.title} | Patch Academy`, description: stage.intro, robots: 'noindex, nofollow, noarchive' },
+    { path: stage.path.slice(1), title: `${stage.code === 'premas' ? 'Pro Headshot Stage' : stage.title} | Patch Academy`, description: stage.code === 'premas' ? 'Create your professional LinkedIn headshot, follow the five photo steps and prepare for your Pro Headshot review.' : stage.intro, robots: 'noindex, nofollow, noarchive' },
     { path: stage.hostPath.slice(1), title: `Host ${stage.title} | Patch Academy`, description: `Host the ${stage.title} check-in on Patch Academy.`, robots: 'noindex, nofollow, noarchive' },
   ]),
   {
