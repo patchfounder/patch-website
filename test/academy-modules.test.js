@@ -19,7 +19,7 @@ const expected = [
   ['M1', 'Activation', 'KLXFHB4zVMI'],
   ['M2', 'Pro Headshot', 'RSmXZOyff4U'],
   ['M3', 'LinkedIn Makeover', null],
-  ['M4', 'LinkedIn Activity', '8jfKkfdnL0o'],
+  ['M4', 'LinkedIn Activity', null],
   ['M5', 'Know Your Coach', null],
   ['M6', 'Certification', null],
 ];

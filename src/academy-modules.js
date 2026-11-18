@@ -74,9 +74,9 @@ const definitions = [
     code: 'M4', title: 'LinkedIn Activity', legacyStageCode: 'LA.05', legacyModuleNumber: 3,
     headline: 'Put your professional voice to work.',
     intro: 'Share your experience, develop your commercial awareness and build your professional network.',
-    videoId: '8jfKkfdnL0o', videoTitle: 'LinkedIn Activity tutorial',
+    videoId: null, videoTitle: 'LinkedIn Activity tutorial',
     steps: [
-      'Watch the tutorial, then choose one idea from your experience or legal interests.',
+      'Choose one idea from your experience or legal interests.',
       'Prepare a short post: explain the idea, what you learned and why it matters.',
       'Bring your draft and one practical networking goal to your review with Patrick.',
     ],
