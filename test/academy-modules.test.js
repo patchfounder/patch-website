@@ -104,7 +104,7 @@ test('six public module addresses match the approved new sequence without renumb
   assert.equal(TRAINING_STAGES[2].moduleNumber, 2);
 });
 
-test('all six pages render stage-specific preparation with meetings handled inside Patch', () => {
+test('all six pages render stage-specific preparation without the retired branding, captions or footer', () => {
   for (const module of modules.ACADEMY_MODULES) {
     const { html } = fixture(module);
     assert.match(html, /<main\b/);
@@ -112,7 +112,8 @@ test('all six pages render stage-specific preparation with meetings handled insi
     assert.ok(decode(html).includes(module.headline), module.code + ' headline');
     assert.ok(decode(html).includes(module.intro), module.code + ' introduction');
     assert.match(html, new RegExp(`Module ${module.number} of 6`));
-    assert.match(html, /Your module call takes place in Patch\./);
+    assert.doesNotMatch(html, />Academy<|Bring your questions|How to Deliver a Patch Call|7 Steps|seven steps|academy-module-video-caption|<footer\b|Your module call takes place in Patch\.|Next:|Final module/i);
+    assert.doesNotMatch(html, /<a\b[^>]*href="https:\/\/www\.youtube\.com\/watch\?/);
     assert.doesNotMatch(html, /<h[1-6]\b[^>]*>Meet Patrick<\/h[1-6]>|meet\.patch\.app|meet\.google\.com|cal\.com|Book (?:your|a|the|Module)|<form\b|<video\b|\bGO\b|Starts in/i);
     assert.doesNotMatch(html, /LIVEKIT_API|participantToken|accessToken|registration.password|type="password"/);
     assert.ok(module.steps.length >= 3, module.code + ' has meaningful preparation');
@@ -139,7 +140,7 @@ test('existing tutorials appear only on their relevant modules and unfinished le
   }
 });
 
-test('public resource and next-module links show their complete destinations', () => {
+test('public resource links show their complete destinations and pages omit next-module navigation', () => {
   for (const module of modules.ACADEMY_MODULES) {
     const { html } = fixture(module);
     for (const [, attributes, inner] of html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)) {
@@ -151,7 +152,7 @@ test('public resource and next-module links show their complete destinations', (
     }
     if (module.number < 6) {
       assert.equal(module.nextModuleUrl, `https://www.patch.app/M${module.number + 1}`);
-      assert.ok(html.includes(`href="${module.nextModuleUrl}"`));
+      assert.ok(!html.includes(`href="${module.nextModuleUrl}"`));
     } else {
       assert.equal(module.nextModuleUrl, null);
       assert.doesNotMatch(html, /https:\/\/www\.patch\.app\/M7/);

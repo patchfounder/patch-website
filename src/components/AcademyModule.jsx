@@ -24,10 +24,6 @@ function Tutorial({ module }) {
           allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen />
       </div>
-      <div className="academy-module-video-caption">
-        <p>{module.videoTitle}</p>
-        <FullUrlLink url={module.videoPageUrl} />
-      </div>
     </> : <div className="academy-module-video academy-module-video-pending" role="note">
       <p className="academy-module-video-title">{module.videoTitle}</p>
       <p>Tutorial coming soon</p>
@@ -86,7 +82,6 @@ export default function AcademyModule({ module }) {
       <header className="academy-module-header">
         <div className="academy-module-brand">
           <img src="/patch-logo-2.png" width="86" height="38" alt="Patch" />
-          <span>Academy</span>
         </div>
         <p className="academy-module-stage">Module {current.number} of {ACADEMY_MODULES.length}</p>
       </header>
@@ -148,13 +143,6 @@ export default function AcademyModule({ module }) {
         </section>
       </main>
 
-      <footer className="academy-module-footer">
-        <p>Your module call takes place in Patch.</p>
-        {current.nextModuleUrl ? <div className="academy-module-next">
-          <p>Next: {current.nextModuleCode} · {current.nextModuleTitle}</p>
-          <a className="academy-module-url" href={current.nextModuleUrl}>{current.nextModuleUrl}</a>
-        </div> : <p>Final module</p>}
-      </footer>
     </div>
   </div>;
 }

@@ -21,10 +21,10 @@ const definitions = [
   {
     code: 'M1', title: 'Activation', legacyStageCode: 'ACT.30', legacyModuleNumber: null,
     headline: 'A confident first call.',
-    intro: 'Learn the Patch Call in 7 Steps, then meet Patrick for a short check-in. Bring your questions.',
-    videoId: 'KLXFHB4zVMI', videoTitle: 'How to Deliver a Patch Call in 7 Steps',
+    intro: 'Learn how to guide a Patch Call, then meet Patrick for a short check-in.',
+    videoId: 'KLXFHB4zVMI', videoTitle: 'Activation tutorial',
     steps: [
-      'Watch the tutorial and familiarise yourself with the seven steps.',
+      'Watch the tutorial before your Activation call.',
       'Read your call script and practise how you would open and guide a Patch Call.',
       'Check that you can sign in to Patch, and bring any questions to your Activation call.',
     ],

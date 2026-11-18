@@ -206,7 +206,7 @@ test('each stage and host URL gets its own metadata rather than Activation or ho
   for (const module of ACADEMY_MODULES) {
     const html = outputs.get(path.join(dist, module.code, 'index.html'));
     assert.ok(html, module.path);
-    assert.ok(html.includes(`<title>${module.code} ${module.title} | Patch Academy</title>`));
+    assert.ok(html.includes(`<title>${module.code} ${module.title} | Patch</title>`));
     assert.ok(html.includes(`content="https://www.patch.app${module.path}"`));
     assert.ok(html.includes('content="noindex, nofollow, noarchive"'));
     assert.ok(!html.includes('join your private video session'));

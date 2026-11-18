@@ -36,3 +36,9 @@ No Coach/User app code, authentication, LiveKit configuration, calendar events, 
 The 18 pre-existing Registration/Recruitment paths, including AGENTS.md, remain outside the release. Preserve their exact bytes and unstaged/untracked state. Test a clean export of committed HEAD plus only the Academy selection, then deploy a fresh archive of the actual scoped commit through the existing Website service. Do not upload the dirty working directory or change service configuration, credentials or storage.
 
 Patrick's current instruction authorizes this scoped commit, push and deployment. Browser control still requires the separate task-specific affirmative reply. Record actual tests, browser checks, deployed commit and live verification in the private Training release receipt.
+
+## Format cleanup — 18 November 2026
+
+Patrick requested removal of the Academy label, the Activation “Bring your questions” sentence, the authored tutorial caption and YouTube URL, and the complete footer containing the in-app call note and next-module link. Apply the shared label/caption/footer simplification consistently across the six numbered pages. The numbered page metadata now ends with “Patch”. The Activation introduction and first preparation step no longer repeat the seven-step label; its iframe retains a neutral accessible “Activation tutorial” title.
+
+Keep the actual embedded videos, module identity and progress label, headings, remaining preparation content, resources, downloads, headshot copy control, layout tokens and all legacy routes unchanged. YouTube's own player artwork and overlays remain controlled by the original video. Internal historical mapping and next-module data remain intact, but no next-module navigation is rendered. Patrick explicitly authorised the scoped commit, push and existing Website deployment for this cleanup. The same ICS, unrelated-work and Patch OS protections above remain in force.

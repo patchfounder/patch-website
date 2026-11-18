@@ -10,7 +10,7 @@ const PREVIEW_IMAGE_URL = 'https://www.patch.app/patch-whatsapp-preview-v2.jpg';
 const routes = [
   ...ACADEMY_MODULES.map(module => ({
     path: module.path.slice(1),
-    title: `${module.code} ${module.title} | Patch Academy`,
+    title: `${module.code} ${module.title} | Patch`,
     description: module.intro,
     robots: 'noindex, nofollow, noarchive',
   })),
