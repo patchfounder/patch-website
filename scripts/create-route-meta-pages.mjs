@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { TRAINING_STAGES } from '../src/training-stages.js';
 import { ACADEMY_MODULES } from '../src/academy-modules.js';
+import { isRetiredTrainingPage } from '../src/retired-training-pages.js';
 
 const DIST_DIR = path.resolve('dist');
 const INDEX_PATH = path.join(DIST_DIR, 'index.html');
@@ -115,7 +116,7 @@ const routes = [
     description: 'Private Patch recruitment assessment.',
     robots: 'noindex, nofollow, noarchive',
   },
-];
+].filter(route => !isRetiredTrainingPage('/' + route.path));
 
 function escapeHtml(value) {
   return value

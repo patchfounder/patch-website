@@ -1,5 +1,6 @@
 import { TRAINING_STAGES } from '../src/training-stages.js';
-import { ACADEMY_MODULES, getAcademyModule } from '../src/academy-modules.js';
+import { ACADEMY_MODULES } from '../src/academy-modules.js';
+import { RETIRED_TRAINING_PATHS, isRetiredTrainingPage } from '../src/retired-training-pages.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -111,28 +112,26 @@ test('mobile widths keep the direct calendar link and defer the desktop embed', 
   }
 });
 
-test('client routing preserves booking routes and selects each numbered Academy page', () => {
-  const moduleRoutes = ACADEMY_MODULES.flatMap(module => [[module.path, 'AcademyModule'], [module.path + '/', 'AcademyModule']]);
-  for (const [pathname, expected] of [['/activation', 'Activation'], ['/activation/', 'Activation'], ['/reactivate', 'Reactivate'], ['/training/prohea', 'ProHeadshotTraining'], ['/training/prohea/', 'ProHeadshotTraining'], ...moduleRoutes]) {
-    let rendered;
-    const module = { exports: {} };
-    vm.runInNewContext(mainCode, {
-      module, exports: module.exports, window: { location: { pathname } }, document: { getElementById: () => ({}) },
-      require(name) {
-        if (name === './training-stages.js') return { TRAINING_STAGES };
-        if (name === './academy-modules.js') return { getAcademyModule };
-        if (name === 'react' || name === 'react/jsx-runtime') return require(name);
-        if (name === 'react-dom/client') return { createRoot: () => ({ render: value => { rendered = value; } }) };
-        if (name.endsWith('.css')) return {};
-        if (name.endsWith('.jsx')) { const component = () => null; component.displayName = path.basename(name, '.jsx'); return { __esModule: true, default: component }; }
-        throw new Error(`Unexpected entry dependency: ${name}`);
-      },
-    });
-    assert.equal(rendered.props.children.type.displayName, expected);
-    if (expected === 'AcademyModule') {
-      assert.equal(rendered.props.children.props.module.path, pathname.replace(/\/$/, ''));
-      assert.equal(rendered.props.children.props.module.code, pathname.replaceAll('/', ''));
-    }
+function renderRoute(pathname) {
+  let rendered;
+  const module = { exports: {} };
+  vm.runInNewContext(mainCode, {
+    module, exports: module.exports, window: { location: { pathname } }, document: { getElementById: () => ({}) },
+    require(name) {
+      if (name === './retired-training-pages.js') return { isRetiredTrainingPage };
+      if (name === 'react' || name === 'react/jsx-runtime') return require(name);
+      if (name === 'react-dom/client') return { createRoot: () => ({ render: value => { rendered = value; } }) };
+      if (name.endsWith('.css')) return {};
+      if (name.endsWith('.jsx')) { const component = () => null; component.displayName = path.basename(name, '.jsx'); return { __esModule: true, default: component }; }
+      throw new Error(`Unexpected entry dependency: ${name}`);
+    },
+  });
+  return rendered.props.children;
+}
+
+test('client routing preserves existing business, recruitment and legal pages', () => {
+  for (const [pathname, expected] of [['/activation', 'Activation'], ['/activation/', 'Activation'], ['/reactivate', 'Reactivate'], ['/meeting', 'Meeting'], ['/coaching', 'Coaching'], ['/application', 'CoachApplication'], ['/assessment', 'Assessment'], ['/administration', 'Administration'], ['/legal', 'Legal'], ['/pre', 'Pre'], ['/masterclass', 'Masterclass'], ['/activity', 'Activity'], ['/kc', 'Kc'], ['/certified', 'Certified'], ['/activity-content', 'ActivityContent'], ['/premasterclass-content', 'PreMasterclassContent'], ['/cancel', 'Cancel'], ['/', 'App']]) {
+    assert.equal(renderRoute(pathname).type.displayName, expected, pathname);
   }
 });
 
@@ -140,7 +139,7 @@ test('metadata generation creates a dedicated Activation share page without file
   const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
   const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
   await vm.runInNewContext(`(async () => {\n${source}\n})()`, {
-    TRAINING_STAGES, ACADEMY_MODULES,
+    TRAINING_STAGES, ACADEMY_MODULES, isRetiredTrainingPage,
     path: { join: path.join, resolve: value => path.resolve(websiteRoot, value) },
     readFile: async file => { assert.equal(file, path.join(dist, 'index.html')); return readSource('index.html'); },
     mkdir: async directory => { assert.ok(directory.startsWith(dist + path.sep)); },
@@ -156,59 +155,28 @@ test('metadata generation creates a dedicated Activation share page without file
 });
 
 
-test('six-letter training URLs select the matching stage and role, including trailing slashes', () => {
-  for (const stage of TRAINING_STAGES) for (const host of [false, true]) for (const suffix of ['', '/']) {
-    let rendered;
-    const pathname = (host ? stage.hostPath : stage.path) + suffix;
-    const module = { exports: {} };
-    vm.runInNewContext(mainCode, {
-      module, exports: module.exports, window: { location: { pathname } }, document: { getElementById: () => ({}) },
-      require(name) {
-        if (name === './training-stages.js') return { TRAINING_STAGES };
-        if (name === './academy-modules.js') return { getAcademyModule };
-        if (name === 'react' || name === 'react/jsx-runtime') return require(name);
-        if (name === 'react-dom/client') return { createRoot: () => ({ render: value => { rendered = value; } }) };
-        if (name.endsWith('.css')) return {};
-        if (name.endsWith('.jsx')) { const component = () => null; component.displayName = path.basename(name, '.jsx'); return { __esModule: true, default: component }; }
-        throw new Error(`Unexpected entry dependency: ${name}`);
-      },
-    });
-    const selected = rendered.props.children;
-    assert.equal(selected.type.displayName, stage.code === 'premas' && !host ? 'ProHeadshotTraining' : 'ActivationTraining', pathname);
-    assert.equal(selected.props.stage.code, stage.code, pathname);
-    assert.equal(selected.props.host, host, pathname);
-    assert.equal(selected.key, stage.code + (host ? '-host' : '-coach'));
+test('retired training URLs never select a module or room client, including static aliases', () => {
+  for (const route of RETIRED_TRAINING_PATHS) for (const suffix of ['', '/', '/index.html']) {
+    const pathname = route + suffix;
+    const selected = renderRoute(pathname);
+    assert.equal(renderToStaticMarkup(selected), '<main><h1>Not found.</h1></main>', pathname);
   }
 });
 
-test('each stage and host URL gets its own metadata rather than Activation or homepage metadata', async () => {
+test('metadata generation excludes retired pages and retains fourteen existing route pages', async () => {
   const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
   const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
   await vm.runInNewContext(`(async () => {\n${source}\n})()`, {
-    TRAINING_STAGES, ACADEMY_MODULES,
+    TRAINING_STAGES, ACADEMY_MODULES, isRetiredTrainingPage,
     path: { join: path.join, resolve: value => path.resolve(websiteRoot, value) },
     readFile: async () => readSource('index.html'), mkdir: async () => {},
     writeFile: async (file, html) => outputs.set(file, html), console: { log() {} },
   });
-  for (const stage of TRAINING_STAGES) for (const host of [false, true]) {
-    const route = host ? stage.hostPath : stage.path;
-    const html = outputs.get(path.join(dist, route.slice(1), 'index.html'));
-    assert.ok(html, route);
-    const title = stage.code === 'premas' && !host ? 'Pro Headshot Stage' : stage.title;
-    assert.ok(html.includes(`<title>${host ? 'Host ' : ''}${title} | Patch Academy</title>`), route);
-    assert.ok(html.includes(`content="https://www.patch.app${route}"`), route);
-    assert.ok(html.includes('content="noindex, nofollow, noarchive"'), route);
+  assert.equal(outputs.size, 14);
+  for (const route of RETIRED_TRAINING_PATHS) {
+    assert.ok(!outputs.has(path.join(dist, route.slice(1), 'index.html')), route);
   }
-  const m1 = outputs.get(path.join(dist, 'training/prohea', 'index.html'));
-  assert.ok(m1.includes('<title>Pro Headshot Stage | Patch Academy</title>'));
-  assert.ok(m1.includes('content="https://www.patch.app/training/prohea"'));
-  assert.ok(m1.includes('content="noindex, nofollow, noarchive"'));
-  for (const module of ACADEMY_MODULES) {
-    const html = outputs.get(path.join(dist, module.code, 'index.html'));
-    assert.ok(html, module.path);
-    assert.ok(html.includes(`<title>${module.code} ${module.title} | Patch</title>`));
-    assert.ok(html.includes(`content="https://www.patch.app${module.path}"`));
-    assert.ok(html.includes('content="noindex, nofollow, noarchive"'));
-    assert.ok(!html.includes('join your private video session'));
+  for (const route of ['activation', 'meeting', 'coaching', 'pre', 'masterclass', 'activity', 'kc', 'certified', 'reactivate', 'cancel', 'legal', 'application', 'administration', 'assessment']) {
+    assert.ok(outputs.has(path.join(dist, route, 'index.html')), route);
   }
 });

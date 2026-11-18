@@ -17,13 +17,7 @@ import Masterclass from './components/Masterclass.jsx';
 import Pre from './components/Pre.jsx';
 import PreMasterclassContent from './components/PreMasterclassContent.jsx';
 import Reactivate from './components/Reactivate.jsx';
-import Training from './components/Training.jsx';
-import ActivationTraining from './components/ActivationTraining.jsx';
-import ActivationHost from './components/ActivationHost.jsx';
-import ProHeadshotTraining from './components/ProHeadshotTraining.jsx';
-import AcademyModule from './components/AcademyModule.jsx';
-import { getAcademyModule } from './academy-modules.js';
-import { TRAINING_STAGES } from './training-stages.js';
+import { isRetiredTrainingPage } from './retired-training-pages.js';
 import './styles.css';
 
 const bookingRoutes = {
@@ -43,10 +37,6 @@ const bookingRoutes = {
   '/pre': Pre,
   '/premasterclass-content': PreMasterclassContent,
   '/reactivate': Reactivate,
-  '/training': Training,
-  '/training/prohea': ProHeadshotTraining,
-  '/training/activation': ActivationTraining,
-  '/training/activation/host': ActivationHost,
   // Add future Unbounce replacement pages here, for example:
   // '/kc': KcBookingPage,
 };
@@ -57,18 +47,11 @@ function normalisePathname(pathname) {
 }
 
 const pathname = normalisePathname(window.location.pathname);
-const academyModule = getAcademyModule(pathname);
-
-const trainingStage = TRAINING_STAGES.find(stage => pathname === stage.path || pathname === stage.hostPath);
-const TrainingComponent = trainingStage?.code === 'premas' && pathname === trainingStage.path
-  ? ProHeadshotTraining : ActivationTraining;
 const RootComponent = bookingRoutes[pathname] || App;
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {academyModule
-      ? <AcademyModule key={academyModule.code} module={academyModule} />
-      : trainingStage
-      ? <TrainingComponent key={trainingStage.code + (pathname === trainingStage.hostPath ? '-host' : '-coach')} stage={trainingStage} host={pathname === trainingStage.hostPath} />
+    {isRetiredTrainingPage(pathname)
+      ? <main><h1>Not found.</h1></main>
       : <RootComponent />}
   </React.StrictMode>,
 );
