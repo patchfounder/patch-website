@@ -1,4 +1,5 @@
 import { TRAINING_STAGES } from '../src/training-stages.js';
+import { ACADEMY_MODULES, getAcademyModule } from '../src/academy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -110,14 +111,16 @@ test('mobile widths keep the direct calendar link and defer the desktop embed', 
   }
 });
 
-test('client routing selects Activation with or without a trailing slash', () => {
-  for (const [pathname, expected] of [['/activation', 'Activation'], ['/activation/', 'Activation'], ['/reactivate', 'Reactivate'], ['/training/prohea', 'ProHeadshotTraining'], ['/training/prohea/', 'ProHeadshotTraining']]) {
+test('client routing preserves booking routes and selects each numbered Academy page', () => {
+  const moduleRoutes = ACADEMY_MODULES.flatMap(module => [[module.path, 'AcademyModule'], [module.path + '/', 'AcademyModule']]);
+  for (const [pathname, expected] of [['/activation', 'Activation'], ['/activation/', 'Activation'], ['/reactivate', 'Reactivate'], ['/training/prohea', 'ProHeadshotTraining'], ['/training/prohea/', 'ProHeadshotTraining'], ...moduleRoutes]) {
     let rendered;
     const module = { exports: {} };
     vm.runInNewContext(mainCode, {
       module, exports: module.exports, window: { location: { pathname } }, document: { getElementById: () => ({}) },
       require(name) {
         if (name === './training-stages.js') return { TRAINING_STAGES };
+        if (name === './academy-modules.js') return { getAcademyModule };
         if (name === 'react' || name === 'react/jsx-runtime') return require(name);
         if (name === 'react-dom/client') return { createRoot: () => ({ render: value => { rendered = value; } }) };
         if (name.endsWith('.css')) return {};
@@ -126,6 +129,10 @@ test('client routing selects Activation with or without a trailing slash', () =>
       },
     });
     assert.equal(rendered.props.children.type.displayName, expected);
+    if (expected === 'AcademyModule') {
+      assert.equal(rendered.props.children.props.module.path, pathname.replace(/\/$/, ''));
+      assert.equal(rendered.props.children.props.module.code, pathname.replaceAll('/', ''));
+    }
   }
 });
 
@@ -133,7 +140,7 @@ test('metadata generation creates a dedicated Activation share page without file
   const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
   const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
   await vm.runInNewContext(`(async () => {\n${source}\n})()`, {
-    TRAINING_STAGES,
+    TRAINING_STAGES, ACADEMY_MODULES,
     path: { join: path.join, resolve: value => path.resolve(websiteRoot, value) },
     readFile: async file => { assert.equal(file, path.join(dist, 'index.html')); return readSource('index.html'); },
     mkdir: async directory => { assert.ok(directory.startsWith(dist + path.sep)); },
@@ -158,6 +165,7 @@ test('six-letter training URLs select the matching stage and role, including tra
       module, exports: module.exports, window: { location: { pathname } }, document: { getElementById: () => ({}) },
       require(name) {
         if (name === './training-stages.js') return { TRAINING_STAGES };
+        if (name === './academy-modules.js') return { getAcademyModule };
         if (name === 'react' || name === 'react/jsx-runtime') return require(name);
         if (name === 'react-dom/client') return { createRoot: () => ({ render: value => { rendered = value; } }) };
         if (name.endsWith('.css')) return {};
@@ -177,7 +185,7 @@ test('each stage and host URL gets its own metadata rather than Activation or ho
   const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
   const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
   await vm.runInNewContext(`(async () => {\n${source}\n})()`, {
-    TRAINING_STAGES,
+    TRAINING_STAGES, ACADEMY_MODULES,
     path: { join: path.join, resolve: value => path.resolve(websiteRoot, value) },
     readFile: async () => readSource('index.html'), mkdir: async () => {},
     writeFile: async (file, html) => outputs.set(file, html), console: { log() {} },
@@ -195,4 +203,12 @@ test('each stage and host URL gets its own metadata rather than Activation or ho
   assert.ok(m1.includes('<title>Pro Headshot Stage | Patch Academy</title>'));
   assert.ok(m1.includes('content="https://www.patch.app/training/prohea"'));
   assert.ok(m1.includes('content="noindex, nofollow, noarchive"'));
+  for (const module of ACADEMY_MODULES) {
+    const html = outputs.get(path.join(dist, module.code, 'index.html'));
+    assert.ok(html, module.path);
+    assert.ok(html.includes(`<title>${module.code} ${module.title} | Patch Academy</title>`));
+    assert.ok(html.includes(`content="https://www.patch.app${module.path}"`));
+    assert.ok(html.includes('content="noindex, nofollow, noarchive"'));
+    assert.ok(!html.includes('join your private video session'));
+  }
 });

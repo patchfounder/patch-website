@@ -1,12 +1,19 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { TRAINING_STAGES } from '../src/training-stages.js';
+import { ACADEMY_MODULES } from '../src/academy-modules.js';
 
 const DIST_DIR = path.resolve('dist');
 const INDEX_PATH = path.join(DIST_DIR, 'index.html');
 const PREVIEW_IMAGE_URL = 'https://www.patch.app/patch-whatsapp-preview-v2.jpg';
 
 const routes = [
+  ...ACADEMY_MODULES.map(module => ({
+    path: module.path.slice(1),
+    title: `${module.code} ${module.title} | Patch Academy`,
+    description: module.intro,
+    robots: 'noindex, nofollow, noarchive',
+  })),
   {
     path: 'training/prohea',
     title: 'Pro Headshot Stage | Patch Academy',
