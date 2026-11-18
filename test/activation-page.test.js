@@ -130,12 +130,12 @@ function renderRoute(pathname) {
 }
 
 test('client routing preserves existing business, recruitment and legal pages', () => {
-  for (const [pathname, expected] of [['/activation', 'Activation'], ['/activation/', 'Activation'], ['/reactivate', 'Reactivate'], ['/meeting', 'Meeting'], ['/coaching', 'Coaching'], ['/application', 'CoachApplication'], ['/assessment', 'Assessment'], ['/administration', 'Administration'], ['/legal', 'Legal'], ['/pre', 'Pre'], ['/masterclass', 'Masterclass'], ['/activity', 'Activity'], ['/kc', 'Kc'], ['/certified', 'Certified'], ['/activity-content', 'ActivityContent'], ['/premasterclass-content', 'PreMasterclassContent'], ['/cancel', 'Cancel'], ['/', 'App']]) {
+  for (const [pathname, expected] of [['/meeting', 'Meeting'], ['/meeting/', 'Meeting'], ['/coaching', 'Coaching'], ['/application', 'CoachApplication'], ['/assessment', 'Assessment'], ['/administration', 'Administration'], ['/legal', 'Legal'], ['/', 'App']]) {
     assert.equal(renderRoute(pathname).type.displayName, expected, pathname);
   }
 });
 
-test('metadata generation creates a dedicated Activation share page without filesystem writes', async () => {
+test('metadata generation preserves the general Meeting share page without filesystem writes', async () => {
   const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
   const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
   await vm.runInNewContext(`(async () => {\n${source}\n})()`, {
@@ -145,13 +145,13 @@ test('metadata generation creates a dedicated Activation share page without file
     mkdir: async directory => { assert.ok(directory.startsWith(dist + path.sep)); },
     writeFile: async (file, html) => { outputs.set(file, html); }, console: { log() {} },
   });
-  const html = outputs.get(path.join(dist, 'activation', 'index.html'));
+  const html = outputs.get(path.join(dist, 'meeting', 'index.html'));
   assert.ok(html);
-  assert.match(html, /<title>Activation Call \| Patch<\/title>/);
-  assert.ok(html.includes(`<meta name="description" content="${description}" />`));
-  assert.match(html, /<meta property="og:url" content="https:\/\/www\.patch\.app\/activation"/);
-  assert.match(html, /<meta property="og:title" content="Activation Call \| Patch"/);
-  assert.match(html, /<meta name="twitter:title" content="Activation Call \| Patch"/);
+  assert.match(html, /<title>Patch Meeting<\/title>/);
+  assert.ok(html.includes('<meta name="description" content="Your Patch meeting link." />'));
+  assert.match(html, /<meta property="og:url" content="https:\/\/www\.patch\.app\/meeting"/);
+  assert.match(html, /<meta property="og:title" content="Patch Meeting"/);
+  assert.match(html, /<meta name="twitter:title" content="Patch Meeting"/);
 });
 
 
@@ -163,7 +163,7 @@ test('retired training URLs never select a module or room client, including stat
   }
 });
 
-test('metadata generation excludes retired pages and retains fourteen existing route pages', async () => {
+test('metadata generation excludes retired pages and retains six existing route pages', async () => {
   const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
   const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
   await vm.runInNewContext(`(async () => {\n${source}\n})()`, {
@@ -172,11 +172,11 @@ test('metadata generation excludes retired pages and retains fourteen existing r
     readFile: async () => readSource('index.html'), mkdir: async () => {},
     writeFile: async (file, html) => outputs.set(file, html), console: { log() {} },
   });
-  assert.equal(outputs.size, 14);
+  assert.equal(outputs.size, 6);
   for (const route of RETIRED_TRAINING_PATHS) {
     assert.ok(!outputs.has(path.join(dist, route.slice(1), 'index.html')), route);
   }
-  for (const route of ['activation', 'meeting', 'coaching', 'pre', 'masterclass', 'activity', 'kc', 'certified', 'reactivate', 'cancel', 'legal', 'application', 'administration', 'assessment']) {
+  for (const route of ['meeting', 'coaching', 'legal', 'application', 'administration', 'assessment']) {
     assert.ok(outputs.has(path.join(dist, route, 'index.html')), route);
   }
 });

@@ -6,17 +6,7 @@ import Administration from './components/Administration.jsx';
 import CoachApplication from './components/CoachApplication.jsx';
 import Legal from './components/Legal.jsx';
 import Meeting from './components/Meeting.jsx';
-import Activation from './components/Activation.jsx';
-import Activity from './components/Activity.jsx';
-import ActivityContent from './components/ActivityContent.jsx';
-import Cancel from './components/Cancel.jsx';
-import Certified from './components/Certified.jsx';
 import Coaching from './components/Coaching.jsx';
-import Kc from './components/Kc.jsx';
-import Masterclass from './components/Masterclass.jsx';
-import Pre from './components/Pre.jsx';
-import PreMasterclassContent from './components/PreMasterclassContent.jsx';
-import Reactivate from './components/Reactivate.jsx';
 import { isRetiredTrainingPage } from './retired-training-pages.js';
 import './styles.css';
 
@@ -26,19 +16,7 @@ const bookingRoutes = {
   '/assessment': Assessment,
   '/legal': Legal,
   '/meeting': Meeting,
-  '/activation': Activation,
-  '/activity': Activity,
-  '/activity-content': ActivityContent,
-  '/cancel': Cancel,
-  '/certified': Certified,
   '/coaching': Coaching,
-  '/kc': Kc,
-  '/masterclass': Masterclass,
-  '/pre': Pre,
-  '/premasterclass-content': PreMasterclassContent,
-  '/reactivate': Reactivate,
-  // Add future Unbounce replacement pages here, for example:
-  // '/kc': KcBookingPage,
 };
 
 function normalisePathname(pathname) {

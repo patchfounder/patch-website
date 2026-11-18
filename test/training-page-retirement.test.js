@@ -15,12 +15,12 @@ const expectedPaths = [
   '/training', '/training/prohea', '/training/activation', '/training/activation/host',
   ...['activa', 'premas', 'linkmc', 'linkac', 'knowyc', 'certif']
     .flatMap(code => ['/training/' + code, '/training/' + code + '/host']),
+  '/activation', '/pre', '/masterclass', '/activity', '/kc', '/certified',
+  '/premasterclass-content', '/activity-content', '/reactivate', '/cancel',
 ];
 const retainedPaths = [
-  '/', '/activation', '/activity', '/activity-content', '/administration',
-  '/application', '/assessment', '/cancel', '/certified', '/coach-registration',
-  '/coaching', '/kc', '/legal', '/masterclass', '/meeting', '/pre',
-  '/premasterclass-content', '/reactivate',
+  '/', '/administration', '/application', '/assessment', '/coach-registration',
+  '/coaching', '/legal', '/meeting',
 ];
 const assets = [
   {
@@ -69,8 +69,8 @@ async function fixture(t) {
   return { request: (pathname, options) => fetch(origin + pathname, { redirect: 'manual', ...options }) };
 }
 
-test('retirement contains exactly the 22 approved presentation routes and their simple aliases', () => {
-  assert.equal(RETIRED_TRAINING_PATHS.length, 22);
+test('retirement contains exactly the 32 approved presentation routes and their simple aliases', () => {
+  assert.equal(RETIRED_TRAINING_PATHS.length, 32);
   assert.deepEqual([...RETIRED_TRAINING_PATHS].sort(), [...expectedPaths].sort());
   assert.ok(Object.isFrozen(RETIRED_TRAINING_PATHS));
   for (const pathname of expectedPaths) {

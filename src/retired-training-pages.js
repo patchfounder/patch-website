@@ -1,5 +1,5 @@
-// Presentation URLs only. Curriculum definitions, videos, resources and saved
-// training history remain available independently of these retired web pages.
+// Retired presentation, booking and tutorial URLs. Curriculum definitions,
+// videos, resources and training history remain independent of these pages.
 export const RETIRED_TRAINING_PATHS = Object.freeze([
   '/M1',
   '/M2',
@@ -23,6 +23,16 @@ export const RETIRED_TRAINING_PATHS = Object.freeze([
   '/training/knowyc/host',
   '/training/certif',
   '/training/certif/host',
+  '/activation',
+  '/pre',
+  '/masterclass',
+  '/activity',
+  '/kc',
+  '/certified',
+  '/premasterclass-content',
+  '/activity-content',
+  '/reactivate',
+  '/cancel',
 ]);
 
 const retiredPages = new Set(RETIRED_TRAINING_PATHS);
