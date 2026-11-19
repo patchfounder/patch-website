@@ -7,6 +7,7 @@ import CoachApplication from './components/CoachApplication.jsx';
 import Legal from './components/Legal.jsx';
 import Meeting from './components/Meeting.jsx';
 import Coaching from './components/Coaching.jsx';
+import Training from './components/Training.jsx';
 import { isRetiredTrainingPage } from './retired-training-pages.js';
 import './styles.css';
 
@@ -17,6 +18,8 @@ const bookingRoutes = {
   '/legal': Legal,
   '/meeting': Meeting,
   '/coaching': Coaching,
+  '/training': Training,
+  '/training/index.html': Training,
 };
 
 function normalisePathname(pathname) {

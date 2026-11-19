@@ -135,6 +135,12 @@ test('client routing preserves existing business, recruitment and legal pages', 
   }
 });
 
+test('client routing restores only the Coach training page and its static aliases', () => {
+  for (const pathname of ['/training', '/training/', '/training/index.html', '/training/index.html/']) {
+    assert.equal(renderRoute(pathname).type.displayName, 'Training', pathname);
+  }
+});
+
 test('metadata generation preserves the general Meeting share page without filesystem writes', async () => {
   const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
   const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
@@ -163,7 +169,7 @@ test('retired training URLs never select a module or room client, including stat
   }
 });
 
-test('metadata generation excludes retired pages and retains six existing route pages', async () => {
+test('metadata generation excludes retired pages and includes restored training among seven route pages', async () => {
   const outputs = new Map(), dist = path.join(websiteRoot, 'dist');
   const source = readSource('scripts/create-route-meta-pages.mjs').replace(/^import[^\n]*\n/gm, '');
   await vm.runInNewContext(`(async () => {\n${source}\n})()`, {
@@ -172,11 +178,16 @@ test('metadata generation excludes retired pages and retains six existing route 
     readFile: async () => readSource('index.html'), mkdir: async () => {},
     writeFile: async (file, html) => outputs.set(file, html), console: { log() {} },
   });
-  assert.equal(outputs.size, 6);
+  assert.equal(outputs.size, 7);
   for (const route of RETIRED_TRAINING_PATHS) {
     assert.ok(!outputs.has(path.join(dist, route.slice(1), 'index.html')), route);
   }
-  for (const route of ['meeting', 'coaching', 'legal', 'application', 'administration', 'assessment']) {
+  for (const route of ['meeting', 'coaching', 'legal', 'application', 'administration', 'assessment', 'training']) {
     assert.ok(outputs.has(path.join(dist, route, 'index.html')), route);
   }
+  const trainingHtml = outputs.get(path.join(dist, 'training', 'index.html'));
+  assert.match(trainingHtml, /<title>Patch Coach Training \| Patch<\/title>/);
+  assert.ok(trainingHtml.includes('<meta name="description" content="Watch the Patch Coach training video and download the Patch Call Process script." />'));
+  assert.match(trainingHtml, /<meta name="robots" content="noindex, nofollow"/);
+  assert.match(trainingHtml, /<meta property="og:url" content="https:\/\/www\.patch\.app\/training"/);
 });

@@ -12,7 +12,7 @@ import { retireTrainingPages } from '../server/training-page-retirement.js';
 const PROJECT = path.resolve(import.meta.dirname, '..');
 const expectedPaths = [
   ...Array.from({ length: 6 }, (_, index) => '/M' + (index + 1)),
-  '/training', '/training/prohea', '/training/activation', '/training/activation/host',
+  '/training/prohea', '/training/activation', '/training/activation/host',
   ...['activa', 'premas', 'linkmc', 'linkac', 'knowyc', 'certif']
     .flatMap(code => ['/training/' + code, '/training/' + code + '/host']),
   '/activation', '/pre', '/masterclass', '/activity', '/kc', '/certified',
@@ -21,6 +21,10 @@ const expectedPaths = [
 const retainedPaths = [
   '/', '/administration', '/application', '/assessment', '/coach-registration',
   '/coaching', '/legal', '/meeting',
+];
+const restoredTrainingPaths = [
+  '/training', '/training/', '/training?source=legacy', '/training/?source=legacy',
+  '/training/index.html', '/training/index.html/', '/training/index.html?source=legacy',
 ];
 const assets = [
   {
@@ -52,6 +56,7 @@ async function fixture(t) {
     mkdirSync(path.dirname(target), { recursive: true });
     copyFileSync(path.join(PROJECT, 'public', resource.path.slice(1)), target);
   }
+  writeFileSync(path.join(directory, 'training', 'index.html'), '<main>restored-training-sentinel</main>');
   writeFileSync(path.join(directory, 'M1', 'release.json'), '{"syntheticProvenance":true}');
   const app = express();
   app.use(retireTrainingPages);
@@ -69,8 +74,8 @@ async function fixture(t) {
   return { request: (pathname, options) => fetch(origin + pathname, { redirect: 'manual', ...options }) };
 }
 
-test('retirement contains exactly the 32 approved presentation routes and their simple aliases', () => {
-  assert.equal(RETIRED_TRAINING_PATHS.length, 32);
+test('retirement retains the other 31 presentation routes and their simple aliases', () => {
+  assert.equal(RETIRED_TRAINING_PATHS.length, 31);
   assert.deepEqual([...RETIRED_TRAINING_PATHS].sort(), [...expectedPaths].sort());
   assert.ok(Object.isFrozen(RETIRED_TRAINING_PATHS));
   for (const pathname of expectedPaths) {
@@ -79,7 +84,7 @@ test('retirement contains exactly the 32 approved presentation routes and their 
     }
   }
   for (const pathname of [
-    ...retainedPaths, ...assets.map(asset => asset.path), '/M1/release.json',
+    ...retainedPaths, ...restoredTrainingPaths, ...assets.map(asset => asset.path), '/M1/release.json',
     '/api/training/activation-room/status', '/m1', '/TRAINING', '/M7',
     '/training/unknown', '/training/activa/host/extra', '/M1/index.html/index.html',
     '/M1.css', null, undefined, 1,
@@ -98,6 +103,26 @@ test('GET and HEAD retirement wins over physical old files and the SPA fallback 
         assert.equal(response.headers.get('x-robots-tag'), 'noindex, noarchive');
         assert.equal(response.headers.get('location'), null);
         assert.equal(await response.text(), method === 'HEAD' ? '' : 'Not found.');
+      }
+    }
+  }
+});
+
+test('restored Coach training and its aliases pass through to static serving or the SPA', async t => {
+  const f = await fixture(t);
+  for (const pathname of restoredTrainingPaths) {
+    for (const method of ['GET', 'HEAD']) {
+      const response = await f.request(pathname, { method });
+      const bareDirectory = pathname === '/training' || pathname === '/training?source=legacy';
+      assert.equal(response.status, bareDirectory ? 301 : 200, method + ' ' + pathname);
+      assert.equal(response.headers.get('x-robots-tag'), null, pathname);
+      if (bareDirectory) {
+        assert.equal(response.headers.get('location'), pathname.replace('/training', '/training/'));
+      } else {
+        assert.match(response.headers.get('content-type'), /^text\/html\b/);
+        assert.equal(response.headers.get('location'), null);
+        assert.equal(await response.text(), method === 'HEAD' ? '' : pathname === '/training/index.html/'
+          ? '<main>active-spa-sentinel</main>' : '<main>restored-training-sentinel</main>');
       }
     }
   }

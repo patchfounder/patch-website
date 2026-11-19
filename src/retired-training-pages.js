@@ -7,7 +7,6 @@ export const RETIRED_TRAINING_PATHS = Object.freeze([
   '/M4',
   '/M5',
   '/M6',
-  '/training',
   '/training/prohea',
   '/training/activation',
   '/training/activation/host',
