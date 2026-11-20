@@ -66,7 +66,7 @@ Pass invitations open as a prefilled draft in the reviewer’s default email app
 
 Passed applicants have a separate final team decision. **Reject** and **Invite** open personalised drafts in the same mail application, without recording an outcome or sending through Resend. The drafts leave Patrick's configured mail-app signature in place and show the registration URL in full. Only **Confirm Sent** records the outcome and moves the card to **Rejected** or **Invited**. The summary navigation is Inbox / Pass / Fail / Rejected / Invited.
 
-Recruitment is permanently open. Schema version 3 converts the existing current intake in place to `alwaysOpen`, preserving its ID, opening timestamp, password, every application/outcome and all audio references. The stored legacy closing date is retained for compatibility but no longer gates access. The assessment summary displays **Application Opened** and the original opening month. It has **Change Password**, with no plus, date, create, activate or remove controls. No monthly reset or scheduled password change occurs.
+Recruitment is permanently open. Schema version 3 converts the existing current intake in place to `alwaysOpen`, preserving its ID, opening timestamp, password, every application/outcome and all audio references. The stored legacy closing date is retained for compatibility but no longer gates access. The assessment summary displays **Application Opened** and the original opening month. Invitation-based intake hides the retired **Change Password** action; no plus, date, create, activate or remove controls are added. No monthly reset or scheduled password change occurs.
 
 The data root contains:
 
@@ -96,12 +96,16 @@ Returns whether the browser holds a valid applicant cookie and the public intake
 JSON:
 
 ```json
-{ "password": "shared application password" }
+{ "invitationCode": "C045" }
 ```
 
-Passwords are stored only as scrypt hashes with per-change random salts. Success sets a signed, `HttpOnly`, `SameSite=Strict` applicant cookie. For ongoing recruitment its lifetime is 24 hours from login, independent of the old closing date; a normal session expiry does not close applications and the applicant can log in again. Each session carries the password revision, so a manual password change invalidates older applicant sessions without affecting reviewer sessions. Old revision-zero cookies remain valid until their own expiry unless the password is changed. Duplicate applicant details and multiple submissions remain deliberately permitted.
+Application login now requires an active invitation in the private Website registry. A code-shaped string alone is insufficient, and the retired shared application password does not unlock the form. Codes preserve leading zeros; surrounding whitespace and lowercase input are normalised. Both the original route and `/api/recruitment/applicant/unlock` remain supported. A stale client may still submit the `password` field, but its value is checked only as an invitation code, never against the retired applicant password hash.
 
-`POST /api/recruitment/applicant/unlock` is an equivalent alias.
+Success sets the existing signed, `HttpOnly`, `SameSite=Strict` cookie with invitation code, referring Coach ID, registry revision and current intake. Ongoing sessions last 24 hours. Expired, revoked or changed invitations fail validation; old password-based applicant cookies must log in again with an invitation. The separate administration password, `/administration`, reviewer private link and reviewer cookie remain available. The public application field still supports the established master-admin redirect without granting applicant access.
+
+Configure `RECRUITMENT_INVITATIONS_JSON` only on the Website service using an explicitly authorised export of existing Coach IDs, for example the synthetic JSON array `["C045"]`. Entries may also be objects such as `{ "code": "C045", "coachId": "C045" }`. The bootstrap adds approved registry entries to the existing private recruitment SQLite database; it does not overwrite an existing referrer or reactivate a revoked code. This is server-only configuration and must never be bundled in frontend assets. The Website makes no runtime request to Patch OS and never opens its storage. New referring Coaches must be registered through the same approved registry maintenance process.
+
+On submission, the server copies the signed invitation code and referring Coach ID into `recruitment_applications.invitation_code` and `referrer_coach_id`. Those fields are shown on the existing private assessment card. Submitted form fields cannot override them. Legacy application rows retain their existing details and audio, with empty attribution. Credits and gift fulfilment remain manual. The retired applicant Change Password action is hidden and its old HTTP write returns a conflict without changing stored data.
 
 ### `POST /api/recruitment/applications`
 
@@ -113,7 +117,7 @@ Passwords are stored only as scrypt hashes with per-change random salts. Success
 - `audioDurationMs` (sent by the Website client for contract compatibility; never trusted for enforcement)
 - `audio` (one non-empty supported audio file)
 
-Accepted base MIME types: WebM, MP4/M4A, AAC, MPEG/MP3, OGG, and WAV. The server parses the uploaded audio container, stores its measured duration, rejects unreadable media, and enforces the 60-second maximum independently of client metadata. The applicant cookie must still be valid for the current intake and its current password revision. Audio is kept in the existing private, server-assigned storage folder and promoted from a private staging path before the SQLite application record is inserted; a database failure removes the promoted file.
+Accepted base MIME types: WebM, MP4/M4A, AAC, MPEG/MP3, OGG, and WAV. The server parses the uploaded audio container, stores its measured duration, rejects unreadable media, and enforces the 60-second maximum independently of client metadata. The invitation cookie must still be valid for the current intake and its active invitation revision. Audio is kept in the existing private, server-assigned storage folder and promoted from a private staging path before the SQLite application record is inserted; a database failure removes the promoted file.
 
 `POST /api/recruitment/applicant/applications` is an equivalent alias.
 

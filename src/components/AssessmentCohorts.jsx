@@ -98,7 +98,7 @@ export default function AssessmentCohorts({
           ))}
         </nav>
 
-        {currentId && (
+        {currentId && currentWindow?.usesInvitationCodes !== true && (
           <button
             className="assessment-button assessment-button-secondary assessment-change-password"
             type="button"
@@ -120,7 +120,7 @@ export default function AssessmentCohorts({
           </button>
         )}
 
-        {formOpen && (
+        {formOpen && currentWindow?.usesInvitationCodes !== true && (
           <form
             className="assessment-password-form"
             id="assessment-password-form"

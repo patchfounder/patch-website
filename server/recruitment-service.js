@@ -83,6 +83,7 @@ function publicCohort(cohort, now) {
     closesAt: cohort.closesAt,
     alwaysOpen: cohort.alwaysOpen === true,
     passwordRevision: Number(cohort.passwordRevision || 0),
+    usesInvitationCodes: true,
     state: cohortWindowState(cohort, now),
     applicationCount: cohort.applicationCount,
     pendingCount: cohort.pendingCount,
@@ -116,6 +117,8 @@ function reviewerApplication(application) {
     emailAttemptCount: application.emailAttemptCount,
     emailProviderId: application.emailProviderId,
     emailError: application.emailError,
+    invitationCode: application.invitationCode || "",
+    referrerCoachId: application.referrerCoachId || "",
   });
 }
 
@@ -210,7 +213,50 @@ export function createRecruitmentService(options = {}) {
     };
   }
 
+  function validateApplicantInvitationSession(payload, validationOptions = {}) {
+    const instant = validationOptions.now || currentTime();
+    const fail = () => {
+      if (validationOptions.throwOnFailure === false) return null;
+      throw new RecruitmentServiceError("Application access has expired. Enter your invitation code again.", "applicant_session_expired", 401);
+    };
+    if (!payload || payload.v !== 2 || payload.kind !== "applicant"
+      || typeof payload.cohortId !== "string" || typeof payload.invitationCode !== "string"
+      || !Number.isFinite(payload.exp) || instant.getTime() >= payload.exp * 1000) return fail();
+    const cohort = database.getCohortById(payload.cohortId);
+    const invitation = database.invitations.get(payload.invitationCode);
+    if (!cohort || cohort.slot !== "current" || cohortWindowState(cohort, instant) !== "open"
+      || !invitation?.active || invitation.code !== payload.invitationCode
+      || invitation.coachId !== payload.referrerCoachId || invitation.revision !== payload.invitationRevision) return fail();
+    return { cohort, invitation, payload };
+  }
+
+  function getInvitationApplicantStatus(payload = null) {
+    const instant = currentTime();
+    const session = validateApplicantInvitationSession(payload, { throwOnFailure: false, now: instant });
+    const cohort = session?.cohort || database.getCohortBySlot("current");
+    return { unlocked: Boolean(session), state: cohortWindowState(cohort, instant),
+      cohort: cohort ? { ...publicCohort(cohort, instant), usesInvitationCodes: true } : null };
+  }
+
+  function unlockApplicantInvitation(code) {
+    const instant = currentTime();
+    const cohort = database.getCohortBySlot("current");
+    if (!cohort || cohortWindowState(cohort, instant) !== "open") {
+      throw new RecruitmentServiceError("Application access is temporarily unavailable.", "cohort_not_open", 403);
+    }
+    const invitation = database.invitations.get(code);
+    if (!invitation?.active) {
+      throw new RecruitmentServiceError("That invitation code was not recognised. Check your invitation and try again.", "invalid_invitation_code", 401);
+    }
+    const expiresAt = cohort.alwaysOpen ? new Date(instant.getTime() + 24 * 60 * 60 * 1000) : new Date(cohort.closesAt);
+    return { cohort: { ...publicCohort(cohort, instant), usesInvitationCodes: true }, expiresAt,
+      sessionPayload: Object.freeze({ v: 2, kind: "applicant", cohortId: cohort.cohortId,
+        invitationCode: invitation.code, referrerCoachId: invitation.coachId,
+        invitationRevision: invitation.revision, exp: Math.floor(expiresAt.getTime() / 1000) }) };
+  }
+
   function validateApplicantSession(payload, validationOptions = {}) {
+    if (payload?.v === 2) return validateApplicantInvitationSession(payload, validationOptions);
     const instant = validationOptions.now || currentTime();
     const passwordRevision = payload?.passwordRevision === undefined ? 0 : payload.passwordRevision;
     const fail = (message, code) => {
@@ -255,7 +301,10 @@ export function createRecruitmentService(options = {}) {
     try {
       const application = database.createApplication({
         cohortId: session.cohort.cohortId,
-        expectedPasswordRevision: Number(session.cohort.passwordRevision || 0),
+        expectedPasswordRevision: session.invitation ? undefined : Number(session.cohort.passwordRevision || 0),
+        invitationCode: session.invitation?.code,
+        referrerCoachId: session.invitation?.coachId,
+        expectedInvitationRevision: session.invitation?.revision,
         fullName,
         email,
         linkedinUrl,
@@ -604,6 +653,9 @@ export function createRecruitmentService(options = {}) {
   }
 
   return Object.freeze({
+    unlockApplicantInvitation,
+    validateApplicantInvitationSession,
+    getInvitationApplicantStatus,
     getApplicantStatus,
     unlockApplicant,
     validateApplicantSession,

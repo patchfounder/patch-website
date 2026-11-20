@@ -1037,15 +1037,15 @@ test("HTTP routes match the Website clients, exchange reviewer secret, range-str
   const history = [{ id: "application-old", applicationId: "application-old", decision: "pass" }];
   const service = {
     healthCheck: () => ({ ok: true }),
-    getApplicantStatus: () => ({ unlocked: false, state: "open", cohort: currentCohort }),
-    async unlockApplicant() {
+    getInvitationApplicantStatus: () => ({ unlocked: false, state: "open", cohort: currentCohort }),
+    async unlockApplicantInvitation() {
       return {
         cohort: currentCohort,
         expiresAt: new Date(Date.now() + 60_000),
         sessionPayload: { v: 1, kind: "applicant", cohortId: "current", exp: Math.floor(Date.now() / 1000) + 60 },
       };
     },
-    validateApplicantSession(payload) {
+    validateApplicantInvitationSession(payload) {
       if (!payload) {
         throw Object.assign(new Error("Application access has expired."), {
           code: "applicant_session_expired",

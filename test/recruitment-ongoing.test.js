@@ -109,10 +109,10 @@ async function fixture({ migrate = false } = {}) {
   };
 }
 
-test("schema 3 converts only the existing current intake in place and preserves every card and audio", async () => {
+test("schema 4 converts only the existing current intake in place and preserves every card and audio", async () => {
   const f = await fixture({ migrate: true });
   try {
-    assert.deepEqual(f.database.healthCheck(), { ok: true, schemaVersion: 3 });
+    assert.deepEqual(f.database.healthCheck(), { ok: true, schemaVersion: 4 });
     const migrated = f.raw.prepare("SELECT * FROM recruitment_cohorts ORDER BY cohort_id").all();
     migrated.forEach((row, index) => {
       const { always_open, password_revision, ...preserved } = row;
@@ -279,7 +279,7 @@ test("legacy window mutations are disabled for ongoing recruitment before any pr
   } finally { f.close(); }
 });
 
-test("password HTTP update requires reviewer, JSON and same origin and leaves reviewer sessions unchanged", async () => {
+test("retired password HTTP update retains reviewer, JSON and same-origin guards without changing data", async () => {
   const f = await fixture();
   let server;
   const codec = createSignedCookieCodec("synthetic-ongoing-cookie-secret-at-least-32-bytes");
@@ -311,11 +311,12 @@ test("password HTTP update requires reviewer, JSON and same origin and leaves re
     }
     assert.equal(f.database.getCohortBySlot("current").passwordRevision, 0);
     const changed = await request({ Cookie: reviewer, "Content-Type": "application/json", Origin: origin, "Sec-Fetch-Site": "same-origin" });
-    assert.equal(changed.status, 200);
+    assert.equal(changed.status, 409);
     assert.equal(changed.headers.get("set-cookie"), null, "password update must not change reviewer cookies");
     assert.match(changed.headers.get("cache-control"), /no-store/);
     const json = await changed.json();
-    assert.equal(json.currentCohort.passwordRevision, 1);
+    assert.equal(json.code, "invitation_codes_required");
+    assert.equal(f.database.getCohortBySlot("current").passwordRevision, 0);
     assert.equal(JSON.stringify(json).includes("synthetic-http-new-password"), false);
     const reviewerState = await fetch(`${origin}/api/recruitment/reviewer/state`, { headers: { Cookie: reviewer } });
     assert.equal(reviewerState.status, 200);
@@ -334,8 +335,9 @@ test("password HTTP update requires reviewer, JSON and same origin and leaves re
     const stale = await fetch(`${origin}/api/recruitment/status`, { headers: { Cookie: applicant } });
     assert.equal((await stale.json()).unlocked, false);
     assert.match(stale.headers.get("set-cookie"), /Max-Age=0/);
+    f.database.invitations.register(["C045"]);
     const freshLogin = await fetch(`${origin}/api/recruitment/unlock`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: "synthetic-http-new-password" }),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ invitationCode: "C045" }),
     });
     assert.equal(freshLogin.status, 200);
     const freshCookie = freshLogin.headers.get("set-cookie").split(";", 1)[0];

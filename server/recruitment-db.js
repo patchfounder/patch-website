@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
+import { createRecruitmentInvitationStore, initializeRecruitmentInvitationSchema } from "./recruitment-invitations.js";
 
-export const RECRUITMENT_SCHEMA_VERSION = 3;
+export const RECRUITMENT_SCHEMA_VERSION = 4;
 
 export class RecruitmentDatabaseError extends Error {
   constructor(message, code = "database_error", statusCode = 500) {
@@ -58,6 +59,8 @@ function applicationFromRow(row) {
     emailAttemptCount: Number(row.email_attempt_count || 0),
     emailProviderId: row.email_provider_id || "",
     emailError: row.email_error || "",
+    invitationCode: row.invitation_code || "",
+    referrerCoachId: row.referrer_coach_id || "",
   };
 }
 
@@ -187,6 +190,7 @@ export function createRecruitmentDatabase(options = {}) {
       // opening date, every application and private audio storage reference.
       database.prepare("UPDATE recruitment_cohorts SET always_open = 1 WHERE slot = 'current'").run();
     }
+    initializeRecruitmentInvitationSchema(database);
     database.exec(`PRAGMA user_version = ${RECRUITMENT_SCHEMA_VERSION}`);
   });
   for (const privatePath of [databasePath, `${databasePath}-wal`, `${databasePath}-shm`]) {
@@ -195,6 +199,7 @@ export function createRecruitmentDatabase(options = {}) {
     }
   }
 
+  const invitations = createRecruitmentInvitationStore({ database, transaction: operation => transaction(database, operation) });
   const cohortSelect = `
     SELECT c.*,
       (SELECT COUNT(*) FROM recruitment_applications a WHERE a.cohort_id = c.cohort_id) AS application_count,
@@ -673,6 +678,13 @@ export function createRecruitmentDatabase(options = {}) {
 
   function createApplication(input) {
     return transaction(database, () => {
+      if (input.invitationCode) {
+        const invitation = invitations.get(input.invitationCode);
+        if (!invitation?.active || invitation.revision !== input.expectedInvitationRevision
+          || invitation.coachId !== input.referrerCoachId) {
+          throw new RecruitmentDatabaseError("Application access has expired. Enter your invitation code again.", "applicant_session_expired", 401);
+        }
+      }
       if (input.expectedPasswordRevision !== undefined) {
         const current = getCohortBySlot("current");
         if (!current || current.cohortId !== input.cohortId
@@ -685,8 +697,8 @@ export function createRecruitmentDatabase(options = {}) {
         INSERT INTO recruitment_applications (
           application_id, cohort_id, full_name, email, linkedin_url,
           audio_storage_key, audio_mime_type, audio_file_size,
-          audio_duration_seconds, submitted_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          audio_duration_seconds, submitted_at, invitation_code, referrer_coach_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         applicationId,
         input.cohortId,
@@ -698,6 +710,8 @@ export function createRecruitmentDatabase(options = {}) {
         input.audioFileSize,
         input.audioDurationSeconds,
         input.submittedAt,
+        input.invitationCode || null,
+        input.referrerCoachId || null,
       );
       return getApplication(applicationId);
     });
@@ -952,6 +966,7 @@ export function createRecruitmentDatabase(options = {}) {
 
   return Object.freeze({
     databasePath,
+    invitations,
     getCohortById,
     getCohortBySlot,
     listCohorts,

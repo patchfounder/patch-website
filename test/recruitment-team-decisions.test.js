@@ -131,11 +131,13 @@ test("schema v1 upgrade is additive and preserves existing records, outcomes, em
   const raw = new DatabaseSync(storage.databasePath);
   const database = createRecruitmentDatabase({ databasePath: storage.databasePath, database: raw });
   try {
-    assert.equal(RECRUITMENT_SCHEMA_VERSION, 3);
-    assert.deepEqual(database.healthCheck(), { ok: true, schemaVersion: 3 });
+    assert.equal(RECRUITMENT_SCHEMA_VERSION, 4);
+    assert.deepEqual(database.healthCheck(), { ok: true, schemaVersion: 4 });
     const migrated = raw.prepare("SELECT * FROM recruitment_applications ORDER BY application_id").all();
     migrated.forEach((row, index) => {
-      const { team_decision, team_decided_at, ...original } = row;
+      const { team_decision, team_decided_at, invitation_code, referrer_coach_id, ...original } = row;
+      assert.equal(invitation_code, null);
+      assert.equal(referrer_coach_id, null);
       assert.deepEqual(original, { ...before[index] });
       assert.equal(team_decision, "");
       assert.equal(team_decided_at, null);

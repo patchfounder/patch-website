@@ -63,7 +63,7 @@ async function withApp(options, run) {
     listPendingApplications: () => [],
     listProcessedApplications: () => [],
     listCohortControls: () => ({ current: null, previous: null, next: null }),
-    validateApplicantSession: () => { throw Object.assign(new Error("Applicant login required."), { statusCode: 401 }); },
+    validateApplicantInvitationSession: () => { throw Object.assign(new Error("Applicant login required."), { statusCode: 401 }); },
     ...serviceOverrides,
   };
   const app = await createRecruitmentApp({
@@ -174,7 +174,7 @@ test("missing admin configuration leaves the existing secret-link login availabl
   });
 });
 
-const APPLICANT_PASSWORD = "test-only window password";
+const APPLICANT_CODE = "C045";
 const unlockPaths = ["/api/recruitment/unlock", "/api/recruitment/applicant/unlock"];
 const unlock = (baseUrl, password, route = unlockPaths[0]) => fetch(`${baseUrl}${route}`, {
   method: "POST",
@@ -184,12 +184,12 @@ const unlock = (baseUrl, password, route = unlockPaths[0]) => fetch(`${baseUrl}$
 
 function windowService(state = "open") {
   return {
-    async unlockApplicant(password) {
+    async unlockApplicantInvitation(password) {
       if (state !== "open") {
         throw Object.assign(new Error(`Application window is ${state}.`), { statusCode: 403, code: `window_${state}` });
       }
-      if (password !== APPLICANT_PASSWORD) {
-        throw Object.assign(new Error("Incorrect application password."), { statusCode: 401, code: "invalid_application_password" });
+      if (password !== APPLICANT_CODE) {
+        throw Object.assign(new Error("Incorrect invitation code."), { statusCode: 401, code: "invalid_invitation_code" });
       }
       const expiresAt = new Date(Date.now() + 60_000);
       return { expiresAt, sessionPayload: { v: 1, kind: "applicant", exp: Math.floor(expiresAt.getTime() / 1000) }, cohort: { id: "fixture-window" } };
@@ -197,13 +197,13 @@ function windowService(state = "open") {
   };
 }
 
-test("the existing applicant password routes accept master login without any application window", async () => {
+test("the existing applicant entry routes accept master login without any application window", async () => {
   let applicantCalls = 0;
   let state = "missing";
   const service = {
-    async unlockApplicant(password) {
+    async unlockApplicantInvitation(password) {
       applicantCalls += 1;
-      return windowService(state).unlockApplicant(password);
+      return windowService(state).unlockApplicantInvitation(password);
     },
   };
   await withApp({ adminPasswordHash: await fixtureHash, service }, async (baseUrl) => {
@@ -224,7 +224,7 @@ test("the existing applicant password routes accept master login without any app
     }
     assert.equal(applicantCalls, 0);
     for (state of ["missing", "future", "closed"]) {
-      const applicant = await unlock(baseUrl, APPLICANT_PASSWORD);
+      const applicant = await unlock(baseUrl, APPLICANT_CODE);
       assert.equal(applicant.status, 403);
       assert.equal((await applicant.json()).code, `window_${state}`);
       assert.equal(applicant.headers.get("set-cookie"), null);
@@ -235,7 +235,7 @@ test("the existing applicant password routes accept master login without any app
 test("successful applicants neither consume the master-password budget nor gain reviewer access", async () => {
   await withApp({ adminPasswordHash: await fixtureHash, service: windowService() }, async (baseUrl) => {
     for (let index = 0; index < 12; index += 1) {
-      const response = await unlock(baseUrl, APPLICANT_PASSWORD, unlockPaths[index % 2]);
+      const response = await unlock(baseUrl, APPLICANT_CODE, unlockPaths[index % 2]);
       assert.equal(response.status, 200);
       const body = await response.json();
       assert.equal(body.unlocked, true);
@@ -270,7 +270,7 @@ test("all master-password entry points share one limit without blocking real app
       assert.equal(limited.headers.get("set-cookie"), null);
     }
     for (const route of unlockPaths) {
-      assert.equal((await unlock(baseUrl, APPLICANT_PASSWORD, route)).status, 200);
+      assert.equal((await unlock(baseUrl, APPLICANT_CODE, route)).status, 200);
     }
     assert.equal((await login(baseUrl, FIXTURE_PASSWORD)).status, 429);
     now += 900_000;
@@ -287,7 +287,7 @@ test("an applicant refund removes only its own failed reservation, even at the s
   assert.equal((await auth.authenticate(FIXTURE_PASSWORD)).statusCode, 429);
 });
 
-test("combined unlock requires safe JSON and preserves legacy applicant login when admin is unconfigured", async () => {
+test("combined unlock requires safe JSON and preserves invitation login when admin is unconfigured", async () => {
   await withApp({ adminPasswordHash: await fixtureHash, service: windowService() }, async (baseUrl) => {
     for (const route of unlockPaths) {
       const form = await fetch(`${baseUrl}${route}`, { method: "POST", body: new URLSearchParams({ password: FIXTURE_PASSWORD }) });
@@ -306,12 +306,12 @@ test("combined unlock requires safe JSON and preserves legacy applicant login wh
   });
   await withApp({ service: windowService() }, async (baseUrl) => {
     for (const route of unlockPaths) {
-      const response = await unlock(baseUrl, APPLICANT_PASSWORD, route);
+      const response = await unlock(baseUrl, APPLICANT_CODE, route);
       assert.equal(response.status, 200);
       assert.equal((await response.json()).unlocked, true);
     }
     const wrong = await unlock(baseUrl, "wrong");
     assert.equal(wrong.status, 401);
-    assert.equal((await wrong.json()).code, "invalid_application_password");
+    assert.equal((await wrong.json()).code, "invalid_invitation_code");
   });
 });

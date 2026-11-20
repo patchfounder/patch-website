@@ -72,7 +72,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
       const nextState = payloadState(payload);
       if (nextState === 'unlocked') {
         // Opening the applicant route from the back office must always show the
-        // password screen, even if this browser still has an older valid cookie.
+        // invitation screen, even if this browser still has an older valid cookie.
         setGateState('locked');
         return;
       }
@@ -99,7 +99,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
     if (isUnlocking) return;
 
     if (!password.trim()) {
-      setPasswordError('Enter your application password.');
+      setPasswordError('Enter your invitation code.');
       return;
     }
 
@@ -118,7 +118,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ invitationCode: password }),
         signal: controller.signal,
       });
       const payload = await readJson(response);
@@ -178,7 +178,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
       }
 
       if (response.status === 401 || response.status === 403) {
-        setPasswordError('That password was not recognised. Check the invitation and try again.');
+        setPasswordError('That invitation code was not recognised. Check your invitation and try again.');
         return;
       }
 
@@ -200,12 +200,12 @@ export default function CoachPasswordGate({ onUnlocked }) {
     gateState === 'error'
       ? {
           title: 'We could not check application access',
-          copy: 'You can still try your password, or check again shortly.',
+          copy: 'You can still try your invitation code, or check again shortly.',
         }
       : ['unavailable', 'not_open', 'closed'].includes(gateState)
         ? {
             title: 'Application access is temporarily unavailable',
-            copy: 'You can try your application password, or check again shortly.',
+            copy: 'You can try your invitation code, or check again shortly.',
           }
         : null;
 
@@ -239,7 +239,7 @@ export default function CoachPasswordGate({ onUnlocked }) {
             <span className="coach-gate-kicker">Legal Speaking Coach</span>
             <h1 id="coach-gate-title">Application login</h1>
             <p>
-              Enter the application password from the invitation sent to you through LinkedIn.
+              Enter the invitation code sent to you by a Patch Coach.
             </p>
 
             {accessMessage && (
@@ -250,18 +250,18 @@ export default function CoachPasswordGate({ onUnlocked }) {
             )}
 
             <label className="coach-field coach-gate-password" htmlFor="coach-application-password">
-              <span>Application password</span>
+              <span>Invitation code</span>
               <input
                 className="coach-field-input"
                 id="coach-application-password"
-                name="password"
+                name="invitationCode"
                 type="password"
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value);
                   setPasswordError('');
                 }}
-                autoComplete="current-password"
+                autoComplete="one-time-code"
                 maxLength="200"
                 disabled={isUnlocking}
                 required

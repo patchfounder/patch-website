@@ -175,6 +175,28 @@ const decisionButtons = (tree) => nodes(tree, (node) => node.type === 'button' &
 const namedButton = (tree, label) => nodes(tree, (node) => node.type === 'button' && textContent(node) === label)[0];
 const summaryOf = (tree) => nodes(tree, (node) => node.type === CohortsPlaceholder)[0];
 
+test('invitation intake hides the retired password action while preserving outcome navigation', () => {
+  const state = reviewerState();
+  state.currentCohort.usesInvitationCodes = true;
+  const summary = summaryOf(harness(assessmentCode, { state }).render());
+  const tree = harness(cohortsCode).render(summary.props);
+  assert.equal(nodes(tree, node => node.type === 'button' && textContent(node) === 'Change Password').length, 0);
+  assert.equal(nodes(tree, node => node.type === 'form').length, 0);
+  assert.deepEqual(nodes(tree, node => node.props.className === 'assessment-outcome-link').map(textContent),
+    ['Inbox3', 'Pass2', 'Fail1', 'Rejected1', 'Invited1']);
+});
+
+test('private assessment cards display saved referral attribution and omit it for legacy applications', () => {
+  const application = { ...applicant('referral', 1), invitationCode: 'C045', referrerCoachId: 'C045' };
+  const tree = harness(queueCode).render({ application });
+  const rows = nodes(tree, node => node.type === 'dt').map(node => textContent(node));
+  assert.ok(rows.includes('Invitation code'));
+  assert.ok(rows.includes('Referred by Coach'));
+  assert.equal(nodes(tree, node => node.type === 'dd' && textContent(node) === 'C045').length, 2);
+  const legacy = harness(queueCode).render({ application: applicant('legacy', 2) });
+  assert.doesNotMatch(textContent(legacy), /Invitation code|Referred by Coach/);
+});
+
 test('Inbox renders every pending card once, oldest first, in the full-width outcome list', () => {
   const page = harness(assessmentCode, { state: reviewerState() });
   const tree = page.render();

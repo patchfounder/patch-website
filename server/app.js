@@ -18,6 +18,7 @@ import { createRecruitmentDatabase } from "./recruitment-db.js";
 import { createRecruitmentEmailSender } from "./recruitment-email.js";
 import { createCoachRegistrationRuntime } from "./coach-registration.js";
 import { createRecruitmentService } from "./recruitment-service.js";
+import { parseInvitationSeeds } from "./recruitment-invitations.js";
 import { createRecruitmentMonitor, mountRecruitmentMonitorRoutes } from "./recruitment-monitor.js";
 import {
   createRecruitmentStorage,
@@ -233,7 +234,7 @@ export function mountRecruitmentRoutes(app, options) {
     }
     return next();
   }, express.json({ limit: "1kb", strict: true }), asyncRoute(async (req, res) => {
-    const adminResult = await adminPasswordAuth.authenticate(req.body?.password);
+    const adminResult = await adminPasswordAuth.authenticate(req.body?.password ?? req.body?.invitationCode);
     if (adminResult.ok) {
       establishReviewerSession(res);
       return res.json({ ok: true, role: "reviewer", redirectTo: "/assessment" });
@@ -241,9 +242,9 @@ export function mountRecruitmentRoutes(app, options) {
 
     let result;
     try {
-      // An exhausted admin budget must never prevent a genuine applicant from
-      // using their window password. All window checks remain in the service.
-      result = await service.unlockApplicant(req.body?.password);
+      // Admin access keeps its separate password. Applicants must use a registered
+      // invitation, even if an older client still submits the password field.
+      result = await service.unlockApplicantInvitation(req.body?.invitationCode ?? req.body?.password);
     } catch (error) {
       if (adminResult.statusCode === 429) {
         res.set("Retry-After", String(adminResult.retryAfterSeconds));
@@ -294,7 +295,7 @@ export function mountRecruitmentRoutes(app, options) {
     noStore(res);
     const payload = cookiePayload(req, APPLICANT_COOKIE_NAME, cookieCodec);
     try {
-      service.validateApplicantSession(payload);
+      service.validateApplicantInvitationSession(payload);
       req.recruitmentApplicantSession = payload;
       return next();
     } catch (error) {
@@ -318,7 +319,7 @@ export function mountRecruitmentRoutes(app, options) {
   app.get(["/api/recruitment/status", "/api/recruitment/applicant/status"], (req, res) => {
     noStore(res);
     const payload = cookiePayload(req, APPLICANT_COOKIE_NAME, cookieCodec);
-    const result = service.getApplicantStatus(payload);
+    const result = service.getInvitationApplicantStatus(payload);
     if (!result.unlocked && parseCookieHeader(req.headers.cookie)[APPLICANT_COOKIE_NAME]) {
       res.set("Set-Cookie", clearCookie(APPLICANT_COOKIE_NAME, { secure: secureCookies }));
     }
@@ -483,7 +484,7 @@ export function mountRecruitmentRoutes(app, options) {
         message: "Open the assessment page on the Patch website and try again.",
       });
     }
-    return res.json({ ok: true, ...await service.changeApplicantPassword(req.body || {}) });
+    return res.status(409).json({ ok: false, code: "invitation_codes_required", message: "Applications now use invitation codes. The application password cannot be changed." });
   }));
 
   app.post("/api/recruitment/reviewer/cohorts/next", requireReviewer, asyncRoute(async (req, res) => {
@@ -622,6 +623,7 @@ export async function createRecruitmentRuntime(options = {}) {
       bookingUrl: env.RECRUITMENT_BOOKING_URL,
       client: options.resendClient,
     });
+    database.invitations.register(parseInvitationSeeds(env.RECRUITMENT_INVITATIONS_JSON || ""));
     const service = options.service || createRecruitmentService({
       database,
       storage,
